@@ -1,7 +1,7 @@
 build:
   stage: build
   script:
-    - make
+    - sbt compile assembly
 
 test:
   stage: test
