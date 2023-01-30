@@ -3,6 +3,7 @@ image: openjdk:8
 build:
   stage: build
   script:
+    - source "$HOME/.sdkman/bin/sdkman-init.sh"
     - make
 
 test:
