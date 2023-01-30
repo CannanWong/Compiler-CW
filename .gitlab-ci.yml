@@ -3,10 +3,9 @@ image: openjdk:8
 build:
   stage: build
   script:
-    - sbt compile assembly
+    - make
 
 test:
   stage: test
   script:
     - for i in src/test/*.wacc; do ./compile src/test/$i.wacc; done
-    
