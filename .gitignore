@@ -61,4 +61,4 @@ project/**/metals.sbt
 .bsp
 
 # jarfile
-wacc-45-compiler.jar
+# wacc-45-compiler.jar
