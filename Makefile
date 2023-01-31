@@ -1,8 +1,8 @@
-all:
-	sbt compile assembly
+all: sbt compile assembly
 
 test:
-	for i in src/test/*.wacc; do ./compile src/test/$i.wacc; done
+	sbt compile assembly
+	for file in src/test/scala/wacc/*.wacc; do ./compile $$file; done
 
 clean:
 	sbt clean && rm -rf wacc-45-compiler.jar
