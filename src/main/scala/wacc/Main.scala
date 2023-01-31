@@ -1,9 +1,11 @@
 package wacc
 
 import parsley.{Parsley, Success, Failure}
+import parsley.combinator.sepBy1
 import parsley.character.digit
 import parsley.expr.chain
 import parsley.implicits.character.charLift
+import parsley.implicits.lift.Lift1
 import parsley.token.{Lexer, descriptions, predicate}
 import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc}
 
@@ -33,6 +35,7 @@ object lexer {
 object Main {
     import lexer.fully
     import lexer.implicits.implicitSymbol
+    
 
     def main(args: Array[String]): Unit = {
         println("Hello WACC_45!")
@@ -52,7 +55,12 @@ object Main {
                 ('+' #> add) <|> ('-' #> sub)
             )
         
-        lazy val prog: Parsley[Unit] = "begin" ~> "skip" ~> "end"
+        lazy val statJoin = 
+            StatJoinNode.lift(sepBy1(statSkip, ";"))
+        lazy val statSkip: Parsley[StatNode] = 
+            "skip" #> SkipNode()
+
+        lazy val prog: Parsley[ProgramNode] = "begin" ~> ProgramNode.lift(statJoin) <~ "end"
 
         val parser = fully(prog)
 
