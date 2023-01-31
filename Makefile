@@ -1,4 +1,5 @@
-all: sbt compile assembly
+all: 
+	sbt compile assembly
 
 test:
 	sbt compile assembly
