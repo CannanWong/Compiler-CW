@@ -9,4 +9,5 @@ build:
 test:
   stage: test
   script:
+    - source "$HOME/.sdkman/bin/sdkman-init.sh"
     - make test
