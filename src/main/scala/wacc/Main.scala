@@ -66,7 +66,10 @@ object Main {
 
         parser.parse(fileContents) match {
             case Success(x) => println(s"${fileContents} = $x")
-            case Failure(msg) => println(msg)
+            case Failure(msg) => {
+                println("#syntax_error#\n" + msg)
+                sys.exit(100)
+            }
         }
     }
 }

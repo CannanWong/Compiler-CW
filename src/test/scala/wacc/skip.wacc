@@ -4,4 +4,8 @@
 
 # Program:
 
-begin skip;skip end
+begin 
+skip;
+skip;
+skip 
+end
