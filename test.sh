@@ -18,10 +18,12 @@ do
     fi
 
     output=$(./compile $file)
-    #echo "Expected output: $expected_output"
-    #echo "Output: $output"
+    exit=$?
+    echo "Expected output: $expected_output"
+    echo "Output: $output"
     echo "Expected exit: $expected_exit"
-    echo "Exit: $?"
+    echo "Exit: $exit"
+    
     pass=1
 
     # Check if program outputs correct error
@@ -33,7 +35,7 @@ do
     fi
 
     # Check if program outputs correct exit code
-    if [ $? -eq $expected_exit ]
+    if [ $exit -eq $expected_exit ]
         then echo "Exit code correct"
     else
         echo "Exit code wrong!"
