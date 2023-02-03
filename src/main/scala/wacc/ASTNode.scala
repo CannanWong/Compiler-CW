@@ -19,6 +19,7 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
+        ident.semanticCheck()
         paramList.semanticCheck()
         stat.semanticCheck()
     }
@@ -26,8 +27,8 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
 
 case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
     override def semanticCheck(): Unit = {
-        for (f <- paramList) {
-            f.semanticCheck()
+        for (p <- paramList) {
+            p.semanticCheck()
         }
     }
 }
