@@ -7,12 +7,10 @@ sealed trait ASTNode {
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
     override def semanticCheck(): Unit = {
-    override def semanticCheck(): Unit = {
         for (f <- funcList) {
             f.semanticCheck()
         }
         stat.semanticCheck()
-    }
     }
 }
 
@@ -69,17 +67,7 @@ case class FreeNode(expr: ExprNode) extends StatNode {
         expr.semanticCheck()
     }
 }
-case class FreeNode(expr: ExprNode) extends StatNode {
-    override def semanticCheck(): Unit = {
-        expr.semanticCheck()
-    }
-}
 
-case class ReturnNode(expr: ExprNode) extends StatNode {
-    override def semanticCheck(): Unit = {
-        expr.semanticCheck()
-    }
-}
 case class ReturnNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
         expr.semanticCheck()
@@ -91,28 +79,13 @@ case class ExitNode(expr: ExprNode) extends StatNode {
         expr.semanticCheck()
     }
 }
-case class ExitNode(expr: ExprNode) extends StatNode {
-    override def semanticCheck(): Unit = {
-        expr.semanticCheck()
-    }
-}
 
 case class PrintNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
         expr.semanticCheck()
     }
 }
-case class PrintNode(expr: ExprNode) extends StatNode {
-    override def semanticCheck(): Unit = {
-        expr.semanticCheck()
-    }
-}
 
-case class PrintlnNode(expr: ExprNode) extends StatNode {
-    override def semanticCheck(): Unit = {
-        expr.semanticCheck()
-    }
-}
 case class PrintlnNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
         expr.semanticCheck()
