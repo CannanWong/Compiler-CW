@@ -6,48 +6,118 @@ sealed trait ASTNode {
 }
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
-     override def semanticCheck(): Unit = {
+    override def semanticCheck(): Unit = {
         for (f <- funcList) {
             f.semanticCheck()
         }
         stat.semanticCheck()
-     }
+    }
 }
 
-case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode
+case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
+    override def semanticCheck(): Unit = {
+        ty.semanticCheck()
+        paramList.semanticCheck()
+        stat.semanticCheck()
+    }
+}
 
-case class ParamListNode(paramList: List[ParamNode]) extends ASTNode
+case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
+    override def semanticCheck(): Unit = {
+        for (f <- paramList) {
+            f.semanticCheck()
+        }
+    }
+}
 
-case class ParamNode(ty: TypeNode, ident: IdentNode) extends ASTNode
+case class ParamNode(ty: TypeNode, ident: IdentNode) extends ASTNode {
+    ty.semanticCheck()
+    ident.semanticCheck()
+}
 
 // StatNode
 sealed trait StatNode extends ASTNode
 
 case class SkipNode() extends StatNode
 
-case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode
+case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        ty.semanticCheck()
+        ident.semanticCheck()
+        rvalue.semanticCheck()
+    }
+}
 
-case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode
+case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        lvalue.semanticCheck()
+        rvalue.semanticCheck()
+    }
+}
 
-case class ReadNode(lvalue: LValueNode) extends StatNode
+case class ReadNode(lvalue: LValueNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        lvalue.semanticCheck()
+    }
+}
 
-case class FreeNode(expr: ExprNode) extends StatNode
+case class FreeNode(expr: ExprNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        expr.semanticCheck()
+    }
+}
 
-case class ReturnNode(expr: ExprNode) extends StatNode
+case class ReturnNode(expr: ExprNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        expr.semanticCheck()
+    }
+}
 
-case class ExitNode(expr: ExprNode) extends StatNode
+case class ExitNode(expr: ExprNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        expr.semanticCheck()
+    }
+}
 
-case class PrintNode(expr: ExprNode) extends StatNode
+case class PrintNode(expr: ExprNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        expr.semanticCheck()
+    }
+}
 
-case class PrintlnNode(expr: ExprNode) extends StatNode
+case class PrintlnNode(expr: ExprNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        expr.semanticCheck()
+    }
+}
 
-case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends StatNode
+case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        fstStat.semanticCheck()
+        sndStat.semanticCheck()
+    }
+}
 
-case class WhileNode(expr: ExprNode, stat: StatNode) extends StatNode
+case class WhileNode(expr: ExprNode, stat: StatNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        expr.semanticCheck()
+        stat.semanticCheck()
+    }
+}
 
-case class BeginEndNode(stat: StatNode) extends StatNode
+case class BeginEndNode(stat: StatNode) extends StatNode {
+    override def semanticCheck(): Unit = {
+        stat.semanticCheck()
+    }
+}
 
-case class StatJoinNode(statList: List[StatNode]) extends StatNode
+case class StatJoinNode(statList: List[StatNode]) extends StatNode {
+    override def semanticCheck(): Unit = {
+        for (s <- statList) {
+            s.semanticCheck()
+        }
+    }
+}
 
 // LValueNode
 sealed trait LValueNode extends ASTNode
