@@ -2,7 +2,6 @@ package wacc
 
 sealed trait ASTNode {
     def semanticCheck(): Unit
-    var errorMessage = ""
 }
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
