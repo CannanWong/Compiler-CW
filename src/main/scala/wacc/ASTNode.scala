@@ -12,7 +12,6 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
         }
         stat.semanticCheck()
     }
-
 }
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
@@ -63,11 +62,6 @@ case class ReadNode(lvalue: LValueNode) extends StatNode {
     }
 }
 
-case class FreeNode(expr: ExprNode) extends StatNode {
-    override def semanticCheck(): Unit = {
-        expr.semanticCheck()
-    }
-}
 case class FreeNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
         expr.semanticCheck()
