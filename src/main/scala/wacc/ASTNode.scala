@@ -1,6 +1,7 @@
 package wacc
 
-case class ProgramNode(funcList: List[FuncNode], stat: StatNode) 
+//case class ProgramNode(funcList: List[FuncNode], stat: StatNode)
+case class ProgramNode(stat: StatNode) 
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode)
 
