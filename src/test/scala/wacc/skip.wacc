@@ -4,7 +4,12 @@
 
 # Program:
 
+
+
 begin 
-int x = 5;
-skip
+  int f(int as) is
+    skip
+  end
+  # int x = 5;
+  skip
 end
