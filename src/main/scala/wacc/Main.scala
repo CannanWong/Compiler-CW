@@ -13,6 +13,11 @@ object Main {
         println("File contents:")
         println(fileContents)
 
+        // Test SemanticChecker for badParentScope.wacc
+        // val example = new ProgramNode(StatJoinNode(List(AssignIdentNode(BaseTypeNode("int"), IdentNode("x"), IntLiterNode(5)), BeginEndNode(StatJoinNode(List(BeginEndNode(StatJoinNode(List(FreeNode(IdentNode("x"))))), AssignIdentNode(ArrayTypeNode(BaseTypeNode("int")), IdentNode("x"), ArrayLiterNode(IntLiterNode(1)))))))))
+        // val sc = new SemanticChecker()
+        // println(sc.check(example))
+
         // lazy val integer = digit.foldLeft1[BigInt](0)((n, d) => n * 10 + d.asDigit)
 
         // val add = (x: BigInt, y: BigInt) => x + y

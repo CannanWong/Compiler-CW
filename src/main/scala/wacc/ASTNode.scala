@@ -116,7 +116,7 @@ case class BeginEndNode(stat: StatNode) extends StatNode  {
 case class StatJoinNode(statList: List[StatNode]) extends StatNode  {
     override def semanticCheck(): Unit = {
         for (s <- statList) {
-        s.semanticCheck()
+            s.semanticCheck()
         }
     }
 }
