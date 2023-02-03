@@ -7,7 +7,7 @@ import parsley.expr.chain
 import parsley.implicits.character.charLift
 import parsley.implicits.lift.Lift1
 import parsley.token.{Lexer, descriptions, predicate}
-import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc}
+import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc}
 
 object lexer {
     val desc = LexicalDesc.plain.copy(
@@ -17,8 +17,14 @@ object lexer {
         ),
         symbolDesc = SymbolDesc.plain.copy(
             hardKeywords = Set("begin", "skip", "end")
+        ),
+        nameDesc = NameDesc.plain.copy(
+            identifierStart = asciiLetter <|> '_'
+            identifierLetter = asciiLetter <|> '_' <|> asciiDigit
         )
     )
+    private val asciiLetter = oneOf('a' to 'z') <|> oneOf('A' to 'Z')
+    private val asciiDigit = oneOf('0' to '9')
     //private val comment = symbol("#") *> manyUntil(item, endOfLine)
     //private val skipWhitespace = skipMany(whitespace <|> comment).hide
     val lexer = new Lexer(desc)

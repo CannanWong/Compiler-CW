@@ -88,7 +88,7 @@ case class PairLiterNode() extends ExprNode
 
 case class UnOpExprNode(op: UnaryOperNode, expr: ExprNode) extends ExprNode
 
-case class BinOpExprNode(expr: ExprNode, op: BinaryOperatorNode, expr: ExprNode) extends ExprNode
+case class BinOpExprNode(fstexpr: ExprNode, op: BinaryOperatorNode, sndexpr: ExprNode) extends ExprNode
 
 case class BracketExprNode(expr: ExprNode) extends ExprNode
 
