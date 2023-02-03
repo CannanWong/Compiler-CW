@@ -27,7 +27,7 @@ case class SkipNode() extends StatNode
 
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode
 
-case class ValuesEqualNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode
+case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode
 
 case class ReadNode(lvalue: LValueNode) extends StatNode
 
