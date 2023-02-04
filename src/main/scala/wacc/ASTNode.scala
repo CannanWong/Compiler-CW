@@ -93,33 +93,20 @@ case class PrintlnNode(expr: ExprNode) extends StatNode {
 }
 
 case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends StatNode {
-    override def semanticCheck(): Unit = 
-        expr match {
-            case IntLiterNode(_) | CharLiterNode(_) | StrLiterNode(_) | PairLiterNode()
-                => SemanticChecker.errorMessage += "Semantic error in if statement\n"
-            case IdentNode(_)
-                // Check symbol table if variable is of type bool
-                => SemanticChecker.errorMessage += "Semantic error in if statement\n"
-            case ArrayElemNode(_,_)
-                // Check symbol table if array elem is of type bool
-                => SemanticChecker.errorMessage += "Semantic error in if statement\n"
-            case UnOpExprNode(UnaryOperNode(op),_)
-                => if (op != "!") {
-                        SemanticChecker.errorMessage += "Semantic error in if statement\n"
-                    }
-            case BinOpExprNode(_,BinaryOperatorNode(op),_)
-                => if (op == "*" || op == "/" || op == "%" || op == "+" || op == "-") {
-                        SemanticChecker.errorMessage += "Semantic error in if statement\n"
-                    }
-            expr.semanticCheck()
-            fstStat.semanticCheck()
-            sndStat.semanticCheck()
-        }
+    override def semanticCheck(): Unit = {
+        SemanticChecker.checkIfWhileCond(expr)
+        expr.semanticCheck()
+        SemanticChecker.scope += 1
+        fstStat.semanticCheck()
+        sndStat.semanticCheck()
+    }
 }
 
 case class WhileNode(expr: ExprNode, stat: StatNode) extends StatNode  {
     override def semanticCheck(): Unit = {
+        SemanticChecker.checkIfWhileCond(expr)
         expr.semanticCheck()
+        SemanticChecker.scope += 1
         stat.semanticCheck()
     }
 }

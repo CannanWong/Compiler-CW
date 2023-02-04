@@ -13,7 +13,8 @@ object Main {
         println("File contents:")
         println(fileContents)
 
-        // Test SemanticChecker for badParentScope.wacc
+        // Test SemanticChecker 
+        // badParentScope.wacc
         // val example = new ProgramNode(StatJoinNode(List(AssignIdentNode(BaseTypeNode("int"), IdentNode("x"), IntLiterNode(5)), BeginEndNode(StatJoinNode(List(BeginEndNode(StatJoinNode(List(FreeNode(IdentNode("x"))))), AssignIdentNode(ArrayTypeNode(BaseTypeNode("int")), IdentNode("x"), ArrayLiterNode(IntLiterNode(1)))))))))
         // ifIntCondition.wacc
         // val ifTest = new ProgramNode(IfNode(...))
