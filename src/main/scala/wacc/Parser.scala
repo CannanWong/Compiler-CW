@@ -1,7 +1,7 @@
 package wacc
 
 import parsley.Parsley
-import parsley.Parsley.{attempt, lookAhead}
+import parsley.Parsley.{attempt, lookAhead, notFollowedBy}
 import parsley.implicits.character.charLift
 import parsley.implicits.lift.{Lift1, Lift2, Lift3, Lift4}
 import parsley.token.{Lexer, descriptions, predicate}
@@ -72,19 +72,22 @@ object Parser {
             baseType,
             ident,
             "(" ~> paramList <~ ")",
-            "is" ~> stat <~ "end")
+            "is" ~> stats <~ "end")
 
     lazy val statSkip: Parsley[StatNode] =
         "skip" #> SkipNode()
 
     lazy val stat: Parsley[StatNode] =
         statSkip <|> assignIdent
+    
+    lazy val stats: Parsley[StatNode] = 
+        statJoin <|> stat <~ notFollowedBy(";")
 
-    lazy val statJoin = 
+    lazy val statJoin: Parsley[StatNode] = 
         StatJoinNode.lift(sepBy1(stat, ";"))
 
     lazy val prog: Parsley[ProgramNode] =
-        ProgramNode.lift("begin" ~> many(func), stat <|> statJoin <~ "end")
+        "begin" ~> ProgramNode.lift(manyUntil(func, lookAhead(attempt(stat))), stats) <~ "end" 
 
     val topLevel = fully(prog)
 }

@@ -4,12 +4,14 @@
 
 # Program:
 
-
-
 begin 
-  int f(int asdf) is
+  int f(int asdf, char cccc) is
+    int asdf = 5
+  end
+  int g(string sss, bool b) is
     skip
   end
-  # int x = 5;
+  int x = 5;
+  int y = 1;
   skip
 end
