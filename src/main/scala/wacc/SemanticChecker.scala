@@ -8,13 +8,9 @@ object SemanticChecker {
     var scope = 0
     var scopeStack = Stack[Int]()
 
-    def check(node: ProgramNode): Unit = {
-        val result = node.semanticCheck()
-        if (result == "") {
-            true
-        }
-        else {
-            result
-        }
+    def check(node: ProgramNode): String = {
+        node.semanticCheck()
+        errorMessage
+
     }
 }

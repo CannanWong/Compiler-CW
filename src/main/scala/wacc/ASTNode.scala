@@ -1,7 +1,8 @@
 package wacc
 
 sealed trait ASTNode {
-    def semanticCheck(): Unit
+    def semanticCheck(): Unit = {
+    }
 }
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
@@ -195,7 +196,7 @@ case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
 }
 
 
-case class ArgListNode(exprList: List[ExprNode]) {
+case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
     override def semanticCheck(): Unit = {
         for (e <- exprList) {
             e.semanticCheck()
