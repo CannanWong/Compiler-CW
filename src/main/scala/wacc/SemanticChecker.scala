@@ -2,7 +2,7 @@ package wacc
 
 import scala.collection.mutable.Stack
 
-class SemanticChecker() {
+object SemanticChecker {
     var errorMessage = ""
     var symbolTable = new SymbolTable()
     var scope = 0
