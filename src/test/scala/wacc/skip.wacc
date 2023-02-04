@@ -7,7 +7,7 @@
 
 
 begin 
-  int f(int as) is
+  int f(int asdf) is
     skip
   end
   # int x = 5;

@@ -28,7 +28,8 @@ object Main {
             case Success(x) => println(s"AST = $x")
             case Failure(msg) => {
                 println("#syntax_error#\n" + msg)
-                sys.exit(100)
+                //Disabling exit code for sbt debug session
+                //sys.exit(100)
             }
         }
     }

@@ -1,15 +1,14 @@
 package wacc
 
 import parsley.Parsley
-import parsley.Parsley.lookAhead
-import parsley.combinator.sepBy1
+import parsley.Parsley.{attempt, lookAhead}
 import parsley.implicits.character.charLift
 import parsley.implicits.lift.{Lift1, Lift2, Lift3, Lift4}
 import parsley.token.{Lexer, descriptions, predicate}
 import descriptions.numeric.{NumericDesc, PlusSignPresence}
 import PlusSignPresence.Optional
 import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc}
-import parsley.combinator.{many, manyUntil, option}
+import parsley.combinator.{attemptChoice, sepBy, sepBy1, many, manyUntil, option}
 
 object lexer {
     val desc = LexicalDesc.plain.copy(
@@ -49,40 +48,43 @@ object Parser {
     import lexer.implicits.implicitSymbol
 
     lazy val ident = IdentNode.lift(identifier)
+
     lazy val baseType = 
-        "int" #> BaseTypeNode("int") <|>
-        "bool" #> BaseTypeNode("bool") <|>
-        "char" #> BaseTypeNode("char") <|>
+        "int"    #> BaseTypeNode("int")    <|>
+        "bool"   #> BaseTypeNode("bool")   <|>
+        "char"   #> BaseTypeNode("char")   <|>
         "string" #> BaseTypeNode("string")
     
-    lazy val intLiter: Parsley[IntLiterNode] = IntLiterNode.lift(num)
+    lazy val intLiter: Parsley[IntLiterNode] =
+        IntLiterNode.lift(num)
 
-    lazy val assignIdent: Parsley[AssignIdentNode] = 
+    lazy val assignIdent: Parsley[AssignIdentNode] =
         AssignIdentNode.lift(baseType, ident <~ "=", intLiter)
 
-    lazy val param: Parsley[ParamNode] = ParamNode.lift(baseType, ident)
+    lazy val param: Parsley[ParamNode] =
+        ParamNode.lift(baseType, ident)
 
-    lazy val paramList: Parsley[ParamListNode]
-        = ParamListNode.lift(many(param))
+    lazy val paramList: Parsley[ParamListNode] =
+        ParamListNode.lift(sepBy(param, ","))
 
-    lazy val func: Parsley[FuncNode]
-        = FuncNode.lift(
+    lazy val func: Parsley[FuncNode] = 
+        FuncNode.lift(
             baseType,
             ident,
             "(" ~> paramList <~ ")",
             "is" ~> stat <~ "end")
 
-    lazy val funcs: Parsley[List[FuncNode]] = manyUntil(func, lookAhead(stat))
-
-    lazy val statSkip: Parsley[StatNode] = 
+    lazy val statSkip: Parsley[StatNode] =
         "skip" #> SkipNode()
 
     lazy val stat: Parsley[StatNode] =
-        statSkip // <|> assignIdent
+        statSkip <|> assignIdent
+
     lazy val statJoin = 
         StatJoinNode.lift(sepBy1(stat, ";"))
 
-    lazy val prog: Parsley[ProgramNode] = "begin" ~> ProgramNode.lift(funcs, statJoin) <~ "end"
+    lazy val prog: Parsley[ProgramNode] =
+        ProgramNode.lift("begin" ~> many(func), stat <|> statJoin <~ "end")
 
     val topLevel = fully(prog)
 }
