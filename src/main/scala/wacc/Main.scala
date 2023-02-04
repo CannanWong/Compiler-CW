@@ -32,7 +32,17 @@ object Main {
         //     )
 
         topLevel.parse(fileContents) match {
-            case Success(x) => println(s"AST = $x")
+            case Success(x) => {
+                println(s"AST = $x")
+                val result = SemanticChecker.check(x)
+                if (result == "") {
+                    println("No semantic error")
+                }
+                else {
+                    println("#semantic_error#\n" + result)
+                    sys.exit(200)
+                }
+            }
             case Failure(msg) => {
                 println("#syntax_error#\n" + msg)
                 //Disabling exit code for sbt debug session
