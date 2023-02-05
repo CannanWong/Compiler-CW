@@ -9,6 +9,7 @@ object SemanticChecker {
     var scopeStack = Stack[Int]()
 
     def check(node: ProgramNode): String = {
+        resetSemanticChecker()
         node.semanticCheck()
         errorMessage
     }
