@@ -28,18 +28,48 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         5. return type matches function type
       */
 
+    // ! Check all execution paths contain return or exit
     override def semanticCheck(): Unit = {
-        val name = "f!" + ident.name
+
         var paramtypeList = ListBuffer[String]()
+        var paramnameList = ListBuffer[String]()
         for (param <- paramList.paramList) {
-            paramtypeList += SemanticChecker.findType(param.ty)
+            // Check for repeated parameter names
+            if (paramtypeList.contains(param.ident.name)) {
+                SemanticChecker.errorMessage += "Semantic error in function declaration: parameters cannot have the same name"
+            }
+            else {
+                paramtypeList += SemanticChecker.findType(param.ty)
+                paramnameList += param.ident.name
+            }
         }
-        val identifier = new FuncIdentifier(paramtypeList.toList, SemanticChecker.findType(ty))
-        SemanticChecker.symbolTable.add(name, identifier)
+
+        // Check ident
+        if (SemanticChecker.validDeclaration(ident)) {
+            // Add to symbol table
+            SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, SemanticChecker.findType(ty))
+        }
+        
+        // Check return type
+        stat match {
+            case s: StatJoinNode
+                => { 
+                    for (stat <- s.statList) {
+                        stat match {
+                            case ReturnNode(expr) 
+                                => SemanticChecker.typeCheck(ty, expr)
+                            case _ =>
+                        }
+                        // ! Check all returns 
+                        // ! Check returns outside function declaration
+                    }
+                }
+            case _ =>
+        }
 
         ty.semanticCheck()
-        ident.semanticCheck()
-        paramList.semanticCheck()
+        // ident.semanticCheck()
+        // paramList.semanticCheck()
 
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
@@ -50,10 +80,6 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
 }
 
 case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
-    /**
-      * Checks for:
-        1. identifier names are all different
-        */
     override def semanticCheck(): Unit = {
         for (p <- paramList) {
             p.semanticCheck()
@@ -82,11 +108,10 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
       */
 
     override def semanticCheck(): Unit = {
-        val varName = SemanticChecker.currScope().toString() + "!" + ident.name
         SemanticChecker.validDeclaration(ident)
         rvalue.semanticCheck()
         if (SemanticChecker.validDeclaration(ident) && SemanticChecker.typeCheck(ty, rvalue)) {
-            SemanticChecker.symbolTable.add(varName, new VarIdentifier(SemanticChecker.findTypeR(rvalue)))
+            SemanticChecker.symbolTable.addVar(ident.name, SemanticChecker.findTypeR(rvalue))
         }
     }
 }
@@ -109,7 +134,7 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         /* check that ident(left) is not asssigned to itself */
         val lValTableHName = lvalue match{
             case id: IdentNode => {
-                val varName = SemanticChecker.currScope() + "!" + id.name
+                val varName = SemanticChecker.currScope().toString() + "!" + id.name
                 lname = id.name
                 if (SemanticChecker.tableContainsIdentifier(id)) {
                     varName
@@ -123,7 +148,7 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
 
         val rValTableHName = rvalue match{
             case id: IdentNode => {
-                val varName = SemanticChecker.currScope() + "!" + id.name
+                val varName = SemanticChecker.currScope().toString() + "!" + id.name
                 rname = id.name
                 if (SemanticChecker.tableContainsIdentifier(id)) {
                     varName
@@ -306,7 +331,7 @@ sealed trait TypeNode extends ASTNode {
 }
 
 case class BaseTypeNode(ty: String) extends TypeNode with PairElemTypeNode {
-    val typeVal = ty    // ?
+    val typeVal = ty
 }
 
 case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
