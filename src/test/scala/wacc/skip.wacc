@@ -5,13 +5,13 @@
 # Program:
 
 begin 
-  int f(int asdf, char cccc) is
+  int f(int[] asdf, char cccc) is
     int asdf = 5
   end
   int g(string sss, bool b) is
     skip
   end
-  int x = 5;
-  int y = 1;
+  int x = 514;
+  int[][] y = [1, 2];
   skip
 end
