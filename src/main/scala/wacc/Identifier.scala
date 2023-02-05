@@ -12,7 +12,7 @@ sealed trait Identifier
 
 case class VarIdentifier(ty: String) extends Identifier
 
-case class FuncIdntifier(paramtype: List[String], returntype: String) extends Identifier
+case class FuncIdentifier(paramtype: List[String], returntype: String) extends Identifier
 
 //case class ArrayIdentifier(ty: String, size: Int, elements: List[Any]) extends Identifier
 

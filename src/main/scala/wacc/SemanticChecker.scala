@@ -5,7 +5,7 @@ import scala.collection.mutable.Stack
 object SemanticChecker {
     var errorMessage = ""
     var symbolTable = new SymbolTable()
-    var scope = 0
+    var nextScope = 0
     var scopeStack = Stack[Int]()
 
     def check(node: ProgramNode): String = {
@@ -18,12 +18,13 @@ object SemanticChecker {
     def resetSemanticChecker(): Unit = {
         errorMessage = ""
         symbolTable = new SymbolTable()
-        scope = 0
+        nextScope = 0
         scopeStack.push(0)
     }
 
     def validDeclaration(node: IdentNode): Boolean = {
-        return symbolTable.lookUp(node.symbolTableName) match {
+        val varName = currScope().toString() + "!" + node.name
+        symbolTable.lookUp(varName) match {
             case Some(n) => {
                 errorMessage += "variable name \"" + node.name + "\" is already used in the same scope"
                 return false
@@ -45,12 +46,13 @@ object SemanticChecker {
             case s: StrLiterNode => "str"
             /* identifier (var and func) */
             case id: IdentNode => {
-                val res = symbolTable.lookUp(id.symbolTableName)
+                val varName = currScope().toString() + "!" + id.name
+                val res = symbolTable.lookUp(varName)
                 res match {
                     case Some(identif) => {
                         identif match {
                             case VarIdentifier(ty) => ty
-                            case FuncIdntifier(paramtype, returntype) => returntype
+                            case FuncIdentifier(paramtype, returntype) => returntype
                             case ArrayIdentifier(ty, dim, size, elements) => ty + ":" + dim
                         }
                     }
@@ -65,19 +67,21 @@ object SemanticChecker {
         }
     }
 
-    def typeCheck(ty: TypeNode, rhs: RValueNode): Boolean = {
-        /* find type of RHS */
-        val rhsType = findType(rhs)
-        val res = ty match {
-            /* basic types (int, bool, char, string) */
-            case BaseTypeNode(basicLhs) => basicLhs == rhsType
-            /* array type */
-            case a: ArrayTypeNode => (a.baseType.typeVal + ":" + a.dimension) == rhsType
-            /* pair type */
-            case _ => false
+    def findType(ty: TypeNode) : String = {
+        ty match {
+            case BaseTypeNode(t) => t
+            case a: ArrayTypeNode => a.typeVal
+            case p: PairTypeNode => p.typeVal
         }
+    }
+
+    def typeCheck(lhs: TypeNode, rhs: RValueNode): Boolean = {
+        /* find type of RHS */
+        val lhsType = findType(lhs)
+        val rhsType = findType(rhs)
+        val res = (lhsType == rhsType)
         if (!res) {
-            errorMessage += "LHS type \"" + ty.typeVal + "\" does not match RHS type \"" + rhsType + "\""
+            errorMessage += "LHS type \"" + lhsType + "\" does not match RHS type \"" + rhsType + "\""
         }
         return res
     }
@@ -90,61 +94,61 @@ object SemanticChecker {
     }
 
     def currScope(): Int = {
-        return 0
+        return scopeStack.top
     }
 
     def checkIfWhileCond(expr: ExprNode): Unit = {
         expr match {
             case IntLiterNode(_) | CharLiterNode(_) | StrLiterNode(_) | PairLiterNode()
-                => SemanticChecker.errorMessage += "Semantic error in if statement\n"
+                => errorMessage += "Semantic error in if statement\n"
             case IdentNode(name)
                 // Check symbol table if variable is of type bool
                 => {
-                    val varName = "v" + scope.toString() + "!" + name
-                    if (SemanticChecker.symbolTable.lookUp(varName).isEmpty) {
-                        SemanticChecker.errorMessage += "Semantic error in if statement\n"
+                    val varName = currScope().toString() + "!" + name
+                    if (symbolTable.lookUp(varName).isEmpty) {
+                        errorMessage += "Semantic error in if statement\n"
                     }
                     else {
-                        val identifier = SemanticChecker.symbolTable.lookUp(varName).get
+                        val identifier = symbolTable.lookUp(varName).get
                         identifier match {
                             case VarIdentifier(ty)
                                 => if (ty != "bool") {
-                                    SemanticChecker.errorMessage += "Semantic error in if statement\n"
+                                    errorMessage += "Semantic error in if statement\n"
                                 }
                             case _
-                               => SemanticChecker.errorMessage += "[Not possible!] Semantic error in if statement\n" 
+                               => errorMessage += "[Not possible!] Semantic error in if statement\n" 
                         }
                     }
                 }
             case ArrayElemNode(IdentNode(name), exprList)
                 // Check symbol table if array elem is of type bool
                 => {
-                    val arrayName = "a" + scope.toString() + "!" + name
-                    if (SemanticChecker.symbolTable.lookUp(arrayName).isEmpty) {
-                        SemanticChecker.errorMessage += "Semantic error in if statement\n"
+                    val arrayName = currScope().toString() + "!" + name
+                    if (symbolTable.lookUp(arrayName).isEmpty) {
+                        errorMessage += "Semantic error in if statement\n"
                     }
                     else {
-                        val identifier = SemanticChecker.symbolTable.lookUp(arrayName).get
+                        val identifier = symbolTable.lookUp(arrayName).get
                         identifier match {
                             case ArrayIdentifier(ty,_, _, _)
                                 => if (exprList.length == 1) {
                                     if (ty != "bool") {
-                                        SemanticChecker.errorMessage += "Semantic error in if statement\n"
+                                        errorMessage += "Semantic error in if statement\n"
                                     }
                                 }
                                 // else {2+ dimension arrays}
                             case _
-                               => SemanticChecker.errorMessage += "[Not possible!] Semantic error in if statement\n" 
+                               => errorMessage += "[Not possible!] Semantic error in if statement\n" 
                         }
                     }
                 }
             case UnOpExprNode(UnaryOperNode(op),_)
                 => if (op != "!") {
-                        SemanticChecker.errorMessage += "Semantic error in if statement\n"
+                        errorMessage += "Semantic error in if statement\n"
                     }
             case BinOpExprNode(_,BinaryOperatorNode(op),_)
                 => if (op == "*" || op == "/" || op == "%" || op == "+" || op == "-") {
-                        SemanticChecker.errorMessage += "Semantic error in if statement\n"
+                        errorMessage += "Semantic error in if statement\n"
                     }
             case _ =>
         }

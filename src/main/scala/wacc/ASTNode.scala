@@ -1,13 +1,15 @@
 package wacc
 
+import scala.collection.mutable.ListBuffer
+
 sealed trait ASTNode {
     def semanticCheck(): Unit = {
     }
 }
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
-    val funcs = funcList
-    val statNode = stat
+    val funcs = funcList    // ?
+    val statNode = stat     // ?
 
     override def semanticCheck(): Unit = {
         for (f <- funcList) {
@@ -19,8 +21,6 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
     
-    ident.symbolTableName = "f" + SemanticChecker.currScope() + "!" + ident.name
-    ident.scope = SemanticChecker.currScope()
     /**
       * Checks for:
         1. legal params
@@ -30,11 +30,24 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         5. return type matches function type
       */
     override def semanticCheck(): Unit = {
+        val name = "f!" + ident.name
+        var paramtypeList = ListBuffer[String]()
+        for (param <- paramList.paramList) {
+            paramtypeList += SemanticChecker.findType(param.ty)
+        }
+        val identifier = new FuncIdentifier(paramtypeList.toList, SemanticChecker.findType(ty))
+        SemanticChecker.symbolTable.add(name, identifier)
+
         ty.semanticCheck()
         ident.semanticCheck()
         paramList.semanticCheck()
+
+        SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
+        SemanticChecker.nextScope += 1
         stat.semanticCheck()
+        SemanticChecker.scopeStack.pop()
     }
+
 }
 
 case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
@@ -119,12 +132,19 @@ case class PrintlnNode(expr: ExprNode) extends StatNode {
 }
 
 case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends StatNode {
-override def semanticCheck(): Unit = {
+    override def semanticCheck(): Unit = {
         SemanticChecker.checkIfWhileCond(expr)
         expr.semanticCheck()
-        SemanticChecker.scope += 1
+
+        SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
+        SemanticChecker.nextScope += 1
         fstStat.semanticCheck()
+        SemanticChecker.scopeStack.pop()
+
+        SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
+        SemanticChecker.nextScope += 1
         sndStat.semanticCheck()
+        SemanticChecker.scopeStack.pop()
     }
 }
 
@@ -132,8 +152,10 @@ case class WhileNode(expr: ExprNode, stat: StatNode) extends StatNode  {
     override def semanticCheck(): Unit = {
         SemanticChecker.checkIfWhileCond(expr)
         expr.semanticCheck()
-        SemanticChecker.scope += 1
+        SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
+        SemanticChecker.nextScope += 1
         stat.semanticCheck()
+        SemanticChecker.scopeStack.pop()
     }
 }
 
@@ -155,13 +177,15 @@ case class StatJoinNode(statList: List[StatNode]) extends StatNode  {
 sealed trait LValueNode extends ASTNode
 
 case class IdentNode(name: String) extends LValueNode with ExprNode { 
-    // symbol table name is decided during traversal of nodes to do semantic checks
-    var scope = 0
-    var symbolTableName = "v" + scope + "!" + name
+    // ! To be deleted !
 
-    override def semanticCheck(): Unit = {
-        SemanticChecker.validDeclaration(this)
-    }
+    // symbol table name is decided during traversal of nodes to do semantic checks
+    // var scope = 0
+    // var symbolTableName = "v" + scope + "!" + name
+
+    // override def semanticCheck(): Unit = {
+    //     SemanticChecker.validDeclaration(this)
+    // }
 }
 
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
@@ -175,15 +199,15 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
 
 sealed trait PairElemNode extends LValueNode with RValueNode
 
-case class FstNode(expr: ExprNode) extends PairElemNode {
+case class FstNode(lvalue: LValueNode) extends PairElemNode {
     override def semanticCheck(): Unit = {
-        expr.semanticCheck()
+        lvalue.semanticCheck()
     }
 }
 
-case class SndNode(expr: ExprNode) extends PairElemNode {
+case class SndNode(lvalue: LValueNode) extends PairElemNode {
     override def semanticCheck(): Unit = {
-        expr.semanticCheck()
+        lvalue.semanticCheck()
     }
 }
 
@@ -230,19 +254,22 @@ sealed trait TypeNode extends ASTNode {
 }
 
 case class BaseTypeNode(ty: String) extends TypeNode with PairElemTypeNode {
-    val typeVal = ty
+    val typeVal = ty    // ?
 }
 
 case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
+    override def semanticCheck(): Unit = {
+        ty.semanticCheck()
+    }
     def countDimension(ty: TypeNode): Int = {
-        return ty match {
+        ty match {
             case ArrayTypeNode(arrayTy) => 1 + countDimension(arrayTy)
             case node => return 1
         }  
     }
 
     def getType(ty: TypeNode): TypeNode = {
-        return ty match {
+        ty match {
             case ArrayTypeNode(arrayTy) => getType(arrayTy)
             case node => return node
         }  
@@ -251,7 +278,6 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
     val baseType = getType(ty)
     val typeVal = baseType.typeVal + ":" + dimension
 }
-
 
 case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) extends TypeNode {
     val typeVal = "pair"
