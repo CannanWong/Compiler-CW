@@ -18,7 +18,6 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 }
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
-    
     ident.symbolTableName = "f" + SemanticChecker.currScope() + "!" + ident.name
     ident.scope = SemanticChecker.currScope()
     /**
@@ -29,6 +28,7 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         4. leagal func ident
         5. return type matches function type
       */
+
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
         ident.semanticCheck()
@@ -60,25 +60,78 @@ sealed trait StatNode extends ASTNode
 case class SkipNode() extends StatNode
 
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
+
     /**
      * Checks for:
        1. ident's name not declared in scope
-       2. RHS val and type consistent
-       3. rval is semantically correct
+       2. RHS val and type consistent 
+       3. rval is semantically correct (TODO)
        4. lhs type is not func (type check should catch)
-      */  
-
+      */
+    ident.symbolTableName = "v" + SemanticChecker.currScope() + "!" + ident.name
+    ident.scope = SemanticChecker.currScope()
     override def semanticCheck(): Unit = {
-        ident.semanticCheck()
+        SemanticChecker.validDeclaration(ident)
         rvalue.semanticCheck()
-        SemanticChecker.typeCheck(ty, rvalue)
+        if (SemanticChecker.validDeclaration(ident) && SemanticChecker.typeCheck(ty, rvalue)) {
+            SemanticChecker.symbolTable.add(ident.symbolTableName, new VarIdentifier(SemanticChecker.findTypeR(rvalue)))
+        }
     }
 }
 
 case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode {
+    /**
+      * check for:
+        1. reassignment to itself (TODO pairs)
+        2. lhs type is not func (type check should catch)
+      */
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
         rvalue.semanticCheck()
+
+        var lname = ""
+        var rname = ""
+
+        var bothDefined = true
+
+        /* check that ident(left) is not asssigned to itself */
+        val lValTableHName = lvalue match{
+            case id: IdentNode => {
+                id.symbolTableName = "v" + SemanticChecker.currScope() + "!" + id.name
+                lname = id.name
+                if (SemanticChecker.tableContainsIdentifier(id)) {
+                    
+                    id.symbolTableName
+                } else {
+                    bothDefined = false
+                    "NO SUCH THING AS -" + "v" + SemanticChecker.currScope() + "!" + id.name
+                }
+            }              
+            case _ => "ARRAY: should pass test PAIR: TODO"
+        }
+
+        val rValTableHName = rvalue match{
+            case id: IdentNode => {
+                id.symbolTableName = "v" + SemanticChecker.currScope() + "!" + id.name
+                rname = id.name
+                if (SemanticChecker.tableContainsIdentifier(id)) {
+                    id.symbolTableName
+                } else {
+                    bothDefined = false
+                    "NO SUCH THING AS -" + "v" + SemanticChecker.currScope() + "!" + id.name
+                }
+            }     
+            case _ => "ARRAY: should pass test PAIR: TODO"
+        }
+
+        if (lValTableHName == rValTableHName) {
+            SemanticChecker.errorMessage += "Reassignment to same variable: " + lname + " to " + rname + "\n"
+        }     
+        else if (bothDefined) {
+            if (SemanticChecker.typeCheck(lvalue, rvalue)) {
+                SemanticChecker.errorMessage += "successful assignment of variable: " + lValTableHName + " to " + rValTableHName + "\n"
+            }
+        }
     }
 }
 
@@ -157,15 +210,12 @@ sealed trait LValueNode extends ASTNode
 case class IdentNode(name: String) extends LValueNode with ExprNode { 
     // symbol table name is decided during traversal of nodes to do semantic checks
     var scope = 0
-    var symbolTableName = "v" + scope + "!" + name
-
-    override def semanticCheck(): Unit = {
-        SemanticChecker.validDeclaration(this)
-    }
+    var symbolTableName = "PLACEHODER: " + name + " : " + scope
 }
 
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
     override def semanticCheck(): Unit = {
+        SemanticChecker.validDeclaration(ident)
         ident.semanticCheck()
         for (e <- exprList) {
             e.semanticCheck()
@@ -175,15 +225,15 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
 
 sealed trait PairElemNode extends LValueNode with RValueNode
 
-case class FstNode(expr: ExprNode) extends PairElemNode {
+case class FstNode(lvalue: LValueNode) extends PairElemNode {
     override def semanticCheck(): Unit = {
-        expr.semanticCheck()
+        lvalue.semanticCheck()
     }
 }
 
-case class SndNode(expr: ExprNode) extends PairElemNode {
+case class SndNode(lvalue: LValueNode) extends PairElemNode {
     override def semanticCheck(): Unit = {
-        expr.semanticCheck()
+        lvalue.semanticCheck()
     }
 }
 
@@ -305,4 +355,4 @@ case class BracketExprNode(expr: ExprNode) extends ExprNode {
 
 case class UnaryOperNode(op: String) extends ASTNode
 
-case class BinaryOperatorNode(op: String) extends ASTNode
+case class BinaryOperatorNode(op: String) extends ASTNode 

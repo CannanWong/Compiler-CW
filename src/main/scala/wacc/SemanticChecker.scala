@@ -25,18 +25,49 @@ object SemanticChecker {
     def validDeclaration(node: IdentNode): Boolean = {
         return symbolTable.lookUp(node.symbolTableName) match {
             case Some(n) => {
-                errorMessage += "variable name \"" + node.name + "\" is already used in the same scope"
+                errorMessage += "variable name \"" + node.name + "\" is already used in the same scope\n"
                 return false
             }
             case _ => true
         }
     }
 
-    def findType(lhs: LValueNode) : String = {
-        return ""
+    def tableContainsIdentifier(id :IdentNode): Boolean = {
+        if (symbolTable.lookUp(id.symbolTableName) == None) {
+            errorMessage += "variable name \"" + id.name + "\" is is not defined in this scope\n"
+            return false
+        }
+        return true
     }
 
-    def findType(rhs: RValueNode) : String = {
+    /* PAIR REPRESENTATION TBC*/
+    def findTypeL(lhs: LValueNode) : String = {
+        return lhs match {
+            case id: IdentNode => {
+                val res = symbolTable.lookUp(id.symbolTableName)
+                return res match {
+                    case Some(VarIdentifier(ty)) => ty
+                    case Some(ArrayIdentifier(ty, dim, size, elements)) => ty + ":" + dim
+                    case Some(PairIdentifier(ty1, ty2)) => ty1 + "-" + ty2
+                    case Some(FuncIdntifier(_, retType)) => {
+                        errorMessage += "Type error (LHS assignment): cannot assign values to function"    
+                        "ERROR"
+                    }
+                        
+                    case None => "ERROR"
+                }
+            }
+            case ArrayElemNode(id, _) => {
+                findTypeL(id)
+            }
+            case FstNode(lvalue) => ???
+            case SndNode(lvalue) => ???
+            case _ => ???
+        }
+    }
+
+    /* PAIR REPRESENTATION TBC*/
+    def findTypeR(rhs: RValueNode) : String = {
         return rhs match {
             /* basic type literals (int, bool, char, string) */
             case i: IntLiterNode => "int"
@@ -52,11 +83,11 @@ object SemanticChecker {
                             case VarIdentifier(ty) => ty
                             case FuncIdntifier(paramtype, returntype) => returntype
                             case ArrayIdentifier(ty, dim, size, elements) => ty + ":" + dim
+                            case PairIdentifier(ty1, ty2) => ty1 + "-" + ty2
                         }
                     }
                     case None => {
-                        errorMessage += "variable name \"" + id.name + "\" is is not defined"
-                        println("var not defined, function should return false here")
+                        errorMessage += "Typecheck: variable name \"" + id.name + "\" is is not defined\n"
                         return "ERROR"
                     }
                 }
@@ -67,7 +98,7 @@ object SemanticChecker {
 
     def typeCheck(ty: TypeNode, rhs: RValueNode): Boolean = {
         /* find type of RHS */
-        val rhsType = findType(rhs)
+        val rhsType = findTypeR(rhs)
         val res = ty match {
             /* basic types (int, bool, char, string) */
             case BaseTypeNode(basicLhs) => basicLhs == rhsType
@@ -77,7 +108,7 @@ object SemanticChecker {
             case _ => false
         }
         if (!res) {
-            errorMessage += "LHS type \"" + ty.typeVal + "\" does not match RHS type \"" + rhsType + "\""
+            errorMessage += "LHS type \"" + ty.typeVal + "\" does not match RHS type \"" + rhsType + "\"\n"
         }
         return res
     }
@@ -86,7 +117,11 @@ object SemanticChecker {
         /* basic types (int, bool, char, string) */
         /* array type */
         /* pair type */
-        return true
+        val res = findTypeL(lhs) == findTypeR(rhs)
+        if (!res) {
+            errorMessage += "LHS type \"" + findTypeL(lhs) + "\" does not match RHS type \"" + findTypeR(rhs) + "\"\n"
+        }
+        return res
     }
 
     def currScope(): Int = {

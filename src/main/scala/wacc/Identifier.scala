@@ -18,5 +18,7 @@ case class FuncIdntifier(paramtype: List[String], returntype: String) extends Id
 
 case class ArrayIdentifier(ty: String, dim: Int, size: Int, elements: List[Any]) extends Identifier
 
+case class PairIdentifier(ty1: String, ty2: String) extends Identifier
+
 // val a = newArrayIdentifier("int[]", 3, [1,2,3])
 // a.ty == "int[]"
