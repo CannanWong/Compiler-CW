@@ -6,6 +6,9 @@ sealed trait ASTNode {
 }
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
+    val funcs = funcList
+    val statNode = stat
+
     override def semanticCheck(): Unit = {
         for (f <- funcList) {
             f.semanticCheck()
@@ -15,6 +18,17 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 }
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
+    
+    ident.symbolTableName = "f" + SemanticChecker.currScope() + "!" + ident.name
+    ident.scope = SemanticChecker.currScope()
+    /**
+      * Checks for:
+        1. legal params
+        2. legal stats
+        3. legal type (tbc)
+        4. leagal func ident
+        5. return type matches function type
+      */
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
         ident.semanticCheck()
@@ -24,6 +38,10 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
 }
 
 case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
+    /**
+      * Checks for:
+        1. identifier names are all different
+        */
     override def semanticCheck(): Unit = {
         for (p <- paramList) {
             p.semanticCheck()
@@ -42,10 +60,18 @@ sealed trait StatNode extends ASTNode
 case class SkipNode() extends StatNode
 
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
+    /**
+     * Checks for:
+       1. ident's name not declared in scope
+       2. RHS val and type consistent
+       3. rval is semantically correct
+       4. lhs type is not func (type check should catch)
+      */  
+
     override def semanticCheck(): Unit = {
-        ty.semanticCheck()
         ident.semanticCheck()
         rvalue.semanticCheck()
+        SemanticChecker.typeCheck(ty, rvalue)
     }
 }
 
@@ -93,7 +119,7 @@ case class PrintlnNode(expr: ExprNode) extends StatNode {
 }
 
 case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends StatNode {
-    override def semanticCheck(): Unit = {
+override def semanticCheck(): Unit = {
         SemanticChecker.checkIfWhileCond(expr)
         expr.semanticCheck()
         SemanticChecker.scope += 1
@@ -128,7 +154,15 @@ case class StatJoinNode(statList: List[StatNode]) extends StatNode  {
 // LValueNode
 sealed trait LValueNode extends ASTNode
 
-case class IdentNode(name: String) extends LValueNode with ExprNode 
+case class IdentNode(name: String) extends LValueNode with ExprNode { 
+    // symbol table name is decided during traversal of nodes to do semantic checks
+    var scope = 0
+    var symbolTableName = "v" + scope + "!" + name
+
+    override def semanticCheck(): Unit = {
+        SemanticChecker.validDeclaration(this)
+    }
+}
 
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
     override def semanticCheck(): Unit = {
@@ -191,13 +225,36 @@ case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
     }
 }
 
-sealed trait TypeNode extends ASTNode
+sealed trait TypeNode extends ASTNode {
+    val typeVal: String
+}
 
-case class BaseTypeNode(ty: String) extends TypeNode with PairElemTypeNode
+case class BaseTypeNode(ty: String) extends TypeNode with PairElemTypeNode {
+    val typeVal = ty
+}
 
-case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode
+case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
+    def countDimension(ty: TypeNode): Int = {
+        return ty match {
+            case ArrayTypeNode(arrayTy) => 1 + countDimension(arrayTy)
+            case node => return 1
+        }  
+    }
+
+    def getType(ty: TypeNode): TypeNode = {
+        return ty match {
+            case ArrayTypeNode(arrayTy) => getType(arrayTy)
+            case node => return node
+        }  
+    }
+    val dimension = countDimension(ty)
+    val baseType = getType(ty)
+    val typeVal = baseType.typeVal + ":" + dimension
+}
+
 
 case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) extends TypeNode {
+    val typeVal = "pair"
     override def semanticCheck(): Unit = {
         fstPET.semanticCheck()
         sndPET.semanticCheck()
@@ -227,6 +284,12 @@ case class UnOpExprNode(op: UnaryOperNode, expr: ExprNode) extends ExprNode {
 }
 
 case class BinOpExprNode(fstExpr: ExprNode, op: BinaryOperatorNode, sndExpr: ExprNode) extends ExprNode {
+    val evalType = op match {
+        case BinaryOperatorNode("") | BinaryOperatorNode("") | BinaryOperatorNode("")| BinaryOperatorNode("") | BinaryOperatorNode("")
+                => "int"
+        case _ => "boolean"
+    }
+
     override def semanticCheck(): Unit = {
         fstExpr.semanticCheck()
         op.semanticCheck()

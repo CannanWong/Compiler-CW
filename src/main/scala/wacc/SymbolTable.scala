@@ -2,14 +2,11 @@ package wacc
 
 import scala.collection.mutable
 
-/**
-  * 
-  *
-  */
-
 class SymbolTable {
 
     val map: mutable.Map[String, Identifier] = mutable.Map()
+
+    var size = 0;
     
     def add(name: String, ident: Identifier): Unit = {
         map.addOne(name, ident)
@@ -18,10 +15,7 @@ class SymbolTable {
     def lookUp(name: String): Option[Identifier] = {
         return map.get(name)
     }
-
-        
 }
-
 
 /*
     all variables being globally unique
