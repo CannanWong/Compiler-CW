@@ -19,7 +19,6 @@ object SemanticChecker {
         errorMessage = ""
         symbolTable = new SymbolTable()
         scope = 0
-        scopeStack = Stack[Int]()
         scopeStack.push(0)
     }
 
@@ -91,7 +90,7 @@ object SemanticChecker {
     }
 
     def currScope(): Int = {
-        return scopeStack.top
+        return 0
     }
 
     def checkIfWhileCond(expr: ExprNode): Unit = {
