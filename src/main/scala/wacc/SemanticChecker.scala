@@ -22,22 +22,55 @@ object SemanticChecker {
         scopeStack.push(0)
     }
 
-    def validDeclaration(node: IdentNode): Boolean = {
-        val varName = currScope().toString() + "!" + node.name
+    def validDeclaration(id: IdentNode): Boolean = {
+        val varName = currScope().toString() + "!" + id.name
         symbolTable.lookUp(varName) match {
             case Some(n) => {
-                errorMessage += "variable name \"" + node.name + "\" is already used in the same scope"
+                errorMessage += "variable name \"" + id.name + "\" is already used in the same scope\n"
                 return false
             }
             case _ => true
         }
     }
 
-    def findType(lhs: LValueNode) : String = {
-        return ""
+    def tableContainsIdentifier(id :IdentNode): Boolean = {
+        val varName = currScope().toString() + "!" + id.name
+        if (symbolTable.lookUp(varName) == None) {
+            errorMessage += "variable name \"" + id.name + "\" is is not defined in this scope\n"
+            return false
+        }
+        return true
     }
 
-    def findType(rhs: RValueNode) : String = {
+    /* PAIR REPRESENTATION TBC*/
+    def findTypeL(lhs: LValueNode) : String = {
+        lhs match {
+            case id: IdentNode => {
+                val varName = currScope().toString() + "!" + id.name
+                val res = symbolTable.lookUp(varName)
+                res match {
+                    case Some(VarIdentifier(ty)) => ty
+                    case Some(ArrayIdentifier(ty, dim, size, elements)) => ty + ":" + dim
+                    case Some(PairIdentifier(ty1, ty2)) => ty1 + "-" + ty2
+                    case Some(FuncIdentifier(_, retType)) => {
+                        errorMessage += "Type error (LHS assignment): cannot assign values to function"    
+                        "ERROR"
+                    }
+                        
+                    case None => "ERROR"
+                }
+            }
+            case ArrayElemNode(id, _) => {
+                findTypeL(id)
+            }
+            case FstNode(lvalue) => ???
+            case SndNode(lvalue) => ???
+            case _ => ???
+        }
+    }
+
+    /* PAIR REPRESENTATION TBC*/
+    def findTypeR(rhs: RValueNode) : String = {
         return rhs match {
             /* basic type literals (int, bool, char, string) */
             case i: IntLiterNode => "int"
@@ -54,11 +87,11 @@ object SemanticChecker {
                             case VarIdentifier(ty) => ty
                             case FuncIdentifier(paramtype, returntype) => returntype
                             case ArrayIdentifier(ty, dim, size, elements) => ty + ":" + dim
+                            case PairIdentifier(ty1, ty2) => ty1 + "-" + ty2
                         }
                     }
                     case None => {
-                        errorMessage += "variable name \"" + id.name + "\" is is not defined"
-                        println("var not defined, function should return false here")
+                        errorMessage += "Typecheck: variable name \"" + id.name + "\" is is not defined\n"
                         return "ERROR"
                     }
                 }
@@ -78,7 +111,7 @@ object SemanticChecker {
     def typeCheck(lhs: TypeNode, rhs: RValueNode): Boolean = {
         /* find type of RHS */
         val lhsType = findType(lhs)
-        val rhsType = findType(rhs)
+        val rhsType = findTypeR(rhs)
         val res = (lhsType == rhsType)
         if (!res) {
             errorMessage += "LHS type \"" + lhsType + "\" does not match RHS type \"" + rhsType + "\""
@@ -90,7 +123,11 @@ object SemanticChecker {
         /* basic types (int, bool, char, string) */
         /* array type */
         /* pair type */
-        return true
+        val res = findTypeL(lhs) == findTypeR(rhs)
+        if (!res) {
+            errorMessage += "LHS type \"" + findTypeL(lhs) + "\" does not match RHS type \"" + findTypeR(rhs) + "\"\n"
+        }
+        return res
     }
 
     def currScope(): Int = {
