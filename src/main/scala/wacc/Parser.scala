@@ -10,7 +10,8 @@ import parsley.expr.chain.postfix1
 import descriptions.numeric.{NumericDesc, PlusSignPresence}
 import PlusSignPresence.Optional
 import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc}
-import parsley.combinator.{sepBy, sepBy1, some, manyUntil}
+import parsley.combinator.{sepBy, sepBy1, some, manyUntil, choice}
+import parsley.character.{noneOf, stringOfMany}
 
 object lexer {
     val desc = LexicalDesc.plain.copy(
@@ -55,7 +56,10 @@ object Parser {
 
     lazy val expr: Parsley[ExprNode] =
         intLiter    <|>
-        ident       <|>
+        attempt(boolLiter) <|> 
+        charLiter <|> 
+        strLiter <|>
+        attempt(ident)     <|>
         arrayElem
 
     lazy val lValue = ident <|> arrayElem
@@ -76,6 +80,31 @@ object Parser {
 
     lazy val intLiter: Parsley[IntLiterNode] =
         IntLiterNode.lift(num)
+    
+    lazy val boolLiter: Parsley[BoolLiterNode] = 
+        "true" #> BoolLiterNode(true) <|>
+        "false" #> BoolLiterNode(false)
+
+    lazy val escapedChar = 
+        "\\" ~> choice(
+            '0' #> '\u0000',
+            'b' #> '\b',
+            't' #> '\t',
+            'n' #> '\n',
+            'f' #> '\f',
+            'r' #> '\r',
+            '\"',
+            '\'',
+            '\\'
+        )
+
+    lazy val character: Parsley[Char] =
+        escapedChar <|> noneOf('\\', '\'', '\"')
+    lazy val charLiter: Parsley[CharLiterNode] = 
+        CharLiterNode.lift("'" ~> character <~ "'")
+    
+    lazy val strLiter: Parsley[StrLiterNode] =
+        StrLiterNode.lift("\"" ~> stringOfMany(character) <~ "\"")
 
     lazy val arrayType: Parsley[TypeNode] =
         postfix1(baseType, "[]" #> ArrayTypeNode)

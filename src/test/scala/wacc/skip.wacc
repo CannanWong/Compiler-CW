@@ -25,5 +25,9 @@ begin
   if 1 then skip else skip fi;
   while 1 do skip done;
   begin skip end;
-  skip
+  skip;
+  bool a = true;
+  bool b = false;
+  char c = 'a';
+  string d = "abc"
 end
