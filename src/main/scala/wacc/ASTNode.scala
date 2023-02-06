@@ -166,12 +166,24 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
 
 case class ReadNode(lvalue: LValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
+        val ty = SemanticChecker.findTypeL(lvalue)
+        if (ty == "pair") {  // ! pair or wrong fst/snd
+            SemanticChecker.errorMessage += "Wrong type in read\n"
+        }
+        else if (ty != "int" && ty != "char") {
+            SemanticChecker.errorMessage += "Wrong type in read\n"
+        }
         lvalue.semanticCheck()
     }
 }
 
 case class FreeNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
+        val ty = SemanticChecker.findTypeR(expr)
+        // Check if type is array or pair
+        if (!((ty contains ":") || (ty contains "-"))) {
+            SemanticChecker.errorMessage += "Wrong type in free\n"
+        }
         expr.semanticCheck()
     }
 }
@@ -202,7 +214,9 @@ case class PrintlnNode(expr: ExprNode) extends StatNode {
 
 case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends StatNode {
     override def semanticCheck(): Unit = {
-        SemanticChecker.checkIfWhileCond(expr)
+        if (SemanticChecker.findTypeR(expr) != "bool") {
+            SemanticChecker.errorMessage += "Semantic error in if statement: wrong type in condition\n"
+        }
         expr.semanticCheck()
 
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
@@ -219,7 +233,9 @@ case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends 
 
 case class WhileNode(expr: ExprNode, stat: StatNode) extends StatNode  {
     override def semanticCheck(): Unit = {
-        SemanticChecker.checkIfWhileCond(expr)
+        if (SemanticChecker.findTypeR(expr) != "bool") {
+            SemanticChecker.errorMessage += "Semantic error in while statement: wrong type in condition\n"
+        }
         expr.semanticCheck()
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1

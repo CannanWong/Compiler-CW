@@ -49,20 +49,19 @@ object SemanticChecker {
                     case Some(VarIdentifier(ty)) => ty
                     case Some(ArrayIdentifier(ty, dim, size, elements)) => ty + ":" + dim
                     case Some(PairIdentifier(ty1, ty2)) => ty1 + "-" + ty2
-                    case Some(FuncIdentifier(_, retType)) => {
-                        errorMessage += "Type error (LHS assignment): cannot assign values to function"    
-                        "ERROR"
-                    }
-                        
+                    // case Some(FuncIdentifier(_, retType)) => {
+                    //     errorMessage += "Type error (LHS assignment): cannot assign values to function"    
+                    //     "ERROR"
+                    // }
                     case None => "ERROR"
                 }
             }
-            case ArrayElemNode(id, _) => {
-                findTypeL(id)
+            case a: ArrayElemNode => {
+                findTypeL(a.ident)
             }
-            case FstNode(lvalue) => ???
-            case SndNode(lvalue) => ???
-            case _ => ???
+            case f: FstNode => findTypeL(f.lvalue)   // !
+            case s: SndNode => findTypeL(s.lvalue)   // !
+            case _ => "ERROR" // !
         }
     }
 
@@ -78,21 +77,64 @@ object SemanticChecker {
             case id: IdentNode => {
                 val res = symbolTable.lookUpVar(id.name)
                 res match {
-                    case Some(identif) => {
-                        identif match {
+                    case Some(ident) => {
+                        ident match {
                             case VarIdentifier(ty) => ty
-                            case FuncIdentifier(paramtype, returntype) => returntype
-                            case ArrayIdentifier(ty, dim, size, elements) => ty + ":" + dim
+                            // case FuncIdentifier(_, returntype) => returntype
+                            case ArrayIdentifier(ty, dim, _, _) => ty + ":" + dim
                             case PairIdentifier(ty1, ty2) => ty1 + "-" + ty2
                         }
                     }
                     case None => {
                         errorMessage += "Typecheck: variable name \"" + id.name + "\" is is not defined\n"
-                        return "ERROR"
+                        "ERROR"
                     }
                 }
             }
-            case _ => ???
+            case a: ArrayElemNode => {
+                val res = symbolTable.lookUpVar(a.ident.name)
+                res match {
+                    case Some(ident) => {
+                        ident match {
+                            case ArrayIdentifier(ty,_,_,_) => ty
+                            case _ => "ERROR"
+                        }
+                    }
+                    case _ => "ERROR"
+                    }
+            }
+            case u: UnOpExprNode => findTypeR(u.expr)
+            case b: BinOpExprNode => findTypeR(b.fstExpr)
+            case br: BracketExprNode => findTypeR(br.expr)
+            case al: ArrayLiterNode => {
+                val fstTy = al.exprList.head
+                findTypeR(fstTy)
+                // ! Check nested arrays
+                // if (findTypeR(fstTy).contains(":")) {
+                //     findTypeR(fstTy) + "+1"
+                // }
+                // else {
+                //     findTypeR(fstTy) + ":1"
+                // }
+            }
+            case np: NewPairNode => {
+                findTypeR(np.fstExpr) + "-" + findTypeR(np.sndExpr)
+            }
+            case f: FstNode => findTypeL(f.lvalue)   // !
+            case sn: SndNode => findTypeL(sn.lvalue)   // !
+            case ca: CallNode => {
+                val res = symbolTable.lookUpFunc(ca.ident.name)
+                res match {
+                    case Some(ident) => {
+                        ident match {
+                            case FuncIdentifier(_,ty) => ty
+                            case _ => "ERROR"
+                        }
+                    }
+                    case _ => "ERROR"
+                    }
+            }
+            case _ => "ERROR"
         }
     }
 
@@ -120,54 +162,5 @@ object SemanticChecker {
 
     def currScope(): Int = {
         return scopeStack.top
-    }
-
-    def checkIfWhileCond(expr: ExprNode): Unit = {
-        expr match {
-            case IntLiterNode(_) | CharLiterNode(_) | StrLiterNode(_) | PairLiterNode()
-                => errorMessage += "Semantic error in if statement: wrong type in condition\n"
-            case id: IdentNode
-                // Check symbol table if variable is of type bool
-                => {
-                    if (tableContainsIdentifier(id)) {
-                        val identifier = symbolTable.lookUpVar(id.name).get
-                        identifier match {
-                            case VarIdentifier(ty)
-                                => if (ty != "bool") {
-                                    errorMessage += "Semantic error in if statement: wrong type in condition\n"
-                                }
-                            case _
-                               => errorMessage += "[Not possible!] Semantic error in if statement\n" 
-                        }
-                    }
-                }
-            case ArrayElemNode(id, exprList)
-                // Check symbol table if array elem is of type bool
-                => {
-                    if (tableContainsIdentifier(id)) {
-                        val identifier = symbolTable.lookUpVar(id.name).get
-                        identifier match {
-                            case ArrayIdentifier(ty,_, _, _)
-                                => if (exprList.length == 1) {
-                                    if (ty != "bool") {
-                                        errorMessage += "Semantic error in if statement: wrong type in condition\n"
-                                    }
-                                }
-                                // else {2+ dimension arrays}
-                            case _
-                               => errorMessage += "[Not possible!] Semantic error in if statement\n" 
-                        }
-                    }
-                }
-            case UnOpExprNode(UnaryOperNode(op),_)
-                => if (op != "!") {
-                        errorMessage += "Semantic error in if statement: wrong type in condition\n"
-                    }
-            case BinOpExprNode(_,BinaryOperatorNode(op),_)
-                => if (op == "*" || op == "/" || op == "%" || op == "+" || op == "-") {
-                        errorMessage += "Semantic error in if statement: wrong type in condition\n"
-                    }
-            case _ =>
-        }
     }
 }

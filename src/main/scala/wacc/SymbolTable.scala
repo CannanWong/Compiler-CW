@@ -22,6 +22,13 @@ class SymbolTable {
         map.addOne(varName, identifier)
     }
 
+    // Add pair to symbol table
+    def addPair(name: String, ty1: String, ty2: String): Unit = {
+        val varName = SemanticChecker.currScope().toString() + "!" + name
+        val identifier = new PairIdentifier(ty1, ty2)
+        map.addOne(varName, identifier)
+    }
+
     // Add function to symbol table
     def addFunc(name: String, paramtype: List[String], returntype: String): Unit = {
         val funcName = "f!" + name
