@@ -137,8 +137,8 @@ object Parser {
     lazy val assignIdent: Parsley[AssignIdentNode] =
         AssignIdentNode.lift(generalType, ident <~ "=", rValue)
 
-    lazy val valuesEqual: Parsley[ValuesEqualNode] =
-        ValuesEqualNode.lift(lValue <~ "=", rValue)
+    lazy val valuesEqual: Parsley[LValuesAssignNode] =
+        LValuesAssignNode.lift(lValue <~ "=", rValue)
 
     lazy val stat: Parsley[StatNode] =
         skip        <|>

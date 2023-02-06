@@ -1,29 +1,7 @@
-# Customised test file
+# simple skip program
 
 # Output:
 
 # Program:
 
-begin
-  # Testing functions with statements inside, array supported
-  int f(int[] asdf, char cccc) is
-    int asdf = 5
-  end
-  int g(string sss, bool b) is
-    skip
-  end
-  # Statement atoms (and statJoin in general)
-  int x = 514;
-  int[][] y = [1, 2];
-  a = 1;
-  read a;
-  free 1;
-  return 1;
-  exit 1;
-  print 1;
-  println 1;
-  if 1 then skip else skip fi;
-  while 1 do skip done;
-  begin skip end;
-  skip
-end
+begin skip end
