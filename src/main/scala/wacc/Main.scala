@@ -29,7 +29,7 @@ object Main {
             case Failure(msg) => {
                 println("#syntax_error#\n" + msg)
                 //Disabling exit code for sbt debug session
-                sys.exit(100)
+                //sys.exit(100)
             }
         }
     }
