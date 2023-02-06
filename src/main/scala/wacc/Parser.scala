@@ -5,10 +5,12 @@ import parsley.Parsley.{attempt, lookAhead, notFollowedBy}
 import parsley.implicits.character.charLift
 import parsley.implicits.lift.{Lift1, Lift2, Lift3, Lift4}
 import parsley.token.{Lexer, descriptions, predicate}
+import parsley.expr.{Atoms, precedence, Postfix, Ops}
+import parsley.expr.chain.postfix1
 import descriptions.numeric.{NumericDesc, PlusSignPresence}
 import PlusSignPresence.Optional
 import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc}
-import parsley.combinator.{attemptChoice, sepBy, sepBy1, many, manyUntil, option}
+import parsley.combinator.{sepBy, sepBy1, some, manyUntil}
 
 object lexer {
     val desc = LexicalDesc.plain.copy(
@@ -47,47 +49,122 @@ object Parser {
     import lexer.{fully, identifier, num}
     import lexer.implicits.implicitSymbol
 
+    /* General expressions */
+
     lazy val ident = IdentNode.lift(identifier)
 
-    lazy val baseType = 
+    lazy val expr: Parsley[ExprNode] =
+        intLiter    <|>
+        ident       <|>
+        arrayElem
+
+    lazy val lValue = ident <|> arrayElem
+
+    lazy val rValue = expr <|> arrayLiter
+
+
+    /* Types */
+
+    lazy val generalType: Parsley[TypeNode] =
+        attempt(arrayType) <|> baseType  // <|> pairType
+
+    lazy val baseType: Parsley[BaseTypeNode] = 
         "int"    #> BaseTypeNode("int")    <|>
         "bool"   #> BaseTypeNode("bool")   <|>
         "char"   #> BaseTypeNode("char")   <|>
         "string" #> BaseTypeNode("string")
-    
+
     lazy val intLiter: Parsley[IntLiterNode] =
         IntLiterNode.lift(num)
 
-    lazy val assignIdent: Parsley[AssignIdentNode] =
-        AssignIdentNode.lift(baseType, ident <~ "=", intLiter)
+    lazy val arrayType: Parsley[TypeNode] =
+        postfix1(baseType, "[]" #> ArrayTypeNode)
 
+    lazy val arrayElem: Parsley[ArrayElemNode] =
+        ArrayElemNode.lift(ident, some("[" ~> expr <~ "]"))
+
+    lazy val arrayLiter: Parsley[ArrayLiterNode] =
+        "[" ~> ArrayLiterNode.lift(sepBy(expr, ",")) <~ "]"
+
+
+    /* Functions */
+    
     lazy val param: Parsley[ParamNode] =
-        ParamNode.lift(baseType, ident)
+        ParamNode.lift(generalType, ident)
 
     lazy val paramList: Parsley[ParamListNode] =
         ParamListNode.lift(sepBy(param, ","))
 
     lazy val func: Parsley[FuncNode] = 
         FuncNode.lift(
-            baseType,
+            generalType,
             ident,
             "(" ~> paramList <~ ")",
             "is" ~> stats <~ "end")
 
-    lazy val statSkip: Parsley[StatNode] =
+    /* Statements */
+    
+    lazy val skip: Parsley[StatNode] =
         "skip" #> SkipNode()
 
+    lazy val read =
+        ReadNode.lift("read" ~> lValue)
+
+    lazy val free =
+        FreeNode.lift("free" ~> expr)
+
+    lazy val valReturn =
+        ReturnNode.lift("return" ~> expr)
+
+    lazy val exit =
+        ExitNode.lift("exit" ~> expr)
+
+    lazy val print =
+        PrintNode.lift("print" ~> expr)
+
+    lazy val println =
+        PrintlnNode.lift("println" ~> expr)
+
+    lazy val ifCon =
+        IfNode.lift("if" ~> expr, "then" ~> stat, "else" ~> stat <~ "fi")
+
+    lazy val whileCon =
+        WhileNode.lift("while" ~> expr, "do" ~> stat <~ "done")
+
+    lazy val beginEnd =
+        BeginEndNode.lift("begin" ~> stat <~ "end")
+
+    lazy val assignIdent: Parsley[AssignIdentNode] =
+        AssignIdentNode.lift(generalType, ident <~ "=", rValue)
+
+    lazy val valuesEqual: Parsley[ValuesEqualNode] =
+        ValuesEqualNode.lift(lValue <~ "=", rValue)
+
     lazy val stat: Parsley[StatNode] =
-        statSkip <|> assignIdent
+        skip        <|>
+        read        <|>
+        free        <|>
+        valReturn   <|>
+        exit        <|>
+        println     <|>
+        print       <|>
+        ifCon       <|>
+        whileCon    <|>
+        beginEnd    <|>
+        assignIdent <|>
+        valuesEqual
     
-    lazy val stats: Parsley[StatNode] = 
-        statJoin <|> stat <~ notFollowedBy(";")
+    lazy val stats: Parsley[StatNode] =
+        attempt(stat <~ notFollowedBy(";")) <|> statJoin
 
     lazy val statJoin: Parsley[StatNode] = 
         StatJoinNode.lift(sepBy1(stat, ";"))
 
+    /* Top Level */
+    
     lazy val prog: Parsley[ProgramNode] =
-        "begin" ~> ProgramNode.lift(manyUntil(func, lookAhead(attempt(stat))), stats) <~ "end" 
+        "begin" ~> ProgramNode.lift(
+            manyUntil(func, lookAhead(attempt(stat))), stats) <~ "end" 
 
     val topLevel = fully(prog)
 }
