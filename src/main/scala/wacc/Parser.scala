@@ -20,7 +20,19 @@ object lexer {
             space = predicate.Basic(Character.isWhitespace)
         ),
         symbolDesc = SymbolDesc.plain.copy(
-            hardKeywords = Set("begin", "skip", "end", "int", "bool", "char", "string")
+            hardKeywords = Set(
+                "begin", "skip", "end", 
+                "int", "bool", "char", "string", 
+                "true", "false", 
+                "is", 
+                "read", 
+                "free", 
+                "return", "exit", 
+                "print", "println", 
+                "if", "then", "else", "fi", 
+                "while", "do", "done", 
+                "call", 
+                "fst", "snd", "newpair", "pair")
         ),
         nameDesc = NameDesc.plain.copy(
             identifierStart = predicate.Basic(validIdentStart),
