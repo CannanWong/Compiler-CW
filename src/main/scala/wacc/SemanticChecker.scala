@@ -40,6 +40,24 @@ object SemanticChecker {
         return true
     }
 
+    /* function returns -1 if idNode is not definded in any scope */
+    def identifierScope(id: IdentNode): Int = {
+        var ret = -1
+        /* can only return 0 or 1 result */
+        var idx = 0
+        while (idx < scopeStack.size && ret != -1) {
+            val scope = scopeStack.indexOf(idx)
+            symbolTable.lookUp(s"${scope}!" + id.name) match {
+                case Some(identif) => {
+                    ret = scope
+                }
+                case None => 
+            }
+            idx += 1
+        }
+        ret
+    }
+
     /* PAIR REPRESENTATION TBC*/
     def findTypeL(lhs: LValueNode) : String = {
         lhs match {
