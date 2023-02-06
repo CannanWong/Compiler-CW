@@ -40,6 +40,11 @@ class SymbolTable {
         val funcName = "f!" + name
         return map.get(funcName)
     }
+
+    // Look up any from symbol table
+    def lookUp(tableName: String): Option[Identifier] = {
+        return map.get(tableName)
+    }
 }
 
 /*

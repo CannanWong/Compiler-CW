@@ -136,7 +136,7 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
             case id: IdentNode => {
                 val varName = SemanticChecker.currScope().toString() + "!" + id.name
                 lname = id.name
-                if (SemanticChecker.tableContainsIdentifier(id)) {
+                if (SemanticChecker.identifierScope(id) >= 0) {
                     varName
                 } else {
                     bothDefined = false
@@ -150,7 +150,7 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
             case id: IdentNode => {
                 val varName = SemanticChecker.currScope().toString() + "!" + id.name
                 rname = id.name
-                if (SemanticChecker.tableContainsIdentifier(id)) {
+                if (SemanticChecker.identifierScope(id) >= 0) {
                     varName
                 } else {
                     bothDefined = false
@@ -253,15 +253,8 @@ case class StatJoinNode(statList: List[StatNode]) extends StatNode  {
 sealed trait LValueNode extends ASTNode
 
 case class IdentNode(name: String) extends LValueNode with ExprNode { 
-    // ! To be deleted !
-
-    // symbol table name is decided during traversal of nodes to do semantic checks
-    // var scope = 0
-    // var symbolTableName = "PLACEHODER: " + name + " : " + scope
-
-    // override def semanticCheck(): Unit = {
-    //     SemanticChecker.validDeclaration(this)
-    // }
+    //left for testing purpose will delete later
+    var symbolTableName = "PLACEHODER--0!" + name 
 }
 
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
