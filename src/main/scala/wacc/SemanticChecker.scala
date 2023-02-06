@@ -96,17 +96,9 @@ object SemanticChecker {
         }
     }
 
-    def findType(ty: TypeNode) : String = {
-        ty match {
-            case BaseTypeNode(t) => t
-            case a: ArrayTypeNode => a.typeVal
-            case p: PairTypeNode => p.typeVal
-        }
-    }
-
     def typeCheck(lhs: TypeNode, rhs: RValueNode): Boolean = {
         /* find type of RHS */
-        val lhsType = findType(lhs)
+        val lhsType = lhs.typeVal
         val rhsType = findTypeR(rhs)
         val res = (lhsType == rhsType)
         if (!res) {

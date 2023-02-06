@@ -30,24 +30,19 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
 
     // ! Check all execution paths contain return or exit
     override def semanticCheck(): Unit = {
-
         var paramtypeList = ListBuffer[String]()
-        var paramnameList = ListBuffer[String]()
         for (param <- paramList.paramList) {
             // Check for repeated parameter names
-            if (paramtypeList.contains(param.ident.name)) {
-                SemanticChecker.errorMessage += "Semantic error in function declaration: parameters cannot have the same name"
-            }
-            else {
-                paramtypeList += SemanticChecker.findType(param.ty)
-                paramnameList += param.ident.name
+            if (SemanticChecker.validDeclaration(param.ident)) {
+                paramtypeList += param.ty.typeVal
+                SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.typeVal)
             }
         }
 
         // Check ident
         if (SemanticChecker.validDeclaration(ident)) {
             // Add to symbol table
-            SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, SemanticChecker.findType(ty))
+            SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal)
         }
         
         // Check return type
@@ -58,10 +53,8 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
                         stat match {
                             case ReturnNode(expr) 
                                 => SemanticChecker.typeCheck(ty, expr)
-                            case _ =>
+                            case _ => // ! Find all return nodes
                         }
-                        // ! Check all returns 
-                        // ! Check returns outside function declaration
                     }
                 }
             case _ =>
@@ -312,7 +305,34 @@ case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode 
 
 case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
     override def semanticCheck(): Unit = {
-        ident.semanticCheck()
+        // Check if function is declared
+        val lookUp = SemanticChecker.symbolTable.lookUpFunc(ident.name)
+        if (lookUp == None) {
+            SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is not defined in this scope\n"
+        }
+        // Check if arg list is of correct type and number
+        else {
+            val identifier = lookUp.get
+            identifier match {
+                case f: FuncIdentifier
+                    => {
+                        if (argList.exprList.length != f.paramtype.length) {
+                            SemanticChecker.errorMessage += "Function argument number is different from function parameter number\n"
+                        }
+                        else {
+                            var index = 0
+                            for (arg <- argList.exprList) {
+                                if (SemanticChecker.findTypeR(arg) != f.paramtype.apply(index)) {
+                                    SemanticChecker.errorMessage += "Function argument type is incorrect\n"
+                                }
+                                index += 1
+                            }
+                        }
+                    }
+                case _ => SemanticChecker.errorMessage += "[Not possible!]"
+            }
+        }
+        // ident.semanticCheck()
         argList.semanticCheck()
     }
 }
