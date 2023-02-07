@@ -291,9 +291,8 @@ sealed trait RValueNode extends ASTNode
 
 sealed trait ExprNode extends RValueNode
 
-case class ArrayLiterNode(expr: ExprNode, exprList: List[ExprNode]) extends ExprNode {
+case class ArrayLiterNode(exprList: List[ExprNode]) extends ExprNode {
     override def semanticCheck(): Unit = {
-        expr.semanticCheck()
         for (e <- exprList) {
             e.semanticCheck()
         }
