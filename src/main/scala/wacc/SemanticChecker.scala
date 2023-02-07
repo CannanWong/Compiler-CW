@@ -55,6 +55,9 @@ object SemanticChecker {
             }
             idx += 1
         }
+        if (ret == -1) {
+            errorMessage += s"${id.name} is not in scope or not declared\n"
+        }
         ret
     }
 

@@ -265,10 +265,21 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
     override def semanticCheck(): Unit = {
         SemanticChecker.validDeclaration(ident)
-        ident.semanticCheck()
-        for (e <- exprList) {
-            e.semanticCheck()
-        }
+        var elemDim = 0
+        if (SemanticChecker.identifierScope(ident) >= 0) {
+            for (e <- exprList) {
+                elemDim += 1
+                e.semanticCheck()
+                if (e.typeAssign != "int") {
+                    SemanticChecker.errorMessage += s"array elem index: unexpected type ${e.typeAssign}, expected int\n"
+                }
+            }
+            /* ERROR: will not stay when everyting abstracted to concrete type identifier */
+            val arrIdentType = SemanticChecker.findTypeL(ident)
+            if (elemDim > arrIdentType.charAt(arrIdentType.length - 2).toInt) {
+                SemanticChecker.errorMessage += s"array elem type: unexpected type ${ident.typeAssign}:${elemDim}, expected ${arrIdentType}\n"
+            }
+        } 
     }
 }
 
