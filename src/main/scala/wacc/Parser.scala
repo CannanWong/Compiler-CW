@@ -5,13 +5,13 @@ import parsley.Parsley.{attempt, lookAhead, notFollowedBy}
 import parsley.implicits.character.charLift
 import parsley.implicits.lift.{Lift1, Lift2, Lift3, Lift4}
 import parsley.token.{Lexer, descriptions, predicate}
-import parsley.expr.{Atoms, precedence, Postfix, Ops}
+import parsley.expr.{Atoms, precedence, Postfix, Ops, InfixL, Prefix}
 import parsley.expr.chain.postfix1
 import descriptions.numeric.{NumericDesc, PlusSignPresence}
 import PlusSignPresence.Optional
 import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc}
 import parsley.combinator.{sepBy, sepBy1, some, manyUntil, choice}
-import parsley.character.{noneOf, stringOfMany}
+import parsley.character.{noneOf, stringOfMany, string, strings, spaces}
 
 object lexer {
     val desc = LexicalDesc.plain.copy(
@@ -66,22 +66,57 @@ object Parser {
 
     lazy val ident = IdentNode.lift(identifier)
 
-    lazy val expr: Parsley[ExprNode] =
+    lazy val literals: Parsley[ExprNode] =
+        attempt(arrayElem) <|>
         intLiter           <|>
         attempt(boolLiter) <|> 
         charLiter          <|> 
         strLiter           <|>
-        attempt(ident)     <|>
-        arrayElem
+        ident              <|>
+        bracketExpr
 
-    lazy val lValue = ident <|> arrayElem <|> pairElem
+    lazy val bracketExpr: Parsley[ExprNode] =
+        "(" ~> expr <~ ")"
+    
+    lazy val expr: Parsley[ExprNode] =
+        attempt(op) <|> literals
+         //   strings("!", "-", "len", "ord", "chr") <~ spaces), expr)
+    
+    // lazy val binOp: Parsley[ExprNode] = 
+    //     parsley.expr.precedence(expr)
+    //         (
+    //             (Ops(InfixL)(MulExpr <# "*")),
+    //         )
+    lazy val op: Parsley[ExprNode] =
+        precedence(literals)(
+            Ops(Prefix)("!" #> NotNode,
+                        "-" #> NegNode,
+                        "len" #> LenNode,
+                        "ord" #> OrdNode,
+                        "chr" #> ChrNode),
+            Ops(InfixL)("*" #> MulNode,
+                        "/" #> DivNode,
+                        "%" #> ModNode),
+            Ops(InfixL)("+" #> AddNode,
+                        "-" #> SubNode),
+            Ops(InfixL)(">" #> GTNode,
+                        ">=" #> GTENode,
+                        "<" #> LTNode,
+                        "<=" #> LTENode),
+            Ops(InfixL)("==" #> EqNode,
+                        "!=" #> IEqNode),
+            Ops(InfixL)("&&" #> AndNode),
+            Ops(InfixL)("||" #> OrNode)
+        )
+       
+    lazy val lValue = pairElem <|> attempt(arrayElem) <|> ident 
 
     lazy val rValue =
-        expr            <|>
         arrayLiter      <|>
         newPair         <|>
         pairElem        <|>
-        funcCall
+        funcCall        <|>
+        expr
 
     /* Types */
 
