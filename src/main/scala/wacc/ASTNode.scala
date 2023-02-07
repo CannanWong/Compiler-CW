@@ -1,10 +1,12 @@
 package wacc
 
 import scala.collection.mutable.ListBuffer
+import scala.util.matching.Regex
 
 sealed trait ASTNode {
     def semanticCheck(): Unit = {
     }
+    var typeAssign = "NO TYPE"
 }
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
@@ -111,7 +113,10 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         SemanticChecker.validDeclaration(ident)
         rvalue.semanticCheck()
         if (SemanticChecker.validDeclaration(ident) && SemanticChecker.typeCheck(ty, rvalue)) {
+            // add var to symbol table
             SemanticChecker.symbolTable.addVar(ident.name, SemanticChecker.findTypeR(rvalue))
+            // assign type to ident
+            ident.typeAssign = ty.typeVal
         }
     }
 }
@@ -254,7 +259,7 @@ sealed trait LValueNode extends ASTNode
 
 case class IdentNode(name: String) extends LValueNode with ExprNode { 
     //left for testing purpose will delete later
-    var symbolTableName = "PLACEHODER--0!" + name 
+    var symbolTableName = "PLACEHODER--0!" + name
 }
 
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
@@ -374,22 +379,100 @@ case class PairLiterNode() extends ExprNode
 
 case class UnOpExprNode(op: UnaryOperNode, expr: ExprNode) extends ExprNode {
     override def semanticCheck(): Unit = {
-        op.semanticCheck()
         expr.semanticCheck()
+        /* assign type to expr */
+        op match {
+            // bool -> bool
+            case UnaryOperNode("!") => {
+                typeAssign = "bool"
+                SemanticChecker.basicTypeCheck("bool", expr)
+            }
+            // int -> int
+            case UnaryOperNode("-") => {
+                typeAssign = "int"
+                SemanticChecker.basicTypeCheck("int", expr)
+            }
+            // array -> int
+            case UnaryOperNode("len") => {
+                typeAssign = "int"
+                /* arrays have their types in the form of: <baseType>:<dimension> */
+                val arrayPattern: Regex = "[a-z]+:[0-9]+".r
+                if (!arrayPattern.matches(expr.typeAssign)) {
+                    SemanticChecker.errorMessage += "Type error: expected at least 1-dimensional array.\n"
+                }
+            }
+            // char -> int
+            case UnaryOperNode("ord") => {
+                typeAssign = "int"
+                SemanticChecker.basicTypeCheck("char", expr)
+            }
+            // int -> char
+            case UnaryOperNode("chr") => {
+                typeAssign = "char"
+                SemanticChecker.basicTypeCheck("int", expr)
+            }
+            // error
+            case UnaryOperNode(unidentOp) => 
+                throw new IllegalArgumentException ("syntax error not caught")
+        }
     }
 }
 
 case class BinOpExprNode(fstExpr: ExprNode, op: BinaryOperatorNode, sndExpr: ExprNode) extends ExprNode {
-    val evalType = op match {
-        case BinaryOperatorNode("") | BinaryOperatorNode("") | BinaryOperatorNode("")| BinaryOperatorNode("") | BinaryOperatorNode("")
-                => "int"
-        case _ => "boolean"
-    }
-
     override def semanticCheck(): Unit = {
         fstExpr.semanticCheck()
-        op.semanticCheck()
         sndExpr.semanticCheck()
+
+        /**
+          * Checks and assignments:
+            1. assign typeAssign for BinOpExprNode
+            2. type check for lhs expression and rhs expression
+          */
+        val lhsType = fstExpr.typeAssign
+        val rhsType = sndExpr.typeAssign
+        if (lhsType != rhsType) {
+            SemanticChecker.errorMessage += "unexpected type " + rhsType + ", expected  type " + lhsType + "\n"
+        }
+        else {
+            op match {
+                // int -> int -> int
+                case BinaryOperatorNode("*") | BinaryOperatorNode("/") | BinaryOperatorNode("%")
+                    | BinaryOperatorNode("+") | BinaryOperatorNode("-")
+                     => SemanticChecker.basicTypeCheck("int", fstExpr)
+
+                // int/char -> int/char -> bool
+                case BinaryOperatorNode(">") | BinaryOperatorNode(">=") | BinaryOperatorNode(">=")| BinaryOperatorNode("<") 
+                    | BinaryOperatorNode("<=")  
+                    => SemanticChecker.basicTypeCheck("int", "char", fstExpr)
+
+                // bool -> bool -> bool
+                case BinaryOperatorNode("&&") | BinaryOperatorNode("||")
+                    => SemanticChecker.basicTypeCheck("bool", fstExpr)
+
+                // T -> T -> bool
+                case BinaryOperatorNode("==") | BinaryOperatorNode("!=")
+                    =>
+
+                case BinaryOperatorNode(unidentOp) => {
+                    throw new IllegalArgumentException ("syntax error not caught")
+                }
+            }
+        }
+        typeAssign = op match {
+            // int -> int -> int
+            case BinaryOperatorNode("*") | BinaryOperatorNode("/") | BinaryOperatorNode("%")
+                | BinaryOperatorNode("+") | BinaryOperatorNode("-")
+                => "int"
+                
+            // int/char -> int/char -> bool
+            case BinaryOperatorNode(">") | BinaryOperatorNode(">=") | BinaryOperatorNode(">=")| BinaryOperatorNode("<") 
+                | BinaryOperatorNode("<=") |BinaryOperatorNode("&&") | BinaryOperatorNode("||")
+                | BinaryOperatorNode("==") | BinaryOperatorNode("!=")
+                => "bool"
+            case BinaryOperatorNode(unidentOp) => {
+                throw new IllegalArgumentException ("syntax error not caught")
+            }
+        }
     }
 }
 
@@ -397,6 +480,7 @@ case class BracketExprNode(expr: ExprNode) extends ExprNode {
     override def semanticCheck(): Unit = {
         expr.semanticCheck()
     }
+    typeAssign = expr.typeAssign
 }
 
 case class UnaryOperNode(op: String) extends ASTNode
