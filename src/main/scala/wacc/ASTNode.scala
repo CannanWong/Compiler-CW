@@ -47,9 +47,9 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
 
 sealed trait PairElemNode extends LValueNode with RValueNode
 
-case class FstNode(expr: ExprNode) extends PairElemNode 
+case class FstNode(expr: LValueNode) extends PairElemNode 
 
-case class SndNode(expr: ExprNode) extends PairElemNode 
+case class SndNode(expr: LValueNode) extends PairElemNode 
 
 // RValueNode
 sealed trait RValueNode

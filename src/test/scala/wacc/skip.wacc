@@ -6,7 +6,7 @@
 
 begin
   # Testing functions with statements inside, array supported
-  int f(int[] asdf, char cccc) is
+  int f(int[] asdf, char cccc, pair(int, char) a) is
     int asdf = 5
   end
   int g(string sss, bool b) is
@@ -15,6 +15,7 @@ begin
   # Statement atoms (and statJoin in general)
   int x = 514;
   int[][] y = [1, 2];
+  # int z = y[1][1];
   a = 1;
   read a;
   free 1;
@@ -29,5 +30,12 @@ begin
   bool a = true;
   bool b = false;
   char c = 'a';
-  string d = "abc"
+  string d = "abc";
+  pair(int, int) p = newpair(1, 2);
+  pair(int, pair) q = newpair(1, p);
+  int x = fst a;
+  int y = fst snd q;
+  pair(int, int)[] a = [p, p]
+  # fst a[0] = 3;
+  # int xxa = fst a[1]
 end

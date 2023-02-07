@@ -20,7 +20,19 @@ object lexer {
             space = predicate.Basic(Character.isWhitespace)
         ),
         symbolDesc = SymbolDesc.plain.copy(
-            hardKeywords = Set("begin", "skip", "end", "int", "bool", "char", "string")
+            hardKeywords = Set(
+                "begin", "skip", "end", 
+                "int", "bool", "char", "string", 
+                "true", "false", 
+                "is", 
+                "read", 
+                "free", 
+                "return", "exit", 
+                "print", "println", 
+                "if", "then", "else", "fi", 
+                "while", "do", "done", 
+                "call", 
+                "fst", "snd", "newpair", "pair")
         ),
         nameDesc = NameDesc.plain.copy(
             identifierStart = predicate.Basic(validIdentStart),
@@ -55,22 +67,29 @@ object Parser {
     lazy val ident = IdentNode.lift(identifier)
 
     lazy val expr: Parsley[ExprNode] =
-        intLiter    <|>
+        intLiter           <|>
         attempt(boolLiter) <|> 
-        charLiter <|> 
-        strLiter <|>
+        charLiter          <|> 
+        strLiter           <|>
         attempt(ident)     <|>
         arrayElem
 
-    lazy val lValue = ident <|> arrayElem
+    lazy val lValue = ident <|> arrayElem <|> pairElem
 
-    lazy val rValue = expr <|> arrayLiter
-
+    lazy val rValue =
+        expr            <|>
+        arrayLiter      <|>
+        newPair         <|>
+        pairElem        <|>
+        funcCall
 
     /* Types */
 
     lazy val generalType: Parsley[TypeNode] =
-        attempt(arrayType) <|> baseType  // <|> pairType
+        attempt(arrayType) <|> arrayBaseType
+    
+    lazy val arrayBaseType: Parsley[TypeNode] =
+        baseType <|> pairType
 
     lazy val baseType: Parsley[BaseTypeNode] = 
         "int"    #> BaseTypeNode("int")    <|>
@@ -106,8 +125,8 @@ object Parser {
     lazy val strLiter: Parsley[StrLiterNode] =
         StrLiterNode.lift("\"" ~> stringOfMany(character) <~ "\"")
 
-    lazy val arrayType: Parsley[TypeNode] =
-        postfix1(baseType, "[]" #> ArrayTypeNode)
+    lazy val arrayType: Parsley[ArrayTypeNode] =
+        postfix1(arrayBaseType, "[]" #> ArrayTypeNode)
 
     lazy val arrayElem: Parsley[ArrayElemNode] =
         ArrayElemNode.lift(ident, some("[" ~> expr <~ "]"))
@@ -115,6 +134,20 @@ object Parser {
     lazy val arrayLiter: Parsley[ArrayLiterNode] =
         "[" ~> ArrayLiterNode.lift(sepBy(expr, ",")) <~ "]"
 
+    lazy val pairType: Parsley[PairTypeNode] =
+        PairTypeNode.lift("pair(" ~> pairElemType <~ ",", pairElemType <~ ")")
+
+    lazy val pairElemType: Parsley[PairElemTypeNode] =
+        attempt(arrayType) <|> baseType <|> "pair" #> PETPairNode()
+
+    lazy val pairLiter: Parsley[PairLiterNode] =
+        "null" #> PairLiterNode()
+
+    lazy val pairElem: Parsley[PairElemNode] =
+        "fst" ~> FstNode.lift(lValue) <|> "snd" ~> SndNode.lift(lValue)
+
+    lazy val newPair: Parsley[NewPairNode] =
+        NewPairNode.lift("newpair(" ~> expr <~ ",", expr <~ ")")
 
     /* Functions */
     
@@ -130,6 +163,12 @@ object Parser {
             ident,
             "(" ~> paramList <~ ")",
             "is" ~> stats <~ "end")
+    
+    lazy val funcCall: Parsley[CallNode] =
+        CallNode.lift("call" ~> ident, "(" ~> argList <~ ")")
+
+    lazy val argList: Parsley[ArgListNode] =
+        ArgListNode.lift(sepBy(expr, ","))
 
     /* Statements */
     
@@ -167,7 +206,7 @@ object Parser {
         AssignIdentNode.lift(generalType, ident <~ "=", rValue)
 
     lazy val valuesEqual: Parsley[ValuesEqualNode] =
-        ValuesEqualNode.lift(lValue <~ "=", rValue)
+        ValuesEqualNode.lift(lValue, "=" ~> rValue)
 
     lazy val stat: Parsley[StatNode] =
         skip        <|>
@@ -180,7 +219,7 @@ object Parser {
         ifCon       <|>
         whileCon    <|>
         beginEnd    <|>
-        assignIdent <|>
+        attempt(assignIdent) <|>
         valuesEqual
     
     lazy val stats: Parsley[StatNode] =
