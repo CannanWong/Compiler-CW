@@ -162,12 +162,11 @@ object SemanticChecker {
             throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
         }
         if (!res) {
-           errorMessage += "unexpected type " + expr.typeAssign + ", expected  type " + ty1 + "/" + ty2+ " \n"
+           errorMessage += s"unexpected type ${expr.typeAssign}, expected type ${ty1} / ${ty2}\n"
         }
         res       
     }
 
-    // /* arrays have their types in the form of: <baseType>:<dimension> */
     // def arrayTypeCheck(ty: String, expr: ExprNode): Boolean = {
     //     if (expr.typeAssign == "NO TYPE") {
     //         throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
@@ -177,7 +176,6 @@ object SemanticChecker {
     //     }
     //     res       
     // }
-
 
     def currScope(): Int = {
         return scopeStack.top

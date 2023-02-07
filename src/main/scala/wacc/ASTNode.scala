@@ -259,7 +259,7 @@ sealed trait LValueNode extends ASTNode
 
 case class IdentNode(name: String) extends LValueNode with ExprNode { 
     //left for testing purpose will delete later
-    var symbolTableName = "PLACEHODER--0!" + name
+    var symbolTableName = s"PLACEHODER--0!${name}"
 }
 
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
@@ -291,10 +291,35 @@ sealed trait RValueNode extends ASTNode
 
 sealed trait ExprNode extends RValueNode
 
-case class ArrayLiterNode(exprList: List[ExprNode]) extends ExprNode {
+case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
+    val size = exprList.size
     override def semanticCheck(): Unit = {
-        for (e <- exprList) {
-            e.semanticCheck()
+        if (!exprList.isEmpty) {
+            val exprTypes = exprList.map(expr => {
+                expr.semanticCheck()
+                expr.typeAssign
+            })
+            exprTypes
+            .map(ty => ty == exprTypes(0))
+            .fold(true)((x,y) => {
+                val equals = x == y
+                if (!equals) {
+                    SemanticChecker.errorMessage += s"array literal expr sould have type ${x}, but was ${y}" 
+                }
+                equals
+            })
+
+            var dim = 1
+            val arrayPattern: Regex = "[a-z]+:[0-9]+".r
+            /* ERROR: will not stay when everyting abstracted to concrete type identifier */
+            if (!arrayPattern.matches(exprTypes(0))) {
+                dim += exprTypes(0).charAt(exprTypes(0).length - 2).toInt
+            } else {
+                typeAssign = s"${exprTypes(0)}:${dim}"
+            } 
+        }else {
+            /* ERROR: will not stay when everyting abstracted to concrete type identifier */
+            typeAssign = "any:1"
         }
     }
 }
@@ -430,7 +455,7 @@ case class BinOpExprNode(fstExpr: ExprNode, op: BinaryOperatorNode, sndExpr: Exp
         val lhsType = fstExpr.typeAssign
         val rhsType = sndExpr.typeAssign
         if (lhsType != rhsType) {
-            SemanticChecker.errorMessage += "unexpected type " + rhsType + ", expected  type " + lhsType + "\n"
+            SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${rhsType}, expected lhs type ${lhsType}\n"
         }
         else {
             op match {
