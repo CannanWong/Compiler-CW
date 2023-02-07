@@ -107,7 +107,7 @@ object SemanticChecker {
                         }
                     }
                     case None => {
-                        errorMessage += "Typecheck: variable name \"" + id.name + "\" is is not defined\n"
+                        errorMessage += "Typecheck: variable name \"" + id.name + "\" is not defined\n"
                         "ERROR"
                     }
                 }

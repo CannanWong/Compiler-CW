@@ -195,6 +195,10 @@ case class FreeNode(expr: ExprNode) extends StatNode {
 
 case class ReturnNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
+        expr match {
+            case i: IdentNode => SemanticChecker.tableContainsIdentifier(i)
+            case _ =>
+        }
         expr.semanticCheck()
     }
 }
@@ -210,12 +214,20 @@ case class ExitNode(expr: ExprNode) extends StatNode {
 
 case class PrintNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
+        expr match {
+            case i: IdentNode => SemanticChecker.tableContainsIdentifier(i)
+            case _ =>
+        }
         expr.semanticCheck()
     }
 }
 
 case class PrintlnNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
+        expr match {
+            case i: IdentNode => SemanticChecker.tableContainsIdentifier(i)
+            case _ =>
+        }
         expr.semanticCheck()
     }
 }
