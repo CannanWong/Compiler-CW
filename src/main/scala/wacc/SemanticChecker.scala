@@ -93,7 +93,7 @@ object SemanticChecker {
             case i: IntLiterNode => "int"
             case b: BoolLiterNode => "bool"
             case c: CharLiterNode => "char"
-            case s: StrLiterNode => "str"
+            case s: StrLiterNode => "string"
             /* identifier (var and func) */
             case id: IdentNode => {
                 val res = symbolTable.lookUpVar(id.name)
