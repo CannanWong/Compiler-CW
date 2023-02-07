@@ -1,5 +1,7 @@
 package wacc
 
+import parsley.genericbridges
+
 //case class ProgramNode(funcList: List[FuncNode], stat: StatNode)
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) 
 
@@ -87,12 +89,34 @@ case class StrLiterNode(s: String) extends ExprNode
 
 case class PairLiterNode() extends ExprNode
 
-case class UnOpExprNode(op: UnaryOperNode, expr: ExprNode) extends ExprNode
+sealed trait UnOpExprNode extends ExprNode
+case class Not(expr: ExprNode) extends UnOpExprNode
+case class Neg(expr: ExprNode) extends UnOpExprNode
+case class Len(expr: ExprNode) extends UnOpExprNode
+case class Ord(expr: ExprNode) extends UnOpExprNode
+case class Chr(expr: ExprNode) extends UnOpExprNode
 
-case class BinOpExprNode(fstexpr: ExprNode, op: BinaryOperatorNode, sndexpr: ExprNode) extends ExprNode
+sealed trait BinOpExprNode extends ExprNode
+case class Mul(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class Div(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class Mod(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class Add(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class Sub(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class GT(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class GTE(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class LT(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class LTE(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class Eq(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class IEq(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class And(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
+case class Or(fstexpr: ExprNode, sndexpr: ExprNode) extends BinOpExprNode
 
 case class BracketExprNode(expr: ExprNode) extends ExprNode
 
 case class UnaryOperNode(op: String)
 
 case class BinaryOperatorNode(op: String)
+
+// object MulExpr extends genericbridges.ParserBridge2[ExprNode, ExprNode, BinOpExprNode] {
+//     override def apply(lhs: ExprNode, rhs: ExprNode): BinOpExprNode = new BinOpExprNode(lhs, Mul, rhs)
+//}

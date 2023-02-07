@@ -15,7 +15,7 @@ begin
   # Statement atoms (and statJoin in general)
   int x = 514;
   int[][] y = [1, 2];
-  # int z = y[1][1];
+  int z = y[1][1];
   a = 1;
   read a;
   free 1;
@@ -35,7 +35,16 @@ begin
   pair(int, pair) q = newpair(1, p);
   int x = fst a;
   int y = fst snd q;
-  pair(int, int)[] a = [p, p]
-  # fst a[0] = 3;
-  # int xxa = fst a[1]
+  pair(int, int)[] a = [p, p];
+  fst a[0] = 3;
+  int xxa = fst a[1];
+  int test = !b;
+  int test2 = --4;
+  int length = len d;
+  int order = ord 'c';
+  int charact = chr 43;
+  x = 1*1;
+  x = 1 * 1;
+  x = 1*(1+2);
+  x = 1*1+2
 end
