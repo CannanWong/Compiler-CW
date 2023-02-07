@@ -196,6 +196,9 @@ case class ReturnNode(expr: ExprNode) extends StatNode {
 
 case class ExitNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
+        if (SemanticChecker.findTypeR(expr) != "int") {
+            SemanticChecker.errorMessage += "Wrong type in exit\n"
+        }
         expr.semanticCheck()
     }
 }
@@ -246,7 +249,10 @@ case class WhileNode(expr: ExprNode, stat: StatNode) extends StatNode  {
 
 case class BeginEndNode(stat: StatNode) extends StatNode  {
     override def semanticCheck(): Unit = {
+        SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
+        SemanticChecker.nextScope += 1
         stat.semanticCheck()
+        SemanticChecker.scopeStack.pop()
     }
 }
 
