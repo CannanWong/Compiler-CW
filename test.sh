@@ -5,7 +5,8 @@ failcount=0
 validcount=221
 invalidcount=133
 
-for file in src/test/scala/wacc/*.wacc
+shopt -s globstar
+for file in src/test/scala/wacc/**/*.wacc
 do 
     ((testcount=testcount+1))
     echo "Testing $file:"
