@@ -55,6 +55,9 @@ object SemanticChecker {
             }
             idx += 1
         }
+        if (ret == -1) {
+            errorMessage += s"${id.name} is not in scope or not declared\n"
+        }
         ret
     }
 
@@ -177,6 +180,39 @@ object SemanticChecker {
         }
         return res
     }
+
+    
+    def basicTypeCheck(ty: String, expr: ExprNode): Boolean = {
+        val res = ty == expr.typeAssign
+        if (expr.typeAssign == "NO TYPE") {
+            throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
+        }
+        if (!res) {
+           errorMessage += "unexpected type " + expr.typeAssign + ", expected  type " + ty + "\n"
+        }
+        res       
+    }
+
+    def basicTypeCheck(ty1: String, ty2: String, expr: ExprNode): Boolean = {
+        val res = ty1 == expr.typeAssign || ty2 == expr.typeAssign
+        if (expr.typeAssign == "NO TYPE") {
+            throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
+        }
+        if (!res) {
+           errorMessage += s"unexpected type ${expr.typeAssign}, expected type ${ty1} / ${ty2}\n"
+        }
+        res       
+    }
+
+    // def arrayTypeCheck(ty: String, expr: ExprNode): Boolean = {
+    //     if (expr.typeAssign == "NO TYPE") {
+    //         throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
+    //     }
+    //     if (!res) {
+    //        errorMessage += "unexpected type " + expr.typeAssign + ", expected  type " + ty + "\n"
+    //     }
+    //     res       
+    // }
 
     def currScope(): Int = {
         return scopeStack.top
