@@ -1,0 +1,5344 @@
+sbt compile assembly
+[info] welcome to sbt 1.8.2 (Temurin Java 1.8.0_362)
+[info] loading settings for project wacc_45-build-build-build from metals.sbt ...
+[info] loading project definition from /homes/tcw121/Documents/COMP50007/WACC/WACC_45/project/project/project
+[info] loading settings for project wacc_45-build-build from metals.sbt ...
+[info] loading project definition from /homes/tcw121/Documents/COMP50007/WACC/WACC_45/project/project
+[success] Generated .bloop/wacc_45-build-build.json
+[success] Total time: 1 s, completed 08-Feb-2023 10:32:24
+[info] loading settings for project wacc_45-build from metals.sbt,plugins.sbt ...
+[info] loading project definition from /homes/tcw121/Documents/COMP50007/WACC/WACC_45/project
+[success] Generated .bloop/wacc_45-build.json
+[success] Total time: 1 s, completed 08-Feb-2023 10:32:25
+[info] loading settings for project root from build.sbt ...
+[info] set current project to WACC 45 (in build file:/homes/tcw121/Documents/COMP50007/WACC/WACC_45/)
+[info] Executing in batch mode. For better performance use sbt's shell
+[info] compiling 2 Scala sources to /homes/tcw121/Documents/COMP50007/WACC/WACC_45/target/scala-2.13/classes ...
+[warn] /homes/tcw121/Documents/COMP50007/WACC/WACC_45/src/main/scala/wacc/ASTNode.scala:325:93: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method typeVal,
+[warn] or remove the empty argument list from its definition (Java-defined methods are exempt).
+[warn] In Scala 3, an unapplied method like this will be eta-expanded into a function.
+[warn]                     SemanticChecker.errorMessage += s"array elem index: unexpected type ${e.typeVal}, expected int\n"
+[warn]                                                                                             ^
+[warn] /homes/tcw121/Documents/COMP50007/WACC/WACC_45/src/main/scala/wacc/ASTNode.scala:3:16: Unused import
+[warn] import parsley.genericbridges
+[warn]                ^
+[warn] /homes/tcw121/Documents/COMP50007/WACC/WACC_45/src/main/scala/wacc/ASTNode.scala:381:17: local val arrayPattern in method typeVal is never used
+[warn]             val arrayPattern: Regex = "[a-z]+:[0-9]+".r
+[warn]                 ^
+[warn] /homes/tcw121/Documents/COMP50007/WACC/WACC_45/src/main/scala/wacc/ASTNode.scala:47:13: local var paramtypeList in method semanticCheck is never updated: consider using immutable val
+[warn]         var paramtypeList = ListBuffer[String]()
+[warn]             ^
+[warn] /homes/tcw121/Documents/COMP50007/WACC/WACC_45/src/main/scala/wacc/ASTNode.scala:380:17: local var dim in method typeVal is never updated: consider using immutable val
+[warn]             var dim = 1
+[warn]                 ^
+[warn] /homes/tcw121/Documents/COMP50007/WACC/WACC_45/src/main/scala/wacc/SemanticChecker.scala:89:23: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method typeVal,
+[warn] or remove the empty argument list from its definition (Java-defined methods are exempt).
+[warn] In Scala 3, an unapplied method like this will be eta-expanded into a function.
+[warn]         val res = lhs.typeVal == rhs.typeVal()
+[warn]                       ^
+[warn] /homes/tcw121/Documents/COMP50007/WACC/WACC_45/src/main/scala/wacc/SemanticChecker.scala:99:18: Auto-application to `()` is deprecated. Supply the empty argument list `()` explicitly to invoke method typeVal,
+[warn] or remove the empty argument list from its definition (Java-defined methods are exempt).
+[warn] In Scala 3, an unapplied method like this will be eta-expanded into a function.
+[warn]         if (expr.typeVal == "NO TYPE") {
+[warn]                  ^
+[warn] 7 warnings found
+[info] done compiling
+[success] Total time: 8 s, completed 08-Feb-2023 10:32:36
+[info] 2 file(s) merged using strategy 'Discard' (Run the task at debug level to see the details)
+[info] Built: /homes/tcw121/Documents/COMP50007/WACC/WACC_45/wacc-45-compiler.jar
+[info] Jar hash: 0f05a3b1f7c5570dd3b290ca328760bd7f2460e9
+[success] Total time: 2 s, completed 08-Feb-2023 10:32:38
+bash test.sh
+Tests:
+
+Test src/test/scala/wacc/invalid/semanticErr/exit/globalReturn.wacc failed! Exited 0 instead of 200
+Output: \n Hello WACC_45!
+File contents:
+# trying to return from the main program
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  return 42 ;
+  println "should not get here" 
+end
+AST = ProgramNode(List(),StatJoinNode(List(ReturnNode(IntLiterNode(42)), PrintlnNode(StrLiterNode(should not get here)))))
+No semantic error
+Test src/test/scala/wacc/invalid/semanticErr/exit/returnsInMain.wacc failed! Exited 0 instead of 200
+Output: \n Hello WACC_45!
+File contents:
+# Returning from the main body is forbidden.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  while true do
+    return 3
+  done;
+
+  if true then
+    return 4
+  else
+    return 5
+  fi;
+
+  begin
+    return 6
+  end
+end
+AST = ProgramNode(List(),StatJoinNode(List(WhileNode(BoolLiterNode(true),ReturnNode(IntLiterNode(3))), IfNode(BoolLiterNode(true),ReturnNode(IntLiterNode(4)),ReturnNode(IntLiterNode(5))), BeginEndNode(ReturnNode(IntLiterNode(6))))))
+No semantic error
+Test src/test/scala/wacc/invalid/semanticErr/function/functionBadReturn.wacc failed! Exited 0 instead of 200
+Output: \n Hello WACC_45!
+File contents:
+# function return type mismatch: int <- char
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+	int f() is
+		return 'c'
+	end
+	int x = call f() ;
+	println x 
+end
+	
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List()),ReturnNode(CharLiterNode(c)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),CallNode(IdentNode(f),ArgListNode(List()))), PrintlnNode(IdentNode(x)))))
+No semantic error
+Test src/test/scala/wacc/invalid/semanticErr/function/mismatchingReturns.wacc failed! Exited 100 instead of 200
+Output: \n Hello WACC_45!
+File contents:
+# Trying to return two different types from a function.
+# Thanks to Ethan Range, Fawwaz Abdullah, Robbie Buxton, and Edward Hartley
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int f(bool b) is
+    if b then
+      return 'c';
+      while true do
+        return 'd'
+      done
+    else
+      skip
+    fi;
+
+    return 10
+  end
+
+  int a = call f(false)
+end
+#syntax_error#
+(line 15, column 17):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or else
+  >    if b then
+  >      return 'c';
+                   ^
+  >      while true do
+Test src/test/scala/wacc/invalid/semanticErr/scope/badParentScope.wacc failed! Exited 100 instead of 200
+Output: \n Hello WACC_45!
+File contents:
+# Stuff that follows a child scope is not part of the parent!
+# Thanks to Ollie Madine and Andrii Verveha
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int x = 5;
+  begin
+    begin
+      free x
+    end;
+    int[] x = [1]
+  end
+end
+#syntax_error#
+(line 17, column 8):
+  unexpected ";"
+  expected end
+  >      free x
+  >    end;
+          ^
+  >    int[] x = [1]
+Test src/test/scala/wacc/invalid/semanticErr/scope/badScopeRedefine.wacc failed! Exited 100 instead of 200
+Output: \n Hello WACC_45!
+File contents:
+# variable scoping test that uses a redefined variable incorrectly
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  int x = 12 ;
+  begin
+    bool x = true ;
+    x = 5
+  end ;
+  exit x 
+end
+
+#syntax_error#
+(line 14, column 19):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or end
+  >  begin
+  >    bool x = true ;
+                     ^
+  >    x = 5
+Test src/test/scala/wacc/invalid/syntaxErr/function/functionConditionalNoReturn.wacc failed! Exited 200 instead of 100
+Output: \n Hello WACC_45!
+File contents:
+# function body missing return or exit statement on a path
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  bool f ( bool b ) is
+    if ( b ) then
+      return b
+    else
+      skip
+    fi
+  end
+  bool g ( bool b ) is
+    if ( b ) then
+      skip
+    else
+      return b
+    fi
+  end
+  bool c = call f ( false ) ;
+  bool d = call g ( true )
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(bool),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(bool),IdentNode(b)))),IfNode(IdentNode(b),ReturnNode(IdentNode(b)),SkipNode())), FuncNode(BaseTypeNode(bool),IdentNode(g),ParamListNode(List(ParamNode(BaseTypeNode(bool),IdentNode(b)))),IfNode(IdentNode(b),SkipNode(),ReturnNode(IdentNode(b))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(bool),IdentNode(c),CallNode(IdentNode(f),ArgListNode(List(BoolLiterNode(false))))), AssignIdentNode(BaseTypeNode(bool),IdentNode(d),CallNode(IdentNode(g),ArgListNode(List(BoolLiterNode(true))))))))
+#semantic_error#
+variable name "b" is is not defined in this scope
+Semantic error in if statement: wrong type in condition
+variable name "b" is is not defined in this scope
+Semantic error in if statement: wrong type in condition
+Variable name "b" is already used in the same scope
+Function argument number is different from function parameter number
+Test src/test/scala/wacc/invalid/syntaxErr/function/functionEndingNotReturn.wacc failed! Exited 0 instead of 100
+Output: \n Hello WACC_45!
+File contents:
+# function body not terminated with return or exit statement
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int f() is
+    return 2;
+    println "How on Earth did we get here?" 
+  end
+
+  int x = call f();
+  println x
+end
+	
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List()),StatJoinNode(List(ReturnNode(IntLiterNode(2)), PrintlnNode(StrLiterNode(How on Earth did we get here?)))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),CallNode(IdentNode(f),ArgListNode(List()))), PrintlnNode(IdentNode(x)))))
+No semantic error
+Test src/test/scala/wacc/invalid/syntaxErr/function/functionNoReturn.wacc failed! Exited 0 instead of 100
+Output: \n Hello WACC_45!
+File contents:
+# function body missing return or exit statement
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int f() is
+    bool b = true 
+  end
+
+  int x = call f();
+  println x
+end
+	
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List()),AssignIdentNode(BaseTypeNode(bool),IdentNode(b),BoolLiterNode(true)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),CallNode(IdentNode(f),ArgListNode(List()))), PrintlnNode(IdentNode(x)))))
+No semantic error
+Test src/test/scala/wacc/invalid/syntaxErr/literals/stringLiteralNoNewlines.wacc failed! Exited 200 instead of 100
+Output: \n Hello WACC_45!
+File contents:
+# Strings cannot be split across lines
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+    string s = "hello
+ world"
+end
+AST = ProgramNode(List(),AssignIdentNode(BaseTypeNode(string),IdentNode(s),StrLiterNode(hello
+ world)))
+#semantic_error#
+String cannot contain newline
+Test src/test/scala/wacc/invalid/syntaxErr/literals/stringLiteralOnlyAscii.wacc failed! Exited 0 instead of 100
+Output: \n Hello WACC_45!
+File contents:
+# Strings must only contain ASCII
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+    string s = "héllo world"
+end
+AST = ProgramNode(List(),AssignIdentNode(BaseTypeNode(string),IdentNode(s),StrLiterNode(héllo world)))
+No semantic error
+Test src/test/scala/wacc/invalid/syntaxErr/pairs/fstNull.wacc failed! Exited 200 instead of 100
+Output: \n Hello WACC_45!
+File contents:
+# call fst on a null pair literal
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int i = fst null;
+  println i
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(i),FstNode(IdentNode(null))), PrintlnNode(IdentNode(i)))))
+#semantic_error#
+LHS type "int" does not match RHS type "ERROR"variable name "i" is is not defined in this scope
+Test src/test/scala/wacc/invalid/syntaxErr/pairs/sndNull.wacc failed! Exited 200 instead of 100
+Output: \n Hello WACC_45!
+File contents:
+# call snd on a null pair literal
+
+# Output:
+# #syntax_error#
+
+# Exit:
+# 100
+
+# Program:
+
+begin
+  int i = snd null;
+  println i
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(i),SndNode(IdentNode(null))), PrintlnNode(IdentNode(i)))))
+#semantic_error#
+LHS type "int" does not match RHS type "ERROR"variable name "i" is is not defined in this scope
+Test src/test/scala/wacc/valid/advanced/binarySortTree.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# The program reads n (number of integers), then n integers. After each input, 
+# it insert the integer into a binary search tree. At the end, it prints out 
+# the content in the binary search tree so that we have a sorted list of 
+# integer.
+# 
+# We represent a node in the binary search tree using two pair elements. The 
+# first element has a type <int, pair>, the int is the integer stored in the 
+# node, the pair is the pointer to the second pair element. The second pair 
+# element has a type <pair, pair> which is the pointer to the two children 
+# nodes in the binary search tree.
+
+begin
+
+  # Create a new node of a binary search tree having the given integer value 
+  # and points to the two given pairs.
+  pair(int, pair) createNewNode(int value, pair(int, pair) left, pair(int, pair) right) is
+    pair(pair, pair) p = newpair(left, right) ;
+    pair(int, pair) q = newpair(value, p) ;
+    return q
+  end
+
+  # Given a root of a binary search tree and an integer to insert, the function 
+  # inserts the integer into the tree and returns the new root of the tree.
+  pair(int, pair) insert(pair(int, pair) root, int n) is
+    if root == null then
+      root = call createNewNode(n, null, null)
+    else
+      pair(pair, pair) p = snd root ;
+      int current = fst root ;
+      pair(int, pair) q = null ;
+      if n < current then
+      	q = fst p ;
+        fst p = call insert(q, n)
+      else 
+      	q = snd p ;
+        snd p = call insert(q, n)
+      fi 
+    fi ;
+    return root
+  end
+
+  # Print the integers in the binary search tree in the increasing order.
+  int printTree(pair(int, pair) root) is
+    if root == null then
+      return 0 
+    else
+      pair(pair, pair) body = snd root ;
+      pair(int, pair) p = fst body ;
+      int temp = call printTree(p) ;
+      temp = fst root ; 
+      print temp ;
+      print ' ' ;
+      p = snd body ;
+      temp = call printTree(p) ;
+      return 0
+    fi
+  end
+
+  # The main function
+  int n = 0 ;
+  print "Please enter the number of integers to insert: " ;
+  read n ;
+  print "There are " ;
+  print n ;
+  println " integers." ;
+  int i = 0 ;
+  pair(int, pair) root = null ;
+  while i < n do
+    int x = 0 ;
+    print "Please enter the number at position " ; 
+    print i + 1 ;
+    print " : " ;
+    read x ;
+    root = call insert(root, x) ;
+    i = i + 1
+  done ;
+  print "Here are the numbers sorted: " ;
+  i = call printTree(root) ;
+  println ""
+end
+
+
+
+#syntax_error#
+(line 28, column 37):
+  unexpected ";"
+  expected "[" or fi
+  >    else
+  >      pair(pair, pair) p = snd root ;
+                                       ^
+  >      int current = fst root ;
+Test src/test/scala/wacc/valid/advanced/hashTable.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# This program is interactive. We implement a hash table containing integers and we play with it.
+# 
+# A hash table is represented by an array of node lists. Each node in a node list is represented 
+# by pair(int, pair). The first element of the pair is the integer at that node, the second element 
+# is the pointer to the next node (or null if no more node). 
+# 
+# Integers those mapped to the same index are stored on the list (in any order) in that index.
+
+begin
+
+	######################### Functions for Hash Table Interface ###############################
+	
+	# Given a hash table, initialise it. Return true.
+	bool init(pair(int, pair)[] table) is
+		int length = len table ;
+		int i = 0 ;
+		while i < length do
+			table[i] = null ; 
+			i = i + 1
+		done ;
+		return true
+	end
+
+	# Returns true if and only if the given hash table contains x.
+	bool contain(pair(int, pair)[] table, int x) is
+		int index = call calculateIndex(table, x) ;
+		pair(int, pair) node = call findNode(table[index], x) ;
+		return node != null
+	end
+	
+	# Insert the given x into the hash table if it does not already contain x.
+	# Returns true if and only if the table does not already contain x.
+	bool insertIfNotContain(pair(int, pair)[] table, int x) is
+		int index = call calculateIndex(table, x) ;
+		pair(int, pair) node = call findNode(table[index], x) ;
+		if node != null then
+			# Already contain it. Do nothing.
+			return false
+		else
+			# Insert in the front of the list.
+			pair(int, pair) p = newpair(x, table[index]) ;
+			table[index] = p ;
+			return true 
+		fi
+	end
+	
+	# Remove the given x from the hash table. Returns true if an only if the table contains x. 
+	# Otherwise, do nothing and returns false.
+	bool remove(pair(int, pair)[] table, int x) is
+		int index = call calculateIndex(table, x) ;
+		pair(int, pair) node = call findNode(table[index], x) ;
+		if node == null then
+			# Not found x. Just return false.
+			return false
+		else
+			# Found x, have to remove the node.
+			table[index] = call removeNode(table[index], node) ;
+			return true
+		fi
+	end
+	
+	# Remove all nodes from the table. Returns true.
+	bool removeAll(pair(int, pair)[] table) is
+		int length = len table ;
+		int i = 0 ;
+		while i < length do
+			pair(int, pair) p = table[i] ;
+			while p != null do
+				pair(int, pair) p2 = snd p ;
+				free p ;
+				p = p2
+			done ;
+			table[i] = null ;
+			i = i + 1
+		done ; 
+		return true
+	end
+	
+	# Count the number of integers in the table and return it.
+	int count(pair(int, pair)[] table) is
+		int length = len table ;
+		int sum = 0 ;
+		int i = 0 ;
+		while i < length do
+			int subSum = call countNodes(table[i]) ;
+			sum = sum + subSum ;
+			i = i + 1
+		done ;
+		return sum
+	end
+	
+	# Print all the integers inside the table, separated by a space and ended with a newline. Returns true.
+	bool printAll(pair(int, pair)[] table) is
+		int length = len table ;
+		int i = 0 ;
+		while i < length do
+      bool result = call printAllNodes(table[i]) ;
+			i = i + 1
+		done ;
+		println "" ;
+		return true
+	end
+		
+	# A helper function.
+	# Given a hash table and an integer, calculate the index of the integer in the table.
+	int calculateIndex(pair(int, pair)[] table, int x) is
+		int length = len table ;
+		return x % length
+	end
+	
+	# A helper function.
+	# Given a head of a chain of nodes, returns the first node containing the value x.
+	# Returns null if no such node.
+	pair(int, pair) findNode(pair(int, pair) head, int x) is
+		while head != null do
+			int y = fst head ;
+			if y == x then
+				return head
+			else
+				head = snd head
+			fi 
+		done ;
+		return null
+	end
+
+	# A helper function.
+	# Given a list of nodes and a node to remove, remove that node from the 
+	# list and return the new list.
+	pair(int, pair) removeNode(pair(int, pair) head, pair(int, pair) toRemove) is
+		if head == null then
+			# Should not happen actually.
+			return null
+		else
+			if head == toRemove then
+				# Save the new head.
+				head = snd head ;
+				
+				# Deallocate the memory of the old node.
+				free toRemove ;
+				
+				# Return the new head.
+				return head
+			else
+				# Not this node, recursive.
+				pair(int, pair) tail = snd head ;
+				snd head = call removeNode(tail, toRemove) ;
+				return head
+			fi
+		fi
+	end
+
+	# A helper function.
+	# Given a list of nodes, count how many nodes there are.
+	int countNodes(pair(int, pair) head) is 
+		int sum = 0 ;
+		while head != null do
+			sum = sum + 1 ;
+			head = snd head
+		done ;
+		return sum
+	end
+
+	# A helper function.
+	# Given a list of nodes, print each integer in the node followed by a space. Returns true.
+	bool printAllNodes(pair(int, pair) head) is
+    while head != null do
+			int x = fst head ;
+			print x ;
+			print ' ' ;
+			head = snd head
+		done ;
+		return true
+	end
+
+	######################### Functions for Command Line Interface ###############################
+	
+	# Print the menu and ask to choose. Returns a valid decision.
+	char printMenu() is
+		println "===========================================" ;
+		println "========== Hash Table Program =============" ;
+		println "===========================================" ;
+		println "=                                         =" ;
+		println "= Please choose the following options:    =" ;
+		println "=                                         =" ;
+		println "= a: insert an integer                    =" ;
+		println "= b: find an integer                      =" ;
+		println "= c: count the integers                   =" ;
+		println "= d: print all integers                   =" ;
+		println "= e: remove an integer                    =" ;
+		println "= f: remove all integers                  =" ;
+		println "= g: exit                                 =" ;
+		println "=                                         =" ;
+		println "===========================================" ;
+		
+		int minChoice = ord 'a' ;
+		int maxChoice = ord 'g' ;
+		
+		while true do
+			print   "Your decision: " ;
+			char d = '\0' ;
+			read d ;
+			int dInt = ord d ;
+			if minChoice <= dInt && dInt <= maxChoice then
+				return d
+			else 
+				print "You have entered: " ;
+				print d ;
+				println " which is invalid, please try again."
+			fi
+		done ;
+		# The compiler is not smart enough to know that this never reaches. 
+		# We have to add a return statement here.
+		return '\0'
+	end
+	
+	# Print out the question, and then read an integer. After that print the integer back and return it.
+	int askForInt(string message) is
+		print message ;
+		int x = 0 ;
+		read x ;
+		print "You have entered: " ;
+		println x ;
+		return x
+	end
+	
+	# Handle menu insert. Returns true.
+	bool handleMenuInsert(pair(int, pair)[] table) is
+		int x = call askForInt("Please enter an integer to insert: ") ;
+		bool notContain = call insertIfNotContain(table, x) ;
+		if notContain then
+			println "Successfully insert it. The integer is new." 
+		else 
+			println "The integer is already there. No insertion is made."
+		fi ;
+		return true		
+	end
+	
+	# Handle menu find. Returns true.
+	bool handleMenuFind(pair(int, pair)[] table) is
+		int x = call askForInt("Please enter an integer to find: ") ;
+		bool find = call contain(table, x) ;
+		if find then
+			println "Find the integer." 
+		else 
+			println "The integer is not found."
+		fi ;
+		return true		
+	end
+	
+	# Handle menu count. Returns true.
+	bool handleMenuCount(pair(int, pair)[] table) is
+		int size = call count(table) ;
+		if size == 1 then
+			println "There is only 1 integer."
+		else
+			print "There are " ;
+			print size ;
+			println " integers."
+		fi ; 
+		return true
+	end
+	
+	# Handle menu print. Returns true.
+	bool handleMenuPrint(pair(int, pair)[] table) is
+		print "Here are the integers: " ;
+		bool junk = call printAll(table) ;
+		return true
+	end
+	
+	# Handle menu remove. Returns true.
+	bool handleMenuRemove(pair(int, pair)[] table) is
+		int x = call askForInt("Please enter an integer to remove: ") ;
+		bool find = call remove(table, x) ;
+		if find then
+			println "The integer has been removed." 
+		else 
+			println "The integer is not found."
+		fi ;
+		return true		
+	end
+	
+	# Handle menu remove all. Returns true.
+	bool handleMenuRemoveAll(pair(int, pair)[] table) is
+		bool junk = call removeAll(table) ; 
+		println "All integers have been removed." ; 
+		return true
+	end
+	
+	################################# The main function ########################################
+	# Our hash table of size 13.
+	pair(int, pair)[] table = [null, null, null, null, null, null, null, null, null, null, null, null, null] ;
+	bool junk = call init(table) ;
+	
+	bool continue = true ;
+	while continue do
+		char choice = call printMenu() ;
+		if choice == 'a' then
+			bool result = call handleMenuInsert(table)
+		else if choice == 'b' then
+			bool result = call handleMenuFind(table)
+		else if choice == 'c' then
+			bool result = call handleMenuCount(table)
+		else if choice == 'd' then
+			bool result = call handleMenuPrint(table)
+		else if choice == 'e' then
+			bool result = call handleMenuRemove(table)
+		else if choice == 'f' then
+			bool result = call handleMenuRemoveAll(table)
+		else if choice == 'g' then
+			println "Goodbye Human" ;
+			continue = false
+		else
+			# Should not happen.
+			print "Error: unknown choice (" ;
+			print choice ;
+			println ")" ;
+			exit -1
+		fi fi fi fi fi fi fi
+	done
+	
+end
+#syntax_error#
+(line 18, column 29):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "[", "||", or done
+  >  while i < length do
+  >   table[i] = null ; 
+                      ^
+  >   i = i + 1
+Test src/test/scala/wacc/valid/advanced/ticTacToe.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# This is a program that allows a human to play Tic Tac Toe with a smart AI. 
+# The AI is implemented using minimax approach. The AI is a perfect one, meaning 
+# that it will never lose and if there is an immediate win, it will play that. 
+#
+# It takes quite a long time to initialise and free up the memory for the AI. 
+# All observed bugs have been fixed.
+#
+# In this program, we are very often need the memory from the heap. 
+# But because a pair is the only data type allocated on the heap, 
+# we have to use it. We very often need a data structure to store 
+# a set of 3 objects. We will use the format below. 
+# 
+#  root --\
+#         |
+#        \|/
+#          
+#  +----------+----------+
+#  |          |          |
+#  |  front   | object 3 |
+#  |          |          |
+#  +----------+----------+ 
+#       |
+#       |
+#      \|/
+#          
+#  +----------+----------+
+#  |          |          |
+#  | object 1 | object 2 |
+#  |          |          |
+#  +----------+----------+ 
+# 
+# We call this structure Pair4Three.
+
+# Program:
+
+begin
+	
+	############################## Interface Functions ######################
+	
+	# Print greeting message and ask the player to choose their symbol.
+	# Return either 'x' or 'o'. 'x' plays first.
+	char chooseSymbol() is
+		println "========= Tic Tac Toe ================" ;
+		println "=  Because we know you want to win   =" ;
+		println "======================================" ;
+		println "=                                    =" ;
+		println "= Who would you like to be?          =" ;
+		println "=   x  (play first)                  =" ;
+		println "=   o  (play second)                 =" ;
+		println "=   q  (quit)                        =" ;
+		println "=                                    =" ;
+		println "======================================" ;
+		
+		char chosen = '\0' ;
+		while chosen == '\0' do 
+			print "Which symbol you would like to choose: " ;
+			char c = '\0' ;
+			read c ;
+			if c == 'x' || c == 'X' then
+				chosen = 'x'
+			else
+				if c == 'o' || c == 'O' then
+					chosen = 'o'
+				else
+					if c == 'q' || c == 'Q' then
+						println "Goodbye safety." ;
+						exit 0
+					else
+						print "Invalid symbol: " ;
+						println c ;
+						println "Please try again."
+					fi 
+				fi
+			fi
+		done ;
+		print "You have chosen: " ;
+		println chosen ;
+		return chosen
+	end
+	
+	# Print the board out to the screen.
+	bool printBoard(pair(pair, pair) board) is
+		pair(pair, pair) front = fst board ;
+		pair(pair, char) row1 = fst front ;
+		pair(pair, char) row2 = snd front ;
+		pair(pair, char) row3 = snd board ;
+	
+    println " 1 2 3";
+    print "1";	
+		bool _ = call printRow(row1) ;
+		println " -+-+-" ;
+    print "2";	
+		_ = call printRow(row2) ;
+		println " -+-+-" ;
+    print "3";	
+		_ = call printRow(row3) ;
+		println "";
+		return true 
+	end
+	
+	# Print a row with a newline to the screen.
+	bool printRow(pair(pair, char) row) is
+		pair(char, char) front = fst row ;
+		
+		char cell1 = fst front ;
+		char cell2 = snd front ;
+		char cell3 = snd row ;
+		
+		bool _ = call printCell(cell1) ;
+		print '|' ;
+		_ = call printCell(cell2) ;
+		print '|' ;
+		_ = call printCell(cell3) ;
+		println "" ;
+		return true
+	end 
+	
+	# Print a given cell. Print an empty space if it is empty. Return true.
+	bool printCell(char cell) is
+		if cell == '\0' then
+			print ' ' 
+		else
+			print cell 
+		fi ;
+		return true
+	end
+	
+	# Ask for a move from the human player. The valid move is then stored in the given move array. 
+	# The row number is stored at move[0], the column number is stored at move[1]. Return true.
+	bool askForAMoveHuman(pair(pair, pair) board, int[] move) is
+		bool success = false ;
+		int row = 0 ;
+		int column = 0 ;
+			
+		while !success do
+			println "What is your next move?" ;
+			print " row (1-3): " ;
+			read row ;
+			print " column (1-3): " ;
+			read column ; 
+			success = call validateMove(board, row, column) ;
+			
+			if success then
+				println "" ; # Just print out an empty line
+				move[0] = row ;
+				move[1] = column ;
+				return true
+			else
+				println "Your move is invalid. Please try again."
+			fi			
+		done ; 
+		# Should not reach here
+		return true
+	end
+	
+	# Validate that the give move is valid. Returns true iff it is valid.
+	bool validateMove(pair(pair, pair) board, int moveRow, int moveColumn) is
+		if 1 <= moveRow && moveRow <= 3 && 1 <= moveColumn && moveColumn <= 3 then
+			char sym = call symbolAt(board, moveRow, moveColumn) ;
+			# Make sure that the cell is empty
+			return sym == '\0'
+		else
+			return false
+		fi
+	end
+	
+	# Print out to the screen about a recent move maid by the AI. Return true.
+	bool notifyMoveHuman(pair(pair, pair) board, char currentTurn, char playerSymbol, int moveRow, int moveColumn) is
+		print "The AI played at row " ;
+		print moveRow ;
+		print " column " ;
+		println moveColumn ;
+		return true
+	end
+	
+	############################### AI Functions #########################################
+	
+	# Initialise an AI data.
+	pair(pair, pair) initAI(char aiSymbol) is
+		
+		pair(char, pair) info = newpair(aiSymbol, null) ; # Don't know yet how to use the second element.
+ 		pair(pair, int) stateTree = call generateAllPossibleStates(aiSymbol) ;
+		int value = call setValuesForAllStates(stateTree, aiSymbol, 'x') ;
+		
+		pair(pair, pair) aiData = newpair(info, stateTree) ;
+		return aiData
+	end
+	
+	# Generate the whole tree of all states. Then return the tree.
+	pair(pair, int) generateAllPossibleStates(char aiSymbol) is
+		pair(pair, pair) board = call allocateNewBoard() ;
+		pair(pair, int) rootState = call convertFromBoardToState(board) ;
+		rootState = call generateNextStates(rootState, 'x') ;
+		return rootState
+	end
+	
+	# Convert from a board to a state.
+	# A state consists of 3 objects: the board, the pointers to the next states, and the value for this state (int).
+	# Therefore, we use the Pair4Three structure.
+	pair(pair, int) convertFromBoardToState(pair(pair, pair) board) is
+		
+		pair(pair, pair) pointers = call generateEmptyPointerBoard() ;
+		pair(pair, pair) front = newpair(board, pointers) ;
+		pair(pair, int) state = newpair(front, 0) ; # The initial value of 0 will be replaced.
+		
+		return state
+	end
+	
+	# Allocate memory for the pointers to the next state.
+	# It looks like a board, but contains pointers (pairs) instead of chars.
+	pair(pair, pair) generateEmptyPointerBoard() is
+		
+		pair(pair, pair) row1 = call generateEmptyPointerRow() ;
+		pair(pair, pair) row2 = call generateEmptyPointerRow() ;
+		pair(pair, pair) row3 = call generateEmptyPointerRow() ;
+		
+		pair(pair, pair) front = newpair(row1, row2) ;
+		pair(pair, pair) root = newpair(front, row3) ;
+		return root
+		
+	end
+	
+	# Allocate memory for the 3 pointers to the next state of a row.
+	pair(pair, pair) generateEmptyPointerRow() is
+		pair(pair, pair) front = newpair(null, null) ;
+		pair(pair, pair) root = newpair(front, null) ;
+		return root 
+	end
+	
+	# Generate next states recursively. Returns the state.
+	pair(pair, int) generateNextStates(pair(pair, int) state, char currentPlayer) is
+		pair(pair, pair) front = fst state ;
+		
+		pair(pair, pair) board = fst front ;
+		pair(pair, pair) pointers = snd front ;
+		
+		char previousPlayer = call oppositeSymbol(currentPlayer) ;
+		
+		bool won = call hasWon(board, previousPlayer) ;
+		
+		if won then
+			# The game ends. The winner is known.
+			return state 
+		else
+			bool _ = call generateNextStatesBoard(board, pointers, currentPlayer) ;
+			return state
+		fi
+		
+	end
+	
+	# Generate Just the next states for every possible point on the board. Update the pointers accordingly. Return true.
+	bool generateNextStatesBoard(pair(pair, pair) board, pair(pair, pair) pointers, char currentPlayer) is
+		pair(pair, pair) front = fst board ;
+		
+		pair(pair, char) row1 = fst front ;
+		pair(pair, char) row2 = snd front ;
+		pair(pair, char) row3 = snd board ;
+		
+		pair(pair, pair) frontP = fst pointers ;
+		
+		pair(pair, pair) row1P = fst frontP ;
+		pair(pair, pair) row2P = snd frontP ;
+		pair(pair, pair) row3P = snd pointers ;
+		
+		bool _ = call generateNextStatesRow(board, row1, row1P, currentPlayer, 1) ;
+		_ = call generateNextStatesRow(board, row2, row2P, currentPlayer, 2) ;
+		_ = call generateNextStatesRow(board, row3, row3P, currentPlayer, 3) ;
+		
+		return true
+	end
+	
+	# Generate Just the next states for every possible point on the row. Update the pointers accordingly. Return true.
+	bool generateNextStatesRow(pair(pair, pair) board, pair(pair, char) row, pair(pair, pair) pointerRow, char currentPlayer, int rowNumber) is
+		pair(char, char) front = fst row ;
+		
+		char cell1 = fst front ;
+		char cell2 = snd front ;
+		char cell3 = snd row ;
+		
+		pair(pair, pair) frontP = fst pointerRow ;
+		
+		fst frontP = call generateNextStatesCell(board, cell1, currentPlayer, rowNumber, 1) ;
+		snd frontP = call generateNextStatesCell(board, cell2, currentPlayer, rowNumber, 2) ;
+		snd pointerRow = call generateNextStatesCell(board, cell3, currentPlayer, rowNumber, 3) ;
+		
+		return true
+	end
+	
+	# Generate Just the next states for the cell on the board. Returns the pointer to the next state.
+	pair(pair, int) generateNextStatesCell(pair(pair, pair) board, char cell, char currentPlayer, int rowNumber, int columnNumber) is
+		if cell == '\0' then
+			# If the cell is empty, generate the next state.
+			pair(pair, pair) board2 = call cloneBoard(board) ;
+			bool _ = call placeMove(board2, currentPlayer, rowNumber, columnNumber) ;
+			pair(pair, int) state = call convertFromBoardToState(board2) ;
+			char nextPlayer = call oppositeSymbol(currentPlayer) ;
+			
+			# Generate next states recursively and return it out.
+			state = call generateNextStates(state, nextPlayer) ;
+			return state
+		else
+			# If the cell is not empty, return null.
+			return null
+		fi
+	end
+	
+	# Clone board.
+	pair(pair, pair) cloneBoard(pair(pair, pair) board) is
+		pair(pair, pair) board2 = call allocateNewBoard() ; 
+		bool _ = call copyBoard(board, board2) ;
+		return board2 
+	end
+	
+	# Copy the content of one board to another. Return true.
+	bool copyBoard(pair(pair, pair) from, pair(pair, pair) to) is
+		pair(pair, pair) frontFrom = fst from ;
+		pair(pair, char) row1From = fst frontFrom ;
+		pair(pair, char) row2From = snd frontFrom ;
+		pair(pair, char) row3From = snd from ;
+		
+		pair(pair, pair) frontTo = fst to ;
+		pair(pair, char) row1To = fst frontTo ;
+		pair(pair, char) row2To = snd frontTo ;
+		pair(pair, char) row3To = snd to ;
+				
+		bool _ = call copyRow(row1From, row1To) ;		
+		_ = call copyRow(row2From, row2To) ;
+		_ = call copyRow(row3From, row3To) ;
+				
+		return true
+	end
+	
+	# Copy from one board row to another. Return true.
+	bool copyRow(pair(pair, char) from, pair(pair, char) to) is
+		pair(char, char) frontFrom = fst from ;
+		pair(char, char) frontTo = fst to ;
+		
+		fst frontTo = fst frontFrom ;
+		snd frontTo = snd frontFrom ;
+		snd to = snd from ;
+		return true
+	end
+	
+	# Calculate the value of how good each state is using Minimax approach. 
+	# If AI wins, value = 100.
+	# If AI lose, value = -100.
+	# If Stalemate, value = 0.
+	# Otherwise, combine the values from the next states.
+	# If this state is null, then return -101 if it is a max state, 101 if it is a min state (thus those values will not be picked).
+	# Return the value.
+	int setValuesForAllStates(pair(pair, int) state, char aiSymbol, char currentPlayer) is
+		int outValue = 0 ;
+		if state == null then
+			# The current state is impossible to reach.
+			# Assign a value that will not be picked in the future.
+			if currentPlayer == aiSymbol then
+				# Later on, we will pick the lowest value (min). So we set this value high so that it will not be picked.
+				outValue = 101
+			else
+				# Later on, we will pick the highest value (max). So we set this value low so that it will not be picked.
+				outValue = -101
+			fi
+		else 
+		
+			pair(pair, pair) front = fst state ;
+			
+			pair(pair, pair) board = fst front ;
+			pair(pair, pair) pointers = snd front ;
+			
+			char anotherPlayer = call oppositeSymbol(currentPlayer) ;
+			
+			# The current player is about to play. So if another player has won it already, the current player cannot play it.
+			bool won = call hasWon(board, anotherPlayer) ;
+		
+			if won then
+				if anotherPlayer == aiSymbol then
+					outValue = 100 # We won
+				else
+					outValue = -100 # We lost
+				fi 
+			else
+				bool hasEmptyCell = call containEmptyCell(board) ;
+				if hasEmptyCell then
+					# If can do next move, calculate the value from the next states.
+					outValue = call calculateValuesFromNextStates(pointers, aiSymbol, anotherPlayer) ;
+					
+					# In order for the AI to choose the winning move immediately, we have to reduce the value for those not winning yet.
+					# So if the next move has value 100, we set the value of this move 90.
+					if outValue == 100 then
+						outValue = 90 
+					else
+						skip
+					fi
+				else
+					# Otherwise, it is a stalemate.
+					outValue = 0 
+				fi 
+			fi ;
+			snd state = outValue
+		fi ;
+		return outValue
+	end
+	
+	# Calculate the values for each next state, then combine them to get the value of this state. Return the value.
+	int calculateValuesFromNextStates(pair(pair, pair) pointers, char aiSymbol, char playerOfNextState) is
+		pair(pair, pair) front = fst pointers ;
+		
+		pair(pair, pair) row1 = fst front ;
+		pair(pair, pair) row2 = snd front ;
+		pair(pair, pair) row3 = snd pointers ;
+		
+		int value1 = call calculateValuesFromNextStatesRow(row1, aiSymbol, playerOfNextState) ;
+		int value2 = call calculateValuesFromNextStatesRow(row2, aiSymbol, playerOfNextState) ;
+		int value3 = call calculateValuesFromNextStatesRow(row3, aiSymbol, playerOfNextState) ;
+		
+		int out = call combineValue(aiSymbol, playerOfNextState, value1, value2, value3) ;
+		return out
+	end
+	
+	# Calculate the values for each next state in a row, then combine them to get the value of this row. Return the value.
+	int calculateValuesFromNextStatesRow(pair(pair, pair) rowPointers, char aiSymbol, char playerOfNextState) is
+		pair(pair, pair) front = fst rowPointers ;
+		
+		pair(pair, int) state1 = fst front ;
+		pair(pair, int) state2 = snd front ; 
+		pair(pair, int) state3 = snd rowPointers ;
+		
+		int value1 = call setValuesForAllStates(state1, aiSymbol, playerOfNextState) ;
+		int value2 = call setValuesForAllStates(state2, aiSymbol, playerOfNextState) ;
+		int value3 = call setValuesForAllStates(state3, aiSymbol, playerOfNextState) ;
+		
+		int out = call combineValue(aiSymbol, playerOfNextState, value1, value2, value3) ;
+		return out
+	end
+	
+	int combineValue(char aiSymbol, char playerOfNextState, int value1, int value2, int value3) is
+		int out = 0 ;
+		if aiSymbol == playerOfNextState then
+			# We move next so the human moves now. Pick the lowest value.
+			out = call min3(value1, value2, value3)
+		else
+			# Human moves next so we move now. Pick the highest value.
+			out = call max3(value1, value2, value3)
+		fi ;
+		return out
+	end
+	
+	# Find the minimum of the three.
+	int min3(int a, int b, int c) is
+		if a < b then
+			if a < c then
+				return a 
+			else 
+				return c
+			fi
+		else
+			if b < c then
+				return b
+			else 
+				return c
+			fi
+		fi
+	end
+	
+	# Find the maximum of the three.
+	int max3(int a, int b, int c) is
+		if a > b then
+			if a > c then
+				return a 
+			else 
+				return c
+			fi
+		else
+			if b > c then
+				return b
+			else 
+				return c
+			fi
+		fi
+	end
+	
+	# Destroy all memory used by the AI. Return true.
+	bool destroyAI(pair(pair, pair) aiData) is
+		
+		pair(char, pair) info = fst aiData ;
+ 		pair(pair, int) stateTree = snd aiData ;
+
+		bool _ = call deleteStateTreeRecursively(stateTree) ;
+		free info ;
+		free aiData ;
+		return true
+	end
+	
+	# Ask the AI for a new move. Return true.
+	bool askForAMoveAI(pair(pair, pair) board, char currentTurn, char playerSymbol, pair(pair, pair) aiData, int[] move) is
+		
+		pair(char, pair) info = fst aiData ;
+ 		pair(pair, int) stateTree = snd aiData ;
+		
+		pair(pair, pair) front = fst stateTree ;
+		
+		pair(pair, pair) pointers = snd front ;
+		int stateValue = snd stateTree ;
+		
+		bool _ = call findTheBestMove(pointers, stateValue, move) ;		
+		
+		println "AI is cleaning up its memory..." ;
+		# Update the state tree by using the new move.
+		snd aiData = call deleteAllOtherChildren(pointers, move[0], move[1]) ;
+	
+		_ = call deleteThisStateOnly(stateTree) ;
+		return true
+	end
+	
+	# Given the pointers to all next states, pick the first one with the given stateValue and store the move in the the given array.
+	# Return true. 
+	bool findTheBestMove(pair(pair, pair) pointers, int stateValue, int[] move) is
+
+		# We have a hack by changing the state value to 90 if the next state is 100. 
+		# So if we have a state value of 90, look for the one with 100 first.
+		# If found, use it. Otherwise, look for the one with 90.
+		if stateValue == 90 then
+			bool found = call findMoveWithGivenValue(pointers, 100, move) ;
+			if found then
+				return true
+			else
+				skip
+			fi
+		else
+			skip
+		fi ;
+		
+		# Normal case. Or when cannot find the child with 100.
+		bool found = call findMoveWithGivenValue(pointers, stateValue, move) ;
+		if found then
+			return true
+		else
+			# Should not happen. Cannot find such move.
+			println "Internal Error: cannot find the next move for the AI" ;
+			exit -1
+		fi
+		
+	end
+
+	# Given the pointers to all next states, pick the first one with the given stateValue and store the move in the the given array.
+	# Return true in this case. Otherwise, the move array is untouched and return false. 
+	bool findMoveWithGivenValue(pair(pair, pair) pointers, int stateValue, int[] move) is
+		pair(pair, pair) front = fst pointers ;
+		
+		pair(pair, pair) row1 = fst front ;
+		pair(pair, pair) row2 = snd front ; 
+		pair(pair, pair) row3 = snd pointers ;
+		
+		bool find = call findMoveWithGivenValueRow(row1, stateValue, move) ;
+		if find then
+			move[0] = 1
+		else
+			find = call findMoveWithGivenValueRow(row2, stateValue, move) ;
+			if find then
+				move[0] = 2
+			else
+				find = call findMoveWithGivenValueRow(row3, stateValue, move) ;
+				if find then
+					move[0] = 3
+				else
+					# Not found, return false.
+					return false
+				fi
+			fi
+		fi ;
+		return true
+	end
+	
+	# Given a row of pointers, pick the first one with the given stateValue and store in move[1], return true if such child state is found. Otherwise, return false and move[1] is untouched.
+	bool findMoveWithGivenValueRow(pair(pair, pair) rowPointers, int stateValue, int[] move) is
+		
+		pair(pair, pair) front = fst rowPointers ;
+		
+		pair(pair, int) cell1 = fst front ;
+		pair(pair, int) cell2 = snd front ;
+		pair(pair, int) cell3 = snd rowPointers ;
+		
+		bool find = call hasGivenStateValue(cell1, stateValue) ;
+		if find then
+			move[1] = 1
+		else
+			find = call hasGivenStateValue(cell2, stateValue) ;
+			if find then
+				move[1] = 2 
+			else 
+				find = call hasGivenStateValue(cell3, stateValue) ;
+				if find then
+					move[1] = 3
+				else 
+					return false
+				fi
+			fi
+		fi ;
+		return true
+	end
+	
+	# Given a state, an a state value. Returns true iff the state has the given state value.
+	bool hasGivenStateValue(pair(pair, int) state, int stateValue) is
+		if state == null then
+			return false
+		else
+			int actual = snd state ;
+			return actual == stateValue
+		fi
+	end
+	
+	# Notify a move made by a human player to the AI. Return true.
+	bool notifyMoveAI(pair(pair, pair) board, char currentTurn, char playerSymbol, pair(pair, pair) aiData, int moveRow, int moveColumn) is
+		
+		#pair(char, pair) info = fst aiData ; #unused
+		pair(pair, int) stateTree = snd aiData ;
+		
+		pair(pair, pair) front = fst stateTree ;
+		
+		#pair(pair, pair) board = fst front ; #unused
+		pair(pair, pair) pointers = snd front ;
+		
+		println "AI is cleaning up its memory..." ;
+		
+		# Set new state tree, remove all other children created by making other moves.
+		snd aiData = call deleteAllOtherChildren(pointers, moveRow, moveColumn) ;
+		bool _ = call deleteThisStateOnly(stateTree) ;
+		return true
+	end
+	
+	# Delete all decendent states apart from those made by moving a given move. Return the child state of that given move.
+	pair(pair, int) deleteAllOtherChildren(pair(pair, pair) pointers, int moveRow, int moveColumn) is
+		pair(pair, pair) front = fst pointers ;
+		
+		pair(pair, pair) row1 = fst front ;
+		pair(pair, pair) row2 = snd front ;
+		pair(pair, pair) row3 = snd pointers ;
+
+		# Find which row to keep or which rows to delete.
+		pair(pair, pair) toKeepRow = null;
+		pair(pair, pair) toDeleteRow1 = null;
+		pair(pair, pair) toDeleteRow2 = null;
+		
+		if moveRow == 1 then
+			toKeepRow = row1 ; 
+			toDeleteRow1 = row2 ; 
+			toDeleteRow2 = row3
+		else 
+			toDeleteRow1 = row1 ;
+			if moveRow == 2 then
+				toKeepRow = row2 ; 
+				toDeleteRow2 = row3
+			else
+				# moveRow == 3
+				toKeepRow = row3 ; 
+				toDeleteRow2 = row2
+			fi
+		fi ;
+		
+		pair(pair, int) out = call deleteAllOtherChildrenRow(toKeepRow, moveColumn) ;
+		bool _ = call deleteChildrenStateRecursivelyRow(toDeleteRow1) ;
+		_ = call deleteChildrenStateRecursivelyRow(toDeleteRow2) ;
+		
+		return out
+	end
+	
+	pair(pair, int) deleteAllOtherChildrenRow(pair(pair, pair) rowPointers, int moveColumn) is
+		pair(pair, pair) front = fst rowPointers ;
+		
+		pair(pair, int) cell1 = fst front ;
+		pair(pair, int) cell2 = snd front ;
+		pair(pair, int) cell3 = snd rowPointers ;
+
+		# Find which cell to keep or which cells to delete.
+		pair(pair, int) toKeepCell = null;
+		pair(pair, int) toDeleteCell1 = null;
+		pair(pair, int) toDeleteCell2 = null;
+		
+		if moveColumn == 1 then
+			toKeepCell = cell1 ; 
+			toDeleteCell1 = cell2 ; 
+			toDeleteCell2 = cell3
+		else 
+			toDeleteCell1 = cell1 ;
+			if moveColumn == 2 then
+				toKeepCell = cell2 ; 
+				toDeleteCell2 = cell3
+			else
+				# moveColumn == 3
+				toKeepCell = cell3 ; 
+				toDeleteCell2 = cell2
+			fi
+		fi ;
+		
+		bool _ = call deleteStateTreeRecursively(toDeleteCell1) ;
+		_ = call deleteStateTreeRecursively(toDeleteCell2) ;
+		
+		return toKeepCell
+	end
+	
+	# Deallocate a given state and all its decendents.
+	bool deleteStateTreeRecursively(pair(pair, int) stateTree) is
+		if stateTree == null then
+			return true 
+		else
+			pair(pair, pair) front = fst stateTree ;
+			
+			pair(pair, pair) board = fst front ;
+			pair(pair, pair) pointers = snd front ;
+			
+			bool _ = call deleteChildrenStateRecursively(pointers) ;
+			_ = call deleteThisStateOnly(stateTree) ;
+			return true
+		fi		
+	end
+	
+	# Given a state tree, deallocate the board, the pointers and the other pairs of this state only. The childrens are preserved. Return true.
+	bool deleteThisStateOnly(pair(pair, int) stateTree) is	
+		pair(pair, pair) front = fst stateTree ;
+		
+		pair(pair, pair) board = fst front ;
+		pair(pair, pair) pointers = snd front ;
+
+		bool _ = call freeBoard(board) ;
+		_ = call freePointers(pointers) ;
+		free front ;
+		free stateTree ;
+		return true
+	end
+	
+	bool freePointers(pair(pair, pair) pointers) is
+		pair(pair, pair) front = fst pointers ;
+		
+		pair(pair, pair) row1 = fst front ;
+		pair(pair, pair) row2 = snd front ;
+		pair(pair, pair) row3 = snd pointers ;
+		
+		bool _ = call freePointersRow(row1) ;
+		_ = call freePointersRow(row2) ;
+		_ = call freePointersRow(row3) ;
+		
+		free front ;
+		free pointers ;
+		return true
+	end
+	
+	bool freePointersRow(pair(pair, pair) rowPointers) is
+		pair(pair, pair) front = fst rowPointers ;
+		
+		free front ;
+		free rowPointers ;
+		return true
+	end
+	
+	# Deallocate all decendent states.
+	bool deleteChildrenStateRecursively(pair(pair, pair) pointers) is
+		pair(pair, pair) front = fst pointers ;
+		
+		pair(pair, pair) row1 = fst front ;
+		pair(pair, pair) row2 = snd front ;
+		pair(pair, pair) row3 = snd pointers ;
+		
+		bool _ = call deleteChildrenStateRecursivelyRow(row1) ;
+		_ = call deleteChildrenStateRecursivelyRow(row2) ;
+		_ = call deleteChildrenStateRecursivelyRow(row3) ;
+		
+		return true
+	end
+	
+	# Deallocate all decendent states given a row of pointers.
+	bool deleteChildrenStateRecursivelyRow(pair(pair, pair) rowPointers) is
+		pair(pair, pair) front = fst rowPointers ;
+		pair(pair, int) cell1 = fst front ;
+		pair(pair, int) cell2 = snd front ;
+		pair(pair, int) cell3 = snd rowPointers ;
+		
+		bool _ = call deleteStateTreeRecursively(cell1) ;
+		_ = call deleteStateTreeRecursively(cell2) ;
+		_ = call deleteStateTreeRecursively(cell3) ;
+		
+		return true
+	end
+	
+	############################### Game Engine Functions ##################################
+	
+	# Ask for a move from the current player. The valid move is stored in the move array. Return true.
+	bool askForAMove(pair(pair, pair) board, char currentTurn, char playerSymbol, pair(pair, pair) aiData, int[] move) is
+		if currentTurn == playerSymbol then
+			bool _ = call askForAMoveHuman(board, move)
+		else 
+			bool _ = call askForAMoveAI(board, currentTurn, playerSymbol, aiData, move)
+		fi ;
+		return true
+	end
+	
+	# Place the given move of the currentTurn in the board. Return true.
+	bool placeMove(pair(pair, pair) board, char currentTurn, int moveRow, int moveColumn) is
+		
+		# Find the target row.
+		pair(pair, char) targetRow = null ;
+		if moveRow <= 2 then
+			pair(pair, pair) front = fst board ;
+			if moveRow == 1 then
+				targetRow = fst front
+			else
+				# moveRow == 2
+				targetRow = snd front
+			fi
+		else
+			# moveRow == 3
+			targetRow = snd board
+		fi ;
+		
+		# Set the target cell
+		if moveColumn <= 2 then
+			pair(char, char) front = fst targetRow ;
+			if moveColumn == 1 then
+				fst front = currentTurn
+			else
+				# moveColumn == 2
+				snd front = currentTurn
+			fi
+		else
+			# moveColumn == 3
+			snd targetRow = currentTurn
+		fi ;
+		return true
+		
+	end
+	
+	# Notify the opponent about a move of another party. Return true.
+	bool notifyMove(pair(pair, pair) board, char currentTurn, char playerSymbol, pair(pair, pair) aiData, int moveRow, int moveColumn) is
+		if currentTurn == playerSymbol then
+			bool _ = call notifyMoveAI(board, currentTurn, playerSymbol, aiData, moveRow, moveColumn)
+		else 
+			bool _ = call notifyMoveHuman(board, currentTurn, playerSymbol, moveRow, moveColumn)
+		fi ;
+		return true
+	end
+	
+	# Given either 'x' or 'o', returns another one.
+	char oppositeSymbol(char symbol) is
+		if symbol == 'x' then
+			return 'o' 
+		else
+			if symbol == 'o' then
+				return 'x'
+			else
+				# Should not happen!
+				println "Internal Error: symbol given is neither \'x\' or \'o\'" ;
+				exit -1 
+			fi 
+		fi
+	end
+	
+	# row = 1, 2 or 3
+	# column = 1, 2 or 3
+	char symbolAt(pair(pair, pair) board, int row, int column) is
+	
+		# Find the target row.
+		pair(pair, char) targetRow = null ;
+		if row <= 2 then
+			pair(pair, pair) front = fst board ;
+			if row == 1 then
+				targetRow = fst front
+			else
+				# row == 2
+				targetRow = snd front
+			fi
+		else
+			# row == 3
+			targetRow = snd board
+		fi ;
+		
+		# Now find the target cell.
+		char targetCell = '\0' ;
+		if column <= 2 then
+			pair(char, char) front = fst targetRow ;
+			if column == 1 then 
+				targetCell = fst front 
+			else
+				# column == 2
+				targetCell = snd front
+			fi
+		else
+			# column == 3
+			targetCell = snd targetRow
+		fi ;
+			
+		return targetCell	
+	end
+	
+	# Return true if there is at least one empty cell where the next player can place a move. Otherwise, return false (game ends).
+	bool containEmptyCell(pair(pair, pair) board) is
+		pair(pair, pair) front = fst board ;
+		
+		pair(pair, char) row1 = fst front ;
+		pair(pair, char) row2 = snd front ;
+		pair(pair, char) row3 = snd board ;
+		
+		bool row1ContainEmpty = call containEmptyCellRow(row1) ;
+		bool row2ContainEmpty = call containEmptyCellRow(row2) ;
+		bool row3ContainEmpty = call containEmptyCellRow(row3) ;
+		
+		return row1ContainEmpty || row2ContainEmpty || row3ContainEmpty
+	end
+	
+	bool containEmptyCellRow(pair(pair, char) row) is
+		pair(char, char) front = fst row ;
+		
+		char cell1 = fst front ;
+		char cell2 = snd front ;
+		char cell3 = snd row ;
+		
+		return cell1 == '\0' || cell2 == '\0' || cell3 == '\0'
+	end
+	
+	# Find if the candidate symbol ('x' or 'o') has won the game.
+	# Returns true if and only if it has won. 
+	bool hasWon(pair(pair, pair) board, char candidate) is
+		char c11 = call symbolAt(board, 1, 1) ;
+		char c12 = call symbolAt(board, 1, 2) ;
+		char c13 = call symbolAt(board, 1, 3) ;
+		char c21 = call symbolAt(board, 2, 1) ;
+		char c22 = call symbolAt(board, 2, 2) ;
+		char c23 = call symbolAt(board, 2, 3) ;
+		char c31 = call symbolAt(board, 3, 1) ;
+		char c32 = call symbolAt(board, 3, 2) ;
+		char c33 = call symbolAt(board, 3, 3) ;
+		
+		return 
+			# Row win
+			c11 == candidate && c12 == candidate && c13 == candidate ||
+			c21 == candidate && c22 == candidate && c23 == candidate ||
+			c31 == candidate && c32 == candidate && c33 == candidate ||
+			 
+			# Column win
+			c11 == candidate && c21 == candidate && c31 == candidate ||
+			c12 == candidate && c22 == candidate && c32 == candidate ||
+			c13 == candidate && c23 == candidate && c33 == candidate ||
+			
+			# Diagonal win
+			c11 == candidate && c22 == candidate && c33 == candidate ||
+			c13 == candidate && c22 == candidate && c31 == candidate
+	end
+	
+	# Allocate a new board. 
+	# We use a Pair4Three structure to store pointers to the 3 rows.
+	pair(pair, pair) allocateNewBoard() is
+		pair(pair, char) row1 = call allocateNewRow() ;
+		pair(pair, char) row2 = call allocateNewRow() ;
+		pair(pair, char) row3 = call allocateNewRow() ;
+		
+		pair(pair, pair) front = newpair(row1, row2) ;
+		pair(pair, pair) root = newpair(front, row3) ;
+		return root
+	end
+	
+	# Allocate a row of the board. 
+	# A row is represented by a Pair4Three structure.
+	# The default value in each cell is '\0'.
+	pair(pair, char) allocateNewRow() is
+		pair(char, char) front = newpair('\0', '\0') ;
+		pair(pair, char) root = newpair(front, '\0') ;
+		return root
+	end
+
+	# Free a memory used to store the whole board.
+	# Return true.
+	bool freeBoard(pair(pair, pair) board) is
+		pair(pair, pair) front = fst board ;
+		
+		pair(pair, char) row1 = fst front ;
+		pair(pair, char) row2 = snd front ;
+		pair(pair, char) row3 = snd board ;
+		
+		bool _ = call freeRow(row1) ;
+		_ = call freeRow(row2) ;
+		_ = call freeRow(row3) ;
+		
+		free front ;
+		free board ;
+		return true
+	end
+	
+	# Free the memory used for a row. Return true.
+	bool freeRow(pair(pair, char) row) is
+		pair(char, char) front = fst row ;
+		free front ;
+		free row ;
+		return true
+	end
+	
+	# For debugging purpose.
+	bool printAiData(pair(pair, pair) aiData) is
+		
+		pair(char, pair) info = fst aiData ;
+		pair(pair, int) stateTree = snd aiData ;
+		
+		bool _ = call printStateTreeRecursively(stateTree) ;
+		exit 0
+	end
+	
+	bool printStateTreeRecursively(pair(pair, int) stateTree) is
+		if stateTree == null then
+			return true 
+		else 
+			pair(pair, pair) front = fst stateTree ;
+			
+			pair(pair, pair) board = fst front ;
+			pair(pair, pair) pointers = snd front ;
+			int value = snd stateTree ;
+			
+			# Print the value
+			print 'v' ;
+			print '=' ;
+			println value ;
+			
+			bool _ = call printBoard(board) ;
+			_ = call printChildrenStateTree(pointers) ;
+			
+			println 'p' ;
+			return true
+		fi
+	end
+	
+	bool printChildrenStateTree(pair(pair, pair) pointers) is
+		pair(pair, pair) front = fst pointers ;
+		
+		pair(pair, pair) row1 = fst front ;
+		pair(pair, pair) row2 = snd front ;
+		pair(pair, pair) row3 = snd pointers ;
+		
+		bool _ = call printChildrenStateTreeRow(row1) ;
+		_ = call printChildrenStateTreeRow(row2) ;
+		_ = call printChildrenStateTreeRow(row3) ;
+		return true
+	end
+	
+	bool printChildrenStateTreeRow(pair(pair, pair) rowPointers) is
+		pair(pair, pair) front = fst rowPointers ;
+		
+		pair(pair, int) cell1 = fst front ;
+		pair(pair, int) cell2 = snd front ;
+		pair(pair, int) cell3 = snd rowPointers ;
+		
+		bool _ = call printStateTreeRecursively(cell1) ;
+		_ = call printStateTreeRecursively(cell2) ;
+		_ = call printStateTreeRecursively(cell3) ;
+		
+		return true
+	end
+	
+	############################## Main Function ############################
+	
+	char playerSymbol = call chooseSymbol() ;
+	char aiSymbol = call oppositeSymbol(playerSymbol) ;
+	char currentTurn = 'x' ;
+	
+	pair(pair, pair) board = call allocateNewBoard() ;
+	
+	println "Initialising AI. Please wait, this may take a few minutes." ;
+	pair(pair, pair) aiData = call initAI(aiSymbol) ;
+	
+	int turnCount = 0 ;
+	char winner = '\0' ;
+	
+	bool _ = call printBoard(board) ;
+	
+	while winner == '\0' && turnCount < 9 do
+		int[] move = [0, 0] ;
+		_ = call askForAMove(board, currentTurn, playerSymbol, aiData, move) ;
+		_ = call placeMove(board, currentTurn, move[0], move[1]) ;
+		_ = call notifyMove(board, currentTurn, playerSymbol, aiData, move[0], move[1]) ;
+		_ = call printBoard(board) ;
+		bool won = call hasWon(board, currentTurn) ;
+		if won then
+			winner = currentTurn
+		else 
+			skip
+		fi ;
+		
+		# Progress to the next turn
+		currentTurn = call oppositeSymbol(currentTurn) ;
+		turnCount = turnCount + 1
+	done ;
+	
+	_ = call freeBoard(board) ;
+	_ = call destroyAI(aiData) ;
+	
+	if winner != '\0' then
+		print winner ;
+		println " has won!" 
+	else 
+		println "Stalemate!" 
+	fi
+end
+#syntax_error#
+(line 56, column 61):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >  while chosen == '\0' do 
+  >   print "Which symbol you would like to choose: " ;
+                                                      ^
+  >   char c = '\0' ;
+Test src/test/scala/wacc/valid/array/arrayEmpty.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# empty array declaration (seems to error currently)
+
+# Output:
+
+# Program:
+
+begin
+  int[] a = []
+end
+AST = ProgramNode(List(),AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(a),ArrayLiterNode(List())))
+#semantic_error#
+LHS type "int:1" does not match RHS type "any:1"
+Test src/test/scala/wacc/valid/array/arrayIndexMayBeArrayIndex.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Testing recursive array indexing
+
+# Output:
+# 6
+# 7
+# 8
+#
+
+# Program:
+
+begin
+    int[] idxs1 = [2, 0, 1] ;
+    int[] idxs2 = [1, 2, 0] ;
+    # idxs1[idxs2[0]] = 0
+    # idxs1[idxs2[1]] = 1
+    # idxs1[idxs2[2]] = 2
+    int[] xs = [5, 6, 7] ;
+    int i = 0 ;
+    while i != 3 do
+        xs[idxs1[idxs2[i]]] = xs[idxs1[idxs2[i]]] + 1 ;
+        println (xs[idxs1[idxs2[i]]]) ;
+        i = i + 1
+    done
+end
+#syntax_error#
+(line 20, column 55):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >    while i != 3 do
+  >        xs[idxs1[idxs2[i]]] = xs[idxs1[idxs2[i]]] + 1 ;
+                                                         ^
+  >        println (xs[idxs1[idxs2[i]]]) ;
+Test src/test/scala/wacc/valid/array/arrayLookup.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# check first element of array
+
+# Output:
+# 43
+#
+
+# Program:
+
+begin
+  int[] a = [43, 2, 18, 1] ;
+  println a[0]
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(a),ArrayLiterNode(List(IntLiterNode(43), IntLiterNode(2), IntLiterNode(18), IntLiterNode(1)))), PrintlnNode(ArrayElemNode(IdentNode(a),List(IntLiterNode(0)))))))
+#semantic_error#
+Variable name "a" is already used in the same scope
+a is not in scope or not declared
+Test src/test/scala/wacc/valid/array/arrayNested.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# basic array declaration and assignment
+
+# Output:
+# 3
+# 3
+#
+
+# Program:
+
+begin
+  int[] a = [1,2,3];
+  int[] b = [3,4];
+  int[][] c = [a,b] ;
+  println c[0][2] ;
+  println c[1][0]
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(a),ArrayLiterNode(List(IntLiterNode(1), IntLiterNode(2), IntLiterNode(3)))), AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(b),ArrayLiterNode(List(IntLiterNode(3), IntLiterNode(4)))), AssignIdentNode(ArrayTypeNode(ArrayTypeNode(BaseTypeNode(int))),IdentNode(c),ArrayLiterNode(List(IdentNode(a), IdentNode(b)))), PrintlnNode(ArrayElemNode(IdentNode(c),List(IntLiterNode(0), IntLiterNode(2)))), PrintlnNode(ArrayElemNode(IdentNode(c),List(IntLiterNode(1), IntLiterNode(0)))))))
+#semantic_error#
+LHS type "int:2" does not match RHS type "int:1:1"c is not in scope or not declared
+c is not in scope or not declared
+Test src/test/scala/wacc/valid/array/arrayOnHeap.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# ensures that arrays are heap allocated
+
+# Output:
+# false
+# 0
+# 1
+#
+
+# Program:
+
+begin
+  int[] dummy_arr = [] ;
+  int[][] arrs = [dummy_arr, dummy_arr] ;
+  int i = 0;
+  while i < 2 do
+    int[] arr = [i] ;
+    arrs[i] = arr ;
+    i = i + 1
+  done;
+
+  # should have different addresses
+  println arrs[0] == arrs[1];
+  # should have different values
+  println arrs[0][0];
+  println arrs[1][0]
+end
+#syntax_error#
+(line 16, column 21):
+  unexpected ";"
+  expected done
+  >  while i < 2 do
+  >    int[] arr = [i] ;
+                       ^
+  >    arrs[i] = arr ;
+Test src/test/scala/wacc/valid/array/arrayPrint.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# print the contents of a simple array
+
+# Output:
+# #addrs# = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+#
+
+# Program:
+
+begin
+  int[] a = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9] ;
+  int i = 0 ;
+  print a ;
+  print " = {" ;
+  i = 0 ;
+  while i < 10
+  do
+    print a[i] ;
+    if i < 9
+    then
+      print ", "
+    else
+      skip
+    fi ;
+    i = i + 1
+  done ;
+  println "}"
+end
+#syntax_error#
+(line 17, column 16):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "[", "||", or done
+  >  do
+  >    print a[i] ;
+                  ^
+  >    if i < 9
+Test src/test/scala/wacc/valid/array/arraySimple.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple array assignment and lookup
+
+# Output:
+# 42
+#
+
+# Program:
+
+begin
+  int[] a = [0] ;
+  a[0] = 42 ;
+  println a[0]
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(a),ArrayLiterNode(List(IntLiterNode(0)))), LValuesAssignNode(ArrayElemNode(IdentNode(a),List(IntLiterNode(0))),IntLiterNode(42)), PrintlnNode(ArrayElemNode(IdentNode(a),List(IntLiterNode(0)))))))
+#semantic_error#
+Variable name "a" is already used in the same scope
+a is not in scope or not declared
+Reassignment to same variable:  to 
+Variable name "a" is already used in the same scope
+a is not in scope or not declared
+Test src/test/scala/wacc/valid/array/array.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# moderate complexity array manipulations
+
+# Output:
+# #addrs# = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9}
+#
+
+# Program:
+
+begin
+  int[] a = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] ;
+  int i = 0 ;
+  while i < 10
+  do
+    a[i] = i ;
+    i = i + 1
+  done ;
+  print a ;
+  print " = {" ;
+  i = 0 ;
+  while i < 10
+  do
+    print a[i] ;
+    if i < 9
+    then
+      print ", "
+    else
+      skip
+    fi ;
+    i = i + 1
+  done ;
+  println "}"
+end
+#syntax_error#
+(line 14, column 14):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "[", "||", or done
+  >  do
+  >    a[i] = i ;
+                ^
+  >    i = i + 1
+Test src/test/scala/wacc/valid/array/emptyArrayAloneIsFine.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# this is fine
+
+# Output:
+
+# Program:
+
+begin
+  int[] x = []
+end
+AST = ProgramNode(List(),AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(x),ArrayLiterNode(List())))
+#semantic_error#
+LHS type "int:1" does not match RHS type "any:1"
+Test src/test/scala/wacc/valid/array/emptyArrayNextLine.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# This should work just fine
+
+# Output:
+
+# Program:
+
+begin
+  int[] x = [] ;
+  bool y = true
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(x),ArrayLiterNode(List())), AssignIdentNode(BaseTypeNode(bool),IdentNode(y),BoolLiterNode(true)))))
+#semantic_error#
+LHS type "int:1" does not match RHS type "any:1"
+Test src/test/scala/wacc/valid/array/emptyArrayPrint.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# basic array declaration and print after
+
+# Output:
+# true
+#
+# Program:
+
+begin
+  int[] x = [] ;
+  println true
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(x),ArrayLiterNode(List())), PrintlnNode(BoolLiterNode(true)))))
+#semantic_error#
+LHS type "int:1" does not match RHS type "any:1"
+Test src/test/scala/wacc/valid/array/emptyArrayReplace.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# it should be possible to reassign to an array
+
+# Output:
+# true
+#
+# Program:
+
+begin
+  int[] x = [] ;
+  x = [0] ;
+  println true
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(x),ArrayLiterNode(List())), LValuesAssignNode(IdentNode(x),ArrayLiterNode(List(IntLiterNode(0)))), PrintlnNode(BoolLiterNode(true)))))
+#semantic_error#
+LHS type "int:1" does not match RHS type "any:1"x is not in scope or not declared
+Test src/test/scala/wacc/valid/array/emptyArrayScope.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Scoping shouldn't affect arrays
+
+# Output:
+
+# Program:
+
+begin
+  int[] x = [] ;
+  begin
+    bool y = true
+  end
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(x),ArrayLiterNode(List())), BeginEndNode(AssignIdentNode(BaseTypeNode(bool),IdentNode(y),BoolLiterNode(true))))))
+#semantic_error#
+LHS type "int:1" does not match RHS type "any:1"
+Test src/test/scala/wacc/valid/array/modifyString.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create and modify string as array of characters
+
+# Output:
+# hello world!
+# Hello world!
+# Hi!
+#
+
+# Program:
+
+begin
+  char[] str = ['h','e','l','l','o',' ','w','o','r','l','d','!'] ;
+  println str ;
+  str[0] = 'H' ;
+  println str ;
+  str = ['H','i','!'] ;
+  println str
+end
+#syntax_error#
+(line 12, column 39):
+  unexpected "'"
+  expected "\" or anything except """, "'", or "\"
+  >begin
+  >  char[] str = ['h','e','l','l','o',' ','w','o','r','l','d','!'] ;
+                                         ^
+  >  println str ;
+Test src/test/scala/wacc/valid/expressions/charComparisonExpr.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# detailed battery of character comparison tests
+
+# Output:
+# false
+# true
+# true
+# true
+# false
+# false
+#
+
+# Program:
+
+begin
+  char c1 = 'a' ;
+  char c2 = 'z' ;
+  println c1 == c2 ;
+  println c1 != c2 ;
+  println c1 < c2 ;
+  println c1 <= c2 ;
+  println c1 > c2 ;
+  println c1 >= c2
+end
+#syntax_error#
+(line 20, column 14):
+  unexpected "<="
+  expected ";", "[", or end
+  >  println c1 < c2 ;
+  >  println c1 <= c2 ;
+                ^^
+  >  println c1 > c2 ;
+Test src/test/scala/wacc/valid/expressions/greaterEqExpr.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# evaluating greater-than
+
+# Output:
+# false
+# true
+# true
+#
+
+# Program:
+
+begin
+  int x = 2 ;
+  int y = 6 ;
+  int z = 4 ;
+  int a = 4 ;
+  println x >= y ;
+  println y >= z ;
+  println z >= z
+end
+#syntax_error#
+(line 16, column 13):
+  unexpected ">="
+  expected ";", "[", or end
+  >  int a = 4 ;
+  >  println x >= y ;
+               ^^
+  >  println y >= z ;
+Test src/test/scala/wacc/valid/expressions/lessEqExpr.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# evaluating less-than-or-equal-to
+
+# Output:
+# true
+# false
+# true
+#
+
+# Program:
+
+begin
+  int x = 2 ;
+  int y = 6 ;
+  int z = 4 ;
+  int a = 4 ;
+  println x <= y ;
+  println y <= z ;
+  println z <= a
+end
+#syntax_error#
+(line 16, column 13):
+  unexpected "<="
+  expected ";", "[", or end
+  >  int a = 4 ;
+  >  println x <= y ;
+               ^^
+  >  println y <= z ;
+Test src/test/scala/wacc/valid/expressions/sequentialCount.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple sequential counting
+
+# Output:
+# Can you count to 10?
+# 1
+# 2
+# 3
+# 4
+# 5
+# 6
+# 7
+# 8
+# 9
+# 10
+#
+
+# Program:
+
+begin
+  int i = 1 ;
+  println "Can you count to 10?" ;
+  println i ;
+  i = i + 1 ;
+  println i ;
+  i = i + 1 ;
+  println i ;
+  i = i + 1 ;
+  println i ;
+  i = i + 1 ;
+  println i ;
+  i = i + 1 ;
+  println i ;
+  i = i + 1 ;
+  println i ;
+  i = i + 1 ;
+  println i ;
+  i = i + 1 ;
+  println i ;
+  i = i + 1 ;
+  println i
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(i),IntLiterNode(1)), PrintlnNode(StrLiterNode(Can you count to 10?)), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)), LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1))), PrintlnNode(IdentNode(i)))))
+#semantic_error#
+i is not in scope or not declared
+i is not in scope or not declared
+i is not in scope or not declared
+i is not in scope or not declared
+i is not in scope or not declared
+i is not in scope or not declared
+i is not in scope or not declared
+i is not in scope or not declared
+i is not in scope or not declared
+Test src/test/scala/wacc/valid/function/nested_functions/fibonacciFullRec.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# recursively calculate the nth fibonacci number
+
+# Input: 30
+
+# Output:
+# This program calculates the nth fibonacci number recursively.
+# Please enter n (should not be too large): The input n is 30
+# The nth fibonacci number is 832040
+#
+
+# Program:
+
+begin
+  int fibonacci(int n) is
+    if n <= 1
+    then
+      return n
+    else
+      skip
+    fi ;
+    int f1 = call fibonacci(n - 1) ;
+    int f2 = call fibonacci(n - 2) ;
+    return f1 + f2
+  end
+
+  println "This program calculates the nth fibonacci number recursively." ;
+  print "Please enter n (should not be too large): " ;
+  int n = 0;
+  read n ;
+  print "The input n is " ;
+  println n ;
+  print "The nth fibonacci number is " ;
+  int result = call fibonacci(n) ;
+  println  result
+end
+#syntax_error#
+(line 15, column 10):
+  unexpected "<="
+  expected "[" or then
+  >  int fibonacci(int n) is
+  >    if n <= 1
+            ^^
+  >    then
+Test src/test/scala/wacc/valid/function/nested_functions/fibonacciRecursive.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# recursive calculation of the first 20 fibonacci numbers
+
+# Output:
+# The first 20 fibonacci numbers are:
+# 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181...
+#
+
+# Program:
+
+begin
+  int fibonacci(int n, bool toPrint) is
+    if n <= 1
+    then
+      return n
+    else
+      skip
+    fi ;
+    int f1 = call fibonacci(n - 1, toPrint) ;
+    if toPrint
+    then
+      print f1 ;
+      print ", "
+    else
+      skip
+    fi ;
+    int f2 = call fibonacci(n - 2, false) ;
+    return f1 + f2
+  end
+
+  println "The first 20 fibonacci numbers are:" ;
+  print "0, " ;
+  int result = call fibonacci(19, true) ;
+  print result ;
+  println "..."
+end
+#syntax_error#
+(line 12, column 10):
+  unexpected "<="
+  expected "[" or then
+  >  int fibonacci(int n, bool toPrint) is
+  >    if n <= 1
+            ^^
+  >    then
+Test src/test/scala/wacc/valid/function/nested_functions/fixedPointRealArithmetic.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# This program implements floating-point type using integers.
+# The details about how it is done can found here:
+# http://www.cse.iitd.ernet.in/~sbansal/csl373/pintos/doc/pintos_7.html#SEC135
+#
+# Basically, our integer have 32 bits. We use the first bit for sign, the next
+# 17 bits for value above the decimal digit and the last 14 bits for the values
+# after the decimal digits.
+#
+# We call the number 17 above p, and the number 14 above q.
+# We have f = 2**q.
+#
+
+# Output:
+# Using fixed-point real: 10 / 3 * 3 = 10
+#
+
+# Program:
+
+begin
+    # Returns the number of bits behind the decimal points.
+    int q() is
+        return 14
+    end
+
+    # Because we do not have bitwise shit in the language, we have to calculate it manually.
+    int power(int base, int amount) is
+        int result = 1 ;
+        while amount > 0 do
+            result = result * base ;
+            amount = amount - 1
+        done ;
+        return result
+    end
+
+    int f() is
+        int qq = call q() ;
+        # f = 2**q
+        int f = call power(2, qq) ;
+        return f
+    end
+
+    # The implementation of the following functions are translated from the URI above.
+    # Arguments start with 'x' have type fixed-point. Those start with 'n' have type integer.
+
+    int intToFixedPoint(int n) is
+        int ff = call f() ;
+        return n * ff
+    end
+
+    int fixedPointToIntRoundDown(int x) is
+        int ff = call f() ;
+        return x / ff
+    end
+
+    int fixedPointToIntRoundNear(int x) is
+        int ff = call f() ;
+        if x >= 0
+        then
+            return (x + ff / 2) / ff
+        else
+            return (x - ff / 2) / ff
+        fi
+    end
+
+    int add(int x1, int x2) is
+        return x1 + x2
+    end
+
+    int subtract(int x1, int x2) is
+        return x1 - x2
+    end
+
+    int addByInt(int x, int n) is
+        int ff = call f() ;
+        return x + n * ff
+    end
+
+    int subtractByInt(int x, int n) is
+        int ff = call f() ;
+        return x - n * ff
+    end
+
+    int multiply(int x1, int x2) is
+        # We don't have int_64 in our language so we just ignore the overflow
+        int ff = call f() ;
+        return x1 * x2 / ff
+    end
+
+    int multiplyByInt(int x, int n) is
+        return x * n
+    end
+
+    int divide(int x1, int x2) is
+        # We don't have int_64 in our language so we just ignore the overflow
+        int ff = call f() ;
+        return x1 * ff / x2
+    end
+
+    int divideByInt(int x, int n) is
+        return x / n
+    end
+
+    # Main function
+    int n1 = 10 ;
+    int n2 = 3 ;
+
+    print "Using fixed-point real: " ;
+    print n1 ;
+    print " / " ;
+    print n2 ;
+    print " * " ;
+    print n2 ;
+    print " = " ;
+
+    int x = call intToFixedPoint(n1) ;
+    x = call divideByInt(x, n2) ;
+    x = call multiplyByInt(x, n2) ;
+    int result = call fixedPointToIntRoundNear(x) ;
+    println result
+end
+
+
+
+#syntax_error#
+(line 29, column 36):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "[", "||", or done
+  >        while amount > 0 do
+  >            result = result * base ;
+                                      ^
+  >            amount = amount - 1
+Test src/test/scala/wacc/valid/function/nested_functions/mutualRecursion.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# a pair of mutually recursive functions
+
+# Output:
+# r1: sending 8
+# r2: received 8
+# r1: sending 7
+# r2: received 7
+# r1: sending 6
+# r2: received 6
+# r1: sending 5
+# r2: received 5
+# r1: sending 4
+# r2: received 4
+# r1: sending 3
+# r2: received 3
+# r1: sending 2
+# r2: received 2
+# r1: sending 1
+# r2: received 1
+#
+
+# Program:
+
+begin
+  int r1(int x) is
+    if x == 0
+    then
+      skip
+    else
+      print "r1: sending " ;
+      println x ;
+      int y = call r2(x)
+    fi ;
+    return 42
+  end
+
+  int r2(int y) is
+    print "r2: received " ;
+    println y ;
+    int z = call r1(y - 1) ;
+    return 44
+  end
+
+  int x = 0 ;
+  x = call r1(8)
+end
+#syntax_error#
+(line 30, column 28):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or fi
+  >    else
+  >      print "r1: sending " ;
+                              ^
+  >      println x ;
+Test src/test/scala/wacc/valid/function/nested_functions/printInputTriangle.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# print a user-specified sized triangle
+
+# Input: 13
+
+# Output:
+# Please enter the size of the triangle to print:
+# -------------
+# ------------
+# -----------
+# ----------
+# ---------
+# --------
+# -------
+# ------
+# -----
+# ----
+# ---
+# --
+# -
+#
+
+# Program:
+
+begin
+  int f(int x) is
+    if x == 0 then
+      skip
+    else
+      int i = x ;
+      while i > 0 do
+        print "-" ;
+        i = i - 1
+      done ;
+      println "" ;
+      int s = call f(x - 1)
+    fi ;
+    return 0
+  end
+
+  println "Please enter the size of the triangle to print:" ;
+  int x = 0;
+
+  read x;
+  int s = call f(x)
+end
+#syntax_error#
+(line 29, column 17):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "[", "||", or fi
+  >    else
+  >      int i = x ;
+                   ^
+  >      while i > 0 do
+Test src/test/scala/wacc/valid/function/nested_functions/printTriangle.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# print a fixed size triangle
+
+# Output:
+# --------
+# -------
+# ------
+# -----
+# ----
+# ---
+# --
+# -
+#
+
+# Program:
+
+begin
+  int f(int x) is
+    if x == 0 then
+      skip
+    else
+      int i = x ;
+      while i > 0 do
+        print "-" ;
+        i = i - 1
+      done ;
+      println "" ;
+      int s = call f(x - 1)
+    fi ;
+    return 0
+  end
+
+  int s = call f(8)
+end
+#syntax_error#
+(line 21, column 17):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "[", "||", or fi
+  >    else
+  >      int i = x ;
+                   ^
+  >      while i > 0 do
+Test src/test/scala/wacc/valid/function/nested_functions/simpleRecursion.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# a simple recursive function
+
+# Output:
+
+# Program:
+
+begin
+  int rec(int x) is
+    if x == 0
+    then
+      skip
+    else
+      int y = call rec(x - 1)
+    fi ;
+    return 42
+  end
+
+  int x = 0 ;
+  x = call rec(8)
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(rec),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(x)))),StatJoinNode(List(IfNode(EqNode(IdentNode(x),IntLiterNode(0)),SkipNode(),AssignIdentNode(BaseTypeNode(int),IdentNode(y),CallNode(IdentNode(rec),ArgListNode(List(SubNode(IdentNode(x),IntLiterNode(1))))))), ReturnNode(IntLiterNode(42)))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),IntLiterNode(0)), LValuesAssignNode(IdentNode(x),CallNode(IdentNode(rec),ArgListNode(List(IntLiterNode(8))))))))
+#semantic_error#
+Binary op: unexpected rhs type ERROR, expected lhs type int
+Binary op: unexpected rhs type ERROR, expected lhs type int
+Function name "rec" is not defined in this scope
+LHS type "int" does not match RHS type "ERROR"Variable name "x" is already used in the same scope
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/function/simple_functions/argScopeCanBeShadowed.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Arguments can be shadowed by the function body
+
+# Output:
+# true
+#
+
+#Program:
+
+begin
+  bool f(int x) is
+    bool x = true ;
+    return x
+  end
+
+  bool x = call f(5);
+  println x
+
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(bool),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(x)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(bool),IdentNode(x),BoolLiterNode(true)), ReturnNode(IdentNode(x)))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(bool),IdentNode(x),CallNode(IdentNode(f),ArgListNode(List(IntLiterNode(5))))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+Variable name "x" is already used in the same scope
+Function argument number is different from function parameter number
+Variable name "x" is already used in the same scope
+Test src/test/scala/wacc/valid/function/simple_functions/asciiTable.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# print out a lookup table for Ascii character representations
+
+# Output:
+# Ascii character lookup table:
+# -------------
+# |   32 =    |
+# |   33 = !  |
+# |   34 = "  |
+# |   35 = #  |
+# |   36 = $  |
+# |   37 = %  |
+# |   38 = &  |
+# |   39 = '  |
+# |   40 = (  |
+# |   41 = )  |
+# |   42 = *  |
+# |   43 = +  |
+# |   44 = ,  |
+# |   45 = -  |
+# |   46 = .  |
+# |   47 = /  |
+# |   48 = 0  |
+# |   49 = 1  |
+# |   50 = 2  |
+# |   51 = 3  |
+# |   52 = 4  |
+# |   53 = 5  |
+# |   54 = 6  |
+# |   55 = 7  |
+# |   56 = 8  |
+# |   57 = 9  |
+# |   58 = :  |
+# |   59 = ;  |
+# |   60 = <  |
+# |   61 = =  |
+# |   62 = >  |
+# |   63 = ?  |
+# |   64 = @  |
+# |   65 = A  |
+# |   66 = B  |
+# |   67 = C  |
+# |   68 = D  |
+# |   69 = E  |
+# |   70 = F  |
+# |   71 = G  |
+# |   72 = H  |
+# |   73 = I  |
+# |   74 = J  |
+# |   75 = K  |
+# |   76 = L  |
+# |   77 = M  |
+# |   78 = N  |
+# |   79 = O  |
+# |   80 = P  |
+# |   81 = Q  |
+# |   82 = R  |
+# |   83 = S  |
+# |   84 = T  |
+# |   85 = U  |
+# |   86 = V  |
+# |   87 = W  |
+# |   88 = X  |
+# |   89 = Y  |
+# |   90 = Z  |
+# |   91 = [  |
+# |   92 = \  |
+# |   93 = ]  |
+# |   94 = ^  |
+# |   95 = _  |
+# |   96 = `  |
+# |   97 = a  |
+# |   98 = b  |
+# |   99 = c  |
+# |  100 = d  |
+# |  101 = e  |
+# |  102 = f  |
+# |  103 = g  |
+# |  104 = h  |
+# |  105 = i  |
+# |  106 = j  |
+# |  107 = k  |
+# |  108 = l  |
+# |  109 = m  |
+# |  110 = n  |
+# |  111 = o  |
+# |  112 = p  |
+# |  113 = q  |
+# |  114 = r  |
+# |  115 = s  |
+# |  116 = t  |
+# |  117 = u  |
+# |  118 = v  |
+# |  119 = w  |
+# |  120 = x  |
+# |  121 = y  |
+# |  122 = z  |
+# |  123 = {  |
+# |  124 = |  |
+# |  125 = }  |
+# |  126 = ~  |
+# -------------
+#
+
+
+# Program:
+
+begin
+  bool printLine(int n) is
+    int i = 0 ;
+    while i < n do
+      print "-" ;
+      i = i + 1
+    done ;
+    println "" ;
+    return true
+  end
+
+  bool printMap(int n) is
+    print "|  " ;
+    if n <100 then
+      print " "
+    else
+      skip
+    fi ;
+    print n ;
+    print " = " ;
+    print chr n ;
+    println "  |" ;
+    return true
+  end
+
+  println "Ascii character lookup table:" ;
+  bool r = call printLine(13) ;
+  int num = ord ' ' ;
+  while num < 127 do
+    r = call printMap(num) ;
+    num = num + 1
+  done ;
+  r = call printLine(13)
+end
+#syntax_error#
+(line 111, column 17):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >    while i < n do
+  >      print "-" ;
+                   ^
+  >      i = i + 1
+Test src/test/scala/wacc/valid/function/simple_functions/functionIfReturns.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# a simple function with nested returns inside an if-statement after a return
+
+# Output:
+# go
+# 1
+#
+
+begin
+    int f() is
+        println "go";
+        return 1;
+        if true then
+            println "a";
+            return 2
+        else
+            println "b";
+            return 3
+        fi
+    end
+
+    int ret = call f();
+    println ret
+end
+#syntax_error#
+(line 13, column 24):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or else
+  >        if true then
+  >            println "a";
+                          ^
+  >            return 2
+Test src/test/scala/wacc/valid/function/simple_functions/functionManyArguments.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# a function with varied inputs
+
+# Output:
+# a is 42
+# b is true
+# c is u
+# d is hello
+# e is #addrs#
+# f is #addrs#
+# answer is g
+#
+
+# Program:
+
+begin
+  char doSomething(int a, bool b, char c, string d, bool[] e, int[] f) is
+    print "a is " ;
+    println a ;
+    print "b is " ;
+    println b ;
+    print "c is " ;
+    println c ;
+    print "d is " ;
+    println d ;
+    print "e is " ;
+    println e ;
+    print "f is " ;
+    println f ;
+    return 'g'
+  end
+  bool[] bools = [ false, true ] ;
+  int[] ints = [ 1, 2 ] ;
+  char answer = call doSomething(42, true, 'u', "hello", bools, ints) ;
+  print "answer is " ;
+  println answer
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(char),IdentNode(doSomething),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(a)), ParamNode(BaseTypeNode(bool),IdentNode(b)), ParamNode(BaseTypeNode(char),IdentNode(c)), ParamNode(BaseTypeNode(string),IdentNode(d)), ParamNode(ArrayTypeNode(BaseTypeNode(bool)),IdentNode(e)), ParamNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(f)))),StatJoinNode(List(PrintNode(StrLiterNode(a is )), PrintlnNode(IdentNode(a)), PrintNode(StrLiterNode(b is )), PrintlnNode(IdentNode(b)), PrintNode(StrLiterNode(c is )), PrintlnNode(IdentNode(c)), PrintNode(StrLiterNode(d is )), PrintlnNode(IdentNode(d)), PrintNode(StrLiterNode(e is )), PrintlnNode(IdentNode(e)), PrintNode(StrLiterNode(f is )), PrintlnNode(IdentNode(f)), ReturnNode(CharLiterNode(g)))))),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(bool)),IdentNode(bools),ArrayLiterNode(List(BoolLiterNode(false), BoolLiterNode(true)))), AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(ints),ArrayLiterNode(List(IntLiterNode(1), IntLiterNode(2)))), AssignIdentNode(BaseTypeNode(char),IdentNode(answer),CallNode(IdentNode(doSomething),ArgListNode(List(IntLiterNode(42), BoolLiterNode(true), CharLiterNode(u), StrLiterNode(hello), IdentNode(bools), IdentNode(ints))))), PrintNode(StrLiterNode(answer is )), PrintlnNode(IdentNode(answer)))))
+#semantic_error#
+variable name "a" is is not defined in this scope
+variable name "b" is is not defined in this scope
+variable name "c" is is not defined in this scope
+variable name "d" is is not defined in this scope
+variable name "e" is is not defined in this scope
+variable name "f" is is not defined in this scope
+Test src/test/scala/wacc/valid/function/simple_functions/functionMultiReturns.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# a simple function with multiple returns, importantly one at the end.
+
+# Output:
+# 1
+#
+
+# Program:
+
+begin
+  int returnInWhile() is
+    while true do
+      return 1 ;
+      println "How on Earth did we get here?"
+    done ;
+    return 2
+  end
+
+  int x = call returnInWhile() ;
+  println x
+end
+#syntax_error#
+(line 12, column 16):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >    while true do
+  >      return 1 ;
+                  ^
+  >      println "How on Earth did we get here?"
+Test src/test/scala/wacc/valid/function/simple_functions/functionReturnPair.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# creates a pair which is returned from a function
+
+# Output:
+# 10
+#
+
+# Program:
+
+begin
+
+  pair(int, int) getPair() is
+    pair(int, int) p = newpair(10,15);
+    return p
+  end
+
+  pair(int, int) p = call getPair();
+  int x = fst p;
+  println x
+end
+AST = ProgramNode(List(FuncNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(getPair),ParamListNode(List()),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),NewPairNode(IntLiterNode(10),IntLiterNode(15))), ReturnNode(IdentNode(p)))))),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),CallNode(IdentNode(getPair),ArgListNode(List()))), AssignIdentNode(BaseTypeNode(int),IdentNode(x),FstNode(IdentNode(p))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-int"variable name "p" is is not defined in this scope
+LHS type "pair" does not match RHS type "ERROR"LHS type "int" does not match RHS type "pair"variable name "x" is is not defined in this scope
+Test src/test/scala/wacc/valid/function/simple_functions/functionSimpleLoop.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# define and call a function with a simple loop
+
+# Output:
+# 10
+#
+
+# Program:
+
+begin
+  int f(int n) is
+    int i = 0;
+    while i < n do
+      i = i + 1
+    done;
+    return i
+  end
+  int x = call f(10) ;
+  println x
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(n)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(i),IntLiterNode(0)), WhileNode(LTNode(IdentNode(i),IdentNode(n)),LValuesAssignNode(IdentNode(i),AddNode(IdentNode(i),IntLiterNode(1)))), ReturnNode(IdentNode(i)))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),CallNode(IdentNode(f),ArgListNode(List(IntLiterNode(10))))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+Binary op: unexpected rhs type int, expected lhs type ERROR
+Binary op: unexpected rhs type ERROR, expected lhs type int
+i is not in scope or not declared
+Test src/test/scala/wacc/valid/function/simple_functions/functionUpdateParameter.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# test that the passed parameter can be updated and used
+# and that y remains the same
+
+# Output:
+# y is 1
+# x is 1
+# x is now 5
+# y is still 1
+#
+
+# Program:
+
+begin
+
+  int f(int x) is
+    print "x is ";
+    println x;
+    x = 5;
+    print "x is now ";
+    println x;
+    return x
+  end
+
+  int y = 1;
+  print "y is ";
+  println y;
+  int x = call f(y);
+  print "y is still ";
+  println y
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(x)))),StatJoinNode(List(PrintNode(StrLiterNode(x is )), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),IntLiterNode(5)), PrintNode(StrLiterNode(x is now )), PrintlnNode(IdentNode(x)), ReturnNode(IdentNode(x)))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(y),IntLiterNode(1)), PrintNode(StrLiterNode(y is )), PrintlnNode(IdentNode(y)), AssignIdentNode(BaseTypeNode(int),IdentNode(x),CallNode(IdentNode(f),ArgListNode(List(IdentNode(y))))), PrintNode(StrLiterNode(y is still )), PrintlnNode(IdentNode(y)))))
+#semantic_error#
+variable name "x" is is not defined in this scope
+x is not in scope or not declared
+variable name "x" is is not defined in this scope
+variable name "x" is is not defined in this scope
+Variable name "x" is already used in the same scope
+Test src/test/scala/wacc/valid/function/simple_functions/incFunction.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# a simple increment function definition and usage
+
+# Output:
+# 1
+# 4
+#
+
+# Program:
+
+begin
+  int inc(int x) is
+    return x + 1
+  end
+  int x = 0 ;
+  x = call inc(x) ;
+  println x ;
+  x = call inc(x) ;
+  x = call inc(x) ;
+  x = call inc(x) ;
+  println x
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(inc),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(x)))),ReturnNode(AddNode(IdentNode(x),IntLiterNode(1))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),IntLiterNode(0)), LValuesAssignNode(IdentNode(x),CallNode(IdentNode(inc),ArgListNode(List(IdentNode(x))))), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),CallNode(IdentNode(inc),ArgListNode(List(IdentNode(x))))), LValuesAssignNode(IdentNode(x),CallNode(IdentNode(inc),ArgListNode(List(IdentNode(x))))), LValuesAssignNode(IdentNode(x),CallNode(IdentNode(inc),ArgListNode(List(IdentNode(x))))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+Binary op: unexpected rhs type ERROR, expected lhs type int
+Variable name "x" is already used in the same scope
+x is not in scope or not declared
+x is not in scope or not declared
+x is not in scope or not declared
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/function/simple_functions/manyArgumentsChar.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# tests a function with more arguments than fit into registers
+
+# Output:
+# A
+# b
+#
+# Program:
+
+begin
+  # y and z are stack allocated on aarch32
+  char f(int u, int v, int w, int x, char y, bool z) is
+    int i = u + v ;
+    int j = w + x ;
+    if z
+        then return chr (ord y - i * j)
+        else return y
+    fi
+  end
+
+  char r1 = call f(3, 5, 1, 3, 'a', true) ;
+  println r1 ;
+
+  char r2 = call f(3, 5, 1, 3, 'b', false) ;
+  println r2
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(char),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(u)), ParamNode(BaseTypeNode(int),IdentNode(v)), ParamNode(BaseTypeNode(int),IdentNode(w)), ParamNode(BaseTypeNode(int),IdentNode(x)), ParamNode(BaseTypeNode(char),IdentNode(y)), ParamNode(BaseTypeNode(bool),IdentNode(z)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(i),AddNode(IdentNode(u),IdentNode(v))), AssignIdentNode(BaseTypeNode(int),IdentNode(j),AddNode(IdentNode(w),IdentNode(x))), IfNode(IdentNode(z),ReturnNode(ChrNode(SubNode(OrdNode(IdentNode(y)),MulNode(IdentNode(i),IdentNode(j))))),ReturnNode(IdentNode(y))))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(char),IdentNode(r1),CallNode(IdentNode(f),ArgListNode(List(IntLiterNode(3), IntLiterNode(5), IntLiterNode(1), IntLiterNode(3), CharLiterNode(a), BoolLiterNode(true))))), PrintlnNode(IdentNode(r1)), AssignIdentNode(BaseTypeNode(char),IdentNode(r2),CallNode(IdentNode(f),ArgListNode(List(IntLiterNode(3), IntLiterNode(5), IntLiterNode(1), IntLiterNode(3), CharLiterNode(b), BoolLiterNode(false))))), PrintlnNode(IdentNode(r2)))))
+#semantic_error#
+unexpected type ERROR, expected  type int
+unexpected type ERROR, expected  type int
+variable name "y" is is not defined in this scope
+Semantic error in if statement: wrong type in condition
+Test src/test/scala/wacc/valid/function/simple_functions/manyArgumentsInt.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# tests a function with more arguments than fit into registers
+
+# Output:
+# 23
+#
+# Program:
+
+begin
+  # y and z are stack allocated on aarch32
+  int f(int u, int v, int w, int x, int y, int z) is
+    int i = u + v ;
+    int j = w * x ;
+    int k = y - z ;
+    return i + j * k
+  end
+
+  int r = call f(1, 4, 2, 3, 7, 4) ;
+  println r
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(u)), ParamNode(BaseTypeNode(int),IdentNode(v)), ParamNode(BaseTypeNode(int),IdentNode(w)), ParamNode(BaseTypeNode(int),IdentNode(x)), ParamNode(BaseTypeNode(int),IdentNode(y)), ParamNode(BaseTypeNode(int),IdentNode(z)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(i),AddNode(IdentNode(u),IdentNode(v))), AssignIdentNode(BaseTypeNode(int),IdentNode(j),MulNode(IdentNode(w),IdentNode(x))), AssignIdentNode(BaseTypeNode(int),IdentNode(k),SubNode(IdentNode(y),IdentNode(z))), ReturnNode(AddNode(IdentNode(i),MulNode(IdentNode(j),IdentNode(k)))))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(r),CallNode(IdentNode(f),ArgListNode(List(IntLiterNode(1), IntLiterNode(4), IntLiterNode(2), IntLiterNode(3), IntLiterNode(7), IntLiterNode(4))))), PrintlnNode(IdentNode(r)))))
+#semantic_error#
+unexpected type ERROR, expected  type int
+unexpected type ERROR, expected  type int
+unexpected type ERROR, expected  type int
+Test src/test/scala/wacc/valid/function/simple_functions/negFunction.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# a simple negation function definition and usage
+
+# Output:
+# true
+# false
+# true
+#
+
+# Program:
+
+begin
+  bool neg(bool b) is
+    return !b
+  end
+  bool b = true ;
+  println b ;
+  b = call neg(b) ;
+  println b ;
+  b = call neg(b) ;
+  b = call neg(b) ;
+  b = call neg(b) ;
+  println b
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(bool),IdentNode(neg),ParamListNode(List(ParamNode(BaseTypeNode(bool),IdentNode(b)))),ReturnNode(NotNode(IdentNode(b))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(bool),IdentNode(b),BoolLiterNode(true)), PrintlnNode(IdentNode(b)), LValuesAssignNode(IdentNode(b),CallNode(IdentNode(neg),ArgListNode(List(IdentNode(b))))), PrintlnNode(IdentNode(b)), LValuesAssignNode(IdentNode(b),CallNode(IdentNode(neg),ArgListNode(List(IdentNode(b))))), LValuesAssignNode(IdentNode(b),CallNode(IdentNode(neg),ArgListNode(List(IdentNode(b))))), LValuesAssignNode(IdentNode(b),CallNode(IdentNode(neg),ArgListNode(List(IdentNode(b))))), PrintlnNode(IdentNode(b)))))
+#semantic_error#
+unexpected type ERROR, expected  type bool
+Variable name "b" is already used in the same scope
+b is not in scope or not declared
+b is not in scope or not declared
+b is not in scope or not declared
+b is not in scope or not declared
+Test src/test/scala/wacc/valid/function/simple_functions/punning.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Functions should be able to have the same name as variables
+# Thanks to Jordan Hall
+
+# Output:
+# 0
+#
+
+begin
+    int inc(int x) is
+        return x + 1
+    end
+    int inc = 0;
+    int tmp = call inc(inc);
+    println inc
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(inc),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(x)))),ReturnNode(AddNode(IdentNode(x),IntLiterNode(1))))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(inc),IntLiterNode(0)), AssignIdentNode(BaseTypeNode(int),IdentNode(tmp),CallNode(IdentNode(inc),ArgListNode(List(IdentNode(inc))))), PrintlnNode(IdentNode(inc)))))
+#semantic_error#
+Binary op: unexpected rhs type ERROR, expected lhs type int
+Function name "inc" is already used
+Function argument type is incorrect
+variable name "inc" is is not defined in this scope
+Test src/test/scala/wacc/valid/function/simple_functions/sameArgName2.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# program with function that has same parameter name as function
+# and also returns to same named variable
+
+# Output:
+# 99
+#
+
+# Program:
+
+begin
+  int f(int f) is
+    return f
+  end
+
+  int f = call f(99);
+  println f
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(f)))),ReturnNode(IdentNode(f)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(f),CallNode(IdentNode(f),ArgListNode(List(IntLiterNode(99))))), PrintlnNode(IdentNode(f)))))
+#semantic_error#
+variable name "f" is is not defined in this scope
+Variable name "f" is already used in the same scope
+Function name "f" is not defined in this scope
+Variable name "f" is already used in the same scope
+Test src/test/scala/wacc/valid/function/simple_functions/sameArgName.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# program with function that has same parameter name as function
+
+# Output:
+# 99
+#
+
+# Program:
+
+begin
+  int f(int f) is
+    return f
+  end
+
+  int x = call f(99);
+  println x
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(f)))),ReturnNode(IdentNode(f)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),CallNode(IdentNode(f),ArgListNode(List(IntLiterNode(99))))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+variable name "f" is is not defined in this scope
+Variable name "f" is already used in the same scope
+Function name "f" is not defined in this scope
+LHS type "int" does not match RHS type "ERROR"variable name "x" is is not defined in this scope
+Test src/test/scala/wacc/valid/function/simple_functions/sameNameAsVar.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# program with function that has same name as a variable
+
+# Output:
+# 5
+#
+
+# Program:
+
+begin
+  int f() is
+    return 5
+  end
+
+  int f = call f();
+  println f
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List()),ReturnNode(IntLiterNode(5)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(f),CallNode(IdentNode(f),ArgListNode(List()))), PrintlnNode(IdentNode(f)))))
+#semantic_error#
+Function name "f" is already used
+variable name "f" is is not defined in this scope
+Test src/test/scala/wacc/valid/function/simple_functions/usesArgumentWhilstMakingArgument.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# tests a function with more arguments than fit into registers
+
+# Output:
+# 12
+# -4
+# 32
+#
+# Program:
+
+begin
+  int f(int u, int v) is
+    int x = call g(u + v, u - v, u * v) ;
+    return x
+  end
+
+  int g(int x, int y, int z) is
+    println(x) ;
+    println(y) ;
+    println(z) ;
+    return 0
+  end
+
+  int r = call f(4, 8)
+end
+AST = ProgramNode(List(FuncNode(BaseTypeNode(int),IdentNode(f),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(u)), ParamNode(BaseTypeNode(int),IdentNode(v)))),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),CallNode(IdentNode(g),ArgListNode(List(AddNode(IdentNode(u),IdentNode(v)), SubNode(IdentNode(u),IdentNode(v)), MulNode(IdentNode(u),IdentNode(v)))))), ReturnNode(IdentNode(x))))), FuncNode(BaseTypeNode(int),IdentNode(g),ParamListNode(List(ParamNode(BaseTypeNode(int),IdentNode(x)), ParamNode(BaseTypeNode(int),IdentNode(y)), ParamNode(BaseTypeNode(int),IdentNode(z)))),StatJoinNode(List(PrintlnNode(IdentNode(x)), PrintlnNode(IdentNode(y)), PrintlnNode(IdentNode(z)), ReturnNode(IntLiterNode(0)))))),AssignIdentNode(BaseTypeNode(int),IdentNode(r),CallNode(IdentNode(f),ArgListNode(List(IntLiterNode(4), IntLiterNode(8))))))
+#semantic_error#
+unexpected type ERROR, expected  type int
+unexpected type ERROR, expected  type int
+unexpected type ERROR, expected  type int
+Function name "g" is not defined in this scope
+LHS type "int" does not match RHS type "ERROR"variable name "x" is is not defined in this scope
+LHS type "int" does not match RHS type "ERROR"variable name "x" is is not defined in this scope
+variable name "y" is is not defined in this scope
+variable name "z" is is not defined in this scope
+Test src/test/scala/wacc/valid/if/whitespace.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Whitespace only important between keyword and variable tokens
+
+# Output:
+# 1
+#
+
+# Program:
+
+begin
+	int a=13;
+  if a==13then a=1else a=0fi;
+  println a
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(a),IntLiterNode(13)), IfNode(EqNode(IdentNode(a),IntLiterNode(13)),LValuesAssignNode(IdentNode(a),IntLiterNode(1)),LValuesAssignNode(IdentNode(a),IntLiterNode(0))), PrintlnNode(IdentNode(a)))))
+#semantic_error#
+a is not in scope or not declared
+a is not in scope or not declared
+Test src/test/scala/wacc/valid/IO/IOLoop.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple input/output loop
+
+# Input: 1 Y 2 Y 3 Y 4 Y 5 Y 142 N
+
+# Output:
+# Please input an integer: echo input: 1
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# Please input an integer: echo input: 2
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# Please input an integer: echo input: 3
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# Please input an integer: echo input: 4
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# Please input an integer: echo input: 5
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+# Please input an integer: echo input: 142
+# Do you want to continue entering input?
+# (enter Y for 'yes' and N for 'no')
+#
+
+# Program:
+
+begin
+  char continue = 'Y' ;
+  int buff = 0 ;
+  while continue != 'N' do
+    print "Please input an integer: " ;
+    read buff ;
+    print "echo input: " ;
+    println buff ;
+    println "Do you want to continue entering input?" ;
+    println "(enter Y for \'yes\' and N for \'no\')" ;
+    read continue
+  done
+end
+#syntax_error#
+(line 32, column 39):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >  while continue != 'N' do
+  >    print "Please input an integer: " ;
+                                         ^
+  >    read buff ;
+Test src/test/scala/wacc/valid/IO/print/hashInProgram.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# In-line comments and printing #
+
+# Output:
+# We can print the hash character: #
+# We can also print # when its in a string.
+#
+
+# Program:
+
+begin
+  int x = 0 ; # comments can be in-line
+  print "We can print the hash character: " ;
+  println '#' ;
+  println "We can also print # when its in a string."
+end
+#syntax_error#
+(line 14, column 4):
+  unexpected "r"
+  expected "'"
+  >  println '#' ;
+  >  println "We can also print # when its in a string."
+      ^
+  >end
+Test src/test/scala/wacc/valid/IO/print/multipleStringsAssignment.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# multiple string assignments and comparisons
+
+# Output:
+# s1 is Hi
+# s2 is Hello
+# They are not the same string.
+# Now make s1 = s2
+# s1 is Hello
+# s2 is Hello
+# They are the same string.
+#
+
+# Program:
+
+begin
+  string s1 = "Hi" ;
+  string s2 = "Hello" ;
+  print "s1 is " ;
+  println s1 ;
+  print "s2 is " ;
+  println s2 ;
+  if s1 == s2 then
+    println "They are the same string."
+  else
+    println "They are not the same string."
+  fi ;
+
+  println "Now make s1 = s2" ;
+  s1 = s2 ;
+
+  print "s1 is " ;
+  println s1 ;
+  print "s2 is " ;
+  println s2 ;
+  if s1 == s2 then
+    println "They are the same string."
+  else
+    println "They are not the same string."
+  fi
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(string),IdentNode(s1),StrLiterNode(Hi)), AssignIdentNode(BaseTypeNode(string),IdentNode(s2),StrLiterNode(Hello)), PrintNode(StrLiterNode(s1 is )), PrintlnNode(IdentNode(s1)), PrintNode(StrLiterNode(s2 is )), PrintlnNode(IdentNode(s2)), IfNode(EqNode(IdentNode(s1),IdentNode(s2)),PrintlnNode(StrLiterNode(They are the same string.)),PrintlnNode(StrLiterNode(They are not the same string.))), PrintlnNode(StrLiterNode(Now make s1 = s2)), LValuesAssignNode(IdentNode(s1),IdentNode(s2)), PrintNode(StrLiterNode(s1 is )), PrintlnNode(IdentNode(s1)), PrintNode(StrLiterNode(s2 is )), PrintlnNode(IdentNode(s2)), IfNode(EqNode(IdentNode(s1),IdentNode(s2)),PrintlnNode(StrLiterNode(They are the same string.)),PrintlnNode(StrLiterNode(They are not the same string.))))))
+#semantic_error#
+s1 is not in scope or not declared
+s2 is not in scope or not declared
+Test src/test/scala/wacc/valid/IO/print/print-backspace.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple print statement off a string with a backspace character
+
+# Output:
+# Hello World!
+#
+
+# Program:
+
+begin
+  print "Hello\b World!\n"
+end
+AST = ProgramNode(List(),PrintNode(StrLiterNode(Hello World!
+)))
+#semantic_error#
+String cannot contain newline
+Test src/test/scala/wacc/valid/IO/print/printCharAsString.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# character array treated as a string
+
+# Output:
+# foo
+# bar
+#
+
+# Program:
+
+begin
+  char[] str = ['f','o','o'];
+  println str;
+  str = ['b','a','r'];
+  println str
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(char)),IdentNode(str),ArrayLiterNode(List(CharLiterNode(f), CharLiterNode(o), CharLiterNode(o)))), PrintlnNode(IdentNode(str)), LValuesAssignNode(IdentNode(str),ArrayLiterNode(List(CharLiterNode(b), CharLiterNode(a), CharLiterNode(r)))), PrintlnNode(IdentNode(str)))))
+#semantic_error#
+str is not in scope or not declared
+Test src/test/scala/wacc/valid/pairs/checkRefPair.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create a pair(int, char) with a second reference to it and check it works
+
+# Output:
+# #addrs#
+# #addrs#
+# true
+# 10
+# 10
+# true
+# a
+# a
+# true
+#
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a') ;
+  pair(int, char) q = p;
+  println p ;
+  println q ;
+  println p == q ;
+  int x = fst p ;
+  int y = fst q ;
+  println x ;
+  println y ;
+  println x == y ;
+  char c1 = snd p ;
+  char c2 = snd q ;
+  println c1 ;
+  println c2 ;
+  println c1 == c2
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(p),NewPairNode(IntLiterNode(10),CharLiterNode(a))), AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(q),IdentNode(p)), PrintlnNode(IdentNode(p)), PrintlnNode(IdentNode(q)), PrintlnNode(EqNode(IdentNode(p),IdentNode(q))), AssignIdentNode(BaseTypeNode(int),IdentNode(x),FstNode(IdentNode(p))), AssignIdentNode(BaseTypeNode(int),IdentNode(y),FstNode(IdentNode(q))), PrintlnNode(IdentNode(x)), PrintlnNode(IdentNode(y)), PrintlnNode(EqNode(IdentNode(x),IdentNode(y))), AssignIdentNode(BaseTypeNode(char),IdentNode(c1),SndNode(IdentNode(p))), AssignIdentNode(BaseTypeNode(char),IdentNode(c2),SndNode(IdentNode(q))), PrintlnNode(IdentNode(c1)), PrintlnNode(IdentNode(c2)), PrintlnNode(EqNode(IdentNode(c1),IdentNode(c2))))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-char"LHS type "pair" does not match RHS type "ERROR"variable name "p" is is not defined in this scope
+variable name "q" is is not defined in this scope
+LHS type "int" does not match RHS type "ERROR"LHS type "int" does not match RHS type "ERROR"variable name "x" is is not defined in this scope
+variable name "y" is is not defined in this scope
+LHS type "char" does not match RHS type "ERROR"LHS type "char" does not match RHS type "ERROR"variable name "c1" is is not defined in this scope
+variable name "c2" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/createPair02.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create a pair (char, char)
+
+# Output:
+
+# Program:
+
+begin
+  pair(char, char) p = newpair('a', 'b')
+end
+AST = ProgramNode(List(),AssignIdentNode(PairTypeNode(BaseTypeNode(char),BaseTypeNode(char)),IdentNode(p),NewPairNode(CharLiterNode(a),CharLiterNode(b))))
+#semantic_error#
+LHS type "pair" does not match RHS type "char-char"
+Test src/test/scala/wacc/valid/pairs/createPair03.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create a pair (int, char)
+
+# Output:
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a')
+end
+AST = ProgramNode(List(),AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(p),NewPairNode(IntLiterNode(10),CharLiterNode(a))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-char"
+Test src/test/scala/wacc/valid/pairs/createPair.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create a pair (int, int)
+
+# Output:
+
+# Program:
+
+begin
+  pair(int, int) p = newpair(10, 3)
+end
+AST = ProgramNode(List(),AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),NewPairNode(IntLiterNode(10),IntLiterNode(3))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-int"
+Test src/test/scala/wacc/valid/pairs/createRefPair.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create a pair(int, char) with a second reference to it
+
+# Output:
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a') ;
+  pair(int, char) q = p
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(p),NewPairNode(IntLiterNode(10),CharLiterNode(a))), AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(q),IdentNode(p)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-char"LHS type "pair" does not match RHS type "ERROR"
+Test src/test/scala/wacc/valid/pairs/free.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Create and free a simple pair
+
+# Output:
+
+# Program:
+
+begin
+  pair(int, char) a = newpair(10, 'a') ;
+  free a
+end
+
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(a),NewPairNode(IntLiterNode(10),CharLiterNode(a))), FreeNode(IdentNode(a)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-char"Wrong type in free
+Test src/test/scala/wacc/valid/pairs/linkedList.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create and print a linked list using pairs
+
+# Output:
+# list = {1, 2, 4, 11}
+#
+
+# Program:
+
+begin
+  pair(int, pair) p = newpair(11, null) ;
+    pair(int, pair) q = newpair(4, p) ;
+    pair(int, pair) r = newpair(2, q) ;
+    pair(int, pair) s = newpair(1, r) ;
+    print "list = {" ;
+    pair(int, pair) x = s ;
+    pair(int, pair) y = snd x ;
+    int f = 0;
+    while y != null do
+      f = fst x ;
+      print f ;
+      print ", " ;
+      x = y ;
+      y = snd x
+    done ;
+    f = fst x ;
+    print f ;
+    println "}"
+end
+#syntax_error#
+(line 19, column 17):
+  unexpected ";"
+  expected "[" or done
+  >    while y != null do
+  >      f = fst x ;
+                   ^
+  >      print f ;
+Test src/test/scala/wacc/valid/pairs/nestedPairLeftAssign.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# nested pair assignments are legal as long as the right hand-side type is known
+
+# Output:
+# 7
+#
+
+# Program:
+
+begin
+  pair(int, int) p = newpair(2, 3) ;
+  pair(int, pair) q = newpair(1, p) ;
+  fst snd q = 7 ;
+  int x = fst p ;
+  println x
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),NewPairNode(IntLiterNode(2),IntLiterNode(3))), AssignIdentNode(PairTypeNode(BaseTypeNode(int),PETPairNode()),IdentNode(q),NewPairNode(IntLiterNode(1),IdentNode(p))), LValuesAssignNode(FstNode(SndNode(IdentNode(q))),IntLiterNode(7)), AssignIdentNode(BaseTypeNode(int),IdentNode(x),FstNode(IdentNode(p))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-int"LHS type "pair" does not match RHS type "int-ERROR"Reassignment to same variable:  to 
+LHS type "int" does not match RHS type "ERROR"variable name "x" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/nestedPairRightExtract.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# nested pair extractions are legal as long as the left hand-side type is known
+
+# Output:
+# 2
+#
+
+# Program:
+
+begin
+  pair(int, int) p = newpair(2, 3) ;
+  pair(int, pair) q = newpair(1, p) ;
+  int x = fst snd q ;
+  println x
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),NewPairNode(IntLiterNode(2),IntLiterNode(3))), AssignIdentNode(PairTypeNode(BaseTypeNode(int),PETPairNode()),IdentNode(q),NewPairNode(IntLiterNode(1),IdentNode(p))), AssignIdentNode(BaseTypeNode(int),IdentNode(x),FstNode(SndNode(IdentNode(q)))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-int"LHS type "pair" does not match RHS type "int-ERROR"LHS type "int" does not match RHS type "ERROR"variable name "x" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/nestedPair.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create a pair (int, pair (int, int) )
+
+# Output:
+
+# Program:
+
+begin
+  pair(int, int) p = newpair(2, 3) ;
+  pair(int, pair) q = newpair(1, p)
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),NewPairNode(IntLiterNode(2),IntLiterNode(3))), AssignIdentNode(PairTypeNode(BaseTypeNode(int),PETPairNode()),IdentNode(q),NewPairNode(IntLiterNode(1),IdentNode(p))))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-int"LHS type "pair" does not match RHS type "int-ERROR"
+Test src/test/scala/wacc/valid/pairs/null.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# null pair assignment
+
+# Output:
+# (nil)
+# (nil)
+#
+
+# Program:
+
+begin
+  pair(pair, pair) p = null ;
+  println p ;
+  p = null ;
+  println p
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(PETPairNode(),PETPairNode()),IdentNode(p),IdentNode(null)), PrintlnNode(IdentNode(p)), LValuesAssignNode(IdentNode(p),IdentNode(null)), PrintlnNode(IdentNode(p)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"variable name "p" is is not defined in this scope
+p is not in scope or not declared
+null is not in scope or not declared
+variable name "p" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/pairarray.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# ensures that pairs can be unpacked directly from arrays
+
+# Output:
+# 3
+#
+# Program:
+
+begin
+  pair(int, int) p = newpair(5, 6);
+  pair(int, int)[] a = [p, p];
+  fst a[0] = 3 ;
+  int x = fst a[1] ;
+  println x
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),NewPairNode(IntLiterNode(5),IntLiterNode(6))), AssignIdentNode(ArrayTypeNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int))),IdentNode(a),ArrayLiterNode(List(IdentNode(p), IdentNode(p)))), LValuesAssignNode(FstNode(ArrayElemNode(IdentNode(a),List(IntLiterNode(0)))),IntLiterNode(3)), AssignIdentNode(BaseTypeNode(int),IdentNode(x),FstNode(ArrayElemNode(IdentNode(a),List(IntLiterNode(1))))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-int"LHS type "pair:1" does not match RHS type "ERROR:1"a is not in scope or not declared
+Reassignment to same variable:  to 
+a is not in scope or not declared
+LHS type "int" does not match RHS type "TBC"variable name "x" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/printNullPair.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# print pair a null pair
+
+# Output:
+# (nil)
+#
+
+# Program:
+
+begin
+  pair(pair, pair) p = null ;
+  println p
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(PETPairNode(),PETPairNode()),IdentNode(p),IdentNode(null)), PrintlnNode(IdentNode(p)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"variable name "p" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/printNull.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# print the null reference
+
+# Output:
+# (nil)
+#
+
+# Program:
+
+begin
+  println null
+end
+AST = ProgramNode(List(),PrintlnNode(IdentNode(null)))
+#semantic_error#
+variable name "null" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/printPairOfNulls.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# print a pair of null pairs
+
+# Output:
+# #addrs# = ((nil),(nil))
+#
+
+# Program:
+
+begin
+  pair(pair, pair) p = newpair(null, null) ;
+  print p ;
+  print " = (" ;
+  pair(pair, pair) q = fst p ;
+  print q ;
+  print "," ;
+  pair(int, bool) r = snd p ;
+  print r ;
+  println ")"
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(PETPairNode(),PETPairNode()),IdentNode(p),NewPairNode(IdentNode(null),IdentNode(null))), PrintNode(IdentNode(p)), PrintNode(StrLiterNode(= ()), AssignIdentNode(PairTypeNode(PETPairNode(),PETPairNode()),IdentNode(q),FstNode(IdentNode(p))), PrintNode(IdentNode(q)), PrintNode(StrLiterNode(,)), AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(bool)),IdentNode(r),SndNode(IdentNode(p))), PrintNode(IdentNode(r)), PrintlnNode(StrLiterNode())))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR-ERROR"variable name "p" is is not defined in this scope
+LHS type "pair" does not match RHS type "ERROR"variable name "q" is is not defined in this scope
+LHS type "pair" does not match RHS type "ERROR"variable name "r" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/printPair.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# print pair program
+
+# Output:
+# #addrs# = (10, a)
+#
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a') ;
+  print p ;
+  print " = (" ;
+  int x = fst p ;
+  print x ;
+  print ", " ;
+  char c = snd p ;
+  print c ;
+  println ')'
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(p),NewPairNode(IntLiterNode(10),CharLiterNode(a))), PrintNode(IdentNode(p)), PrintNode(StrLiterNode(= ()), AssignIdentNode(BaseTypeNode(int),IdentNode(x),FstNode(IdentNode(p))), PrintNode(IdentNode(x)), PrintNode(StrLiterNode(, )), AssignIdentNode(BaseTypeNode(char),IdentNode(c),SndNode(IdentNode(p))), PrintNode(IdentNode(c)), PrintlnNode(CharLiterNode())))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-char"variable name "p" is is not defined in this scope
+LHS type "int" does not match RHS type "ERROR"variable name "x" is is not defined in this scope
+LHS type "char" does not match RHS type "ERROR"variable name "c" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/readPair.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# construct a pair from supplied user input
+
+# Input: f 16
+
+# Output:
+# Please enter the first element (char): Please enter the second element (int): The first element was f
+# The second element was 16
+#
+# Program:
+
+begin
+	pair(char, int) p = newpair('\0', 0) ;
+	print "Please enter the first element (char): " ;
+  	char c = '0';
+	read c ;
+  	fst p = c ;
+	print "Please enter the second element (int): " ;
+	int i = 0 ;
+	read i ;
+	snd p = i ;
+	# Clear the value for c and i
+	c = '\0' ;
+	i = -1 ;
+	print "The first element was " ;
+	c = fst p ;
+	println c ;
+	print "The second element was " ;
+	i = snd p ;
+	println i
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(char),BaseTypeNode(int)),IdentNode(p),NewPairNode(CharLiterNode(),IntLiterNode(0))), PrintNode(StrLiterNode(Please enter the first element (char): )), AssignIdentNode(BaseTypeNode(char),IdentNode(c),CharLiterNode(0)), ReadNode(IdentNode(c)), LValuesAssignNode(FstNode(IdentNode(p)),IdentNode(c)), PrintNode(StrLiterNode(Please enter the second element (int): )), AssignIdentNode(BaseTypeNode(int),IdentNode(i),IntLiterNode(0)), ReadNode(IdentNode(i)), LValuesAssignNode(SndNode(IdentNode(p)),IdentNode(i)), LValuesAssignNode(IdentNode(c),CharLiterNode()), LValuesAssignNode(IdentNode(i),NegNode(IntLiterNode(1))), PrintNode(StrLiterNode(The first element was )), LValuesAssignNode(IdentNode(c),FstNode(IdentNode(p))), PrintlnNode(IdentNode(c)), PrintNode(StrLiterNode(The second element was )), LValuesAssignNode(IdentNode(i),SndNode(IdentNode(p))), PrintlnNode(IdentNode(i)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "char-int"c is not in scope or not declared
+i is not in scope or not declared
+c is not in scope or not declared
+i is not in scope or not declared
+c is not in scope or not declared
+i is not in scope or not declared
+Test src/test/scala/wacc/valid/pairs/writeFst.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create a pair and write to its first element
+
+# Output:
+# 10
+# 42
+#
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a') ;
+  int f = fst p ;
+  println f ;
+  fst p = 42 ;
+  f = fst p ;
+  println f
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(p),NewPairNode(IntLiterNode(10),CharLiterNode(a))), AssignIdentNode(BaseTypeNode(int),IdentNode(f),FstNode(IdentNode(p))), PrintlnNode(IdentNode(f)), LValuesAssignNode(FstNode(IdentNode(p)),IntLiterNode(42)), LValuesAssignNode(IdentNode(f),FstNode(IdentNode(p))), PrintlnNode(IdentNode(f)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-char"LHS type "int" does not match RHS type "ERROR"variable name "f" is is not defined in this scope
+Reassignment to same variable:  to 
+f is not in scope or not declared
+variable name "f" is is not defined in this scope
+Test src/test/scala/wacc/valid/pairs/writeSnd.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# create a pair and write to its second element
+
+# Output:
+# a
+# Z
+#
+
+# Program:
+
+begin
+  pair(int, char) p = newpair(10, 'a') ;
+  char s = snd p ;
+  println s ;
+  snd p = 'Z' ;
+  s = snd p ;
+  println s
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(char)),IdentNode(p),NewPairNode(IntLiterNode(10),CharLiterNode(a))), AssignIdentNode(BaseTypeNode(char),IdentNode(s),SndNode(IdentNode(p))), PrintlnNode(IdentNode(s)), LValuesAssignNode(SndNode(IdentNode(p)),CharLiterNode(Z)), LValuesAssignNode(IdentNode(s),SndNode(IdentNode(p))), PrintlnNode(IdentNode(s)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "int-char"LHS type "char" does not match RHS type "ERROR"variable name "s" is is not defined in this scope
+Reassignment to same variable:  to 
+s is not in scope or not declared
+variable name "s" is is not defined in this scope
+Test src/test/scala/wacc/valid/runtimeErr/arrayOutOfBounds/arrayNegBounds.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt out of bounds array access (this ought to seg fault or similar)
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+	int[] a = [43, 2, 18, 1] ;
+  int[] b = [1, 2, 3] ;	
+  println a[-2]
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(a),ArrayLiterNode(List(IntLiterNode(43), IntLiterNode(2), IntLiterNode(18), IntLiterNode(1)))), AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(b),ArrayLiterNode(List(IntLiterNode(1), IntLiterNode(2), IntLiterNode(3)))), PrintlnNode(ArrayElemNode(IdentNode(a),List(NegNode(IntLiterNode(2))))))))
+#semantic_error#
+Variable name "a" is already used in the same scope
+a is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/arrayOutOfBounds/arrayOutOfBounds.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt out of bounds array access (this ought to seg fault or similar)
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+
+  int[] b = [1, 2, 3] ;
+	int[] a = [43, 2, 18, 1] ;
+	println a[5]
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(b),ArrayLiterNode(List(IntLiterNode(1), IntLiterNode(2), IntLiterNode(3)))), AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(a),ArrayLiterNode(List(IntLiterNode(43), IntLiterNode(2), IntLiterNode(18), IntLiterNode(1)))), PrintlnNode(ArrayElemNode(IdentNode(a),List(IntLiterNode(5)))))))
+#semantic_error#
+Variable name "a" is already used in the same scope
+a is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/arrayOutOfBounds/arrayOutOfBoundsWrite.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt write out of array bounds (gods, this really should not work!)
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+
+  int[] b = [1, 2, 3] ;
+	int[] a = [43, 2, 18, 1] ;
+	a[5] = 100 ;
+  println a[5]
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(b),ArrayLiterNode(List(IntLiterNode(1), IntLiterNode(2), IntLiterNode(3)))), AssignIdentNode(ArrayTypeNode(BaseTypeNode(int)),IdentNode(a),ArrayLiterNode(List(IntLiterNode(43), IntLiterNode(2), IntLiterNode(18), IntLiterNode(1)))), LValuesAssignNode(ArrayElemNode(IdentNode(a),List(IntLiterNode(5))),IntLiterNode(100)), PrintlnNode(ArrayElemNode(IdentNode(a),List(IntLiterNode(5)))))))
+#semantic_error#
+Variable name "a" is already used in the same scope
+a is not in scope or not declared
+Reassignment to same variable:  to 
+Variable name "a" is already used in the same scope
+a is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/integerOverflow/intJustOverflow.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# integer overflow
+
+# Output:
+# 2147483646
+# 2147483647
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  int x = 2147483646 ;
+  println x ;
+  x = x + 1 ;
+  println x ;
+  x = x + 1 ; #err here?
+  println x
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),IntLiterNode(2147483646)), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),AddNode(IdentNode(x),IntLiterNode(1))), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),AddNode(IdentNode(x),IntLiterNode(1))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/integerOverflow/intmultOverflow.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# integer overflow - generates odd assembly error!
+
+# Output:
+# 2147483
+# 2147483000
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  int x = 2147483 ;
+  println x ;
+  x = x * 1000 ;
+  println x ;
+  x = x * 1000 ;
+  println x ;
+  x = x * 1000 ; #err here?
+  println x 
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),IntLiterNode(2147483)), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),MulNode(IdentNode(x),IntLiterNode(1000))), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),MulNode(IdentNode(x),IntLiterNode(1000))), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),MulNode(IdentNode(x),IntLiterNode(1000))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+x is not in scope or not declared
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/integerOverflow/intnegateOverflow2.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# multiplying the biggest possible negative integer
+
+# Output:
+# -2147483648
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  int x = -2147483648 ;
+  println x ;
+  x = x*10; #err here?
+  println x
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),IntLiterNode(-2147483648)), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),MulNode(IdentNode(x),IntLiterNode(10))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/integerOverflow/intnegateOverflow3.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# multiplying a negative integer
+
+# Output:
+# -20000
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  int x = -20000 ;
+  println x ;
+  x = x*100000000; #err here? 
+  println x 
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),NegNode(IntLiterNode(20000))), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),MulNode(IdentNode(x),IntLiterNode(100000000))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/integerOverflow/intnegateOverflow4.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# negative overflow
+
+# Output:
+# -2000000000
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  int x = -2000000000 ;
+  println x ;
+  x = x - 2000000000; #err here? 
+  println x 
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),NegNode(IntLiterNode(2000000000))), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),SubNode(IdentNode(x),IntLiterNode(2000000000))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/integerOverflow/intnegateOverflow.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# negating biggest possible negative integer
+
+# Output:
+# -2147483648
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  int x = -2147483648 ;
+  println x ;
+  x = -x; #err here?
+  println x
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),IntLiterNode(-2147483648)), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),NegNode(IdentNode(x))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/integerOverflow/intUnderflow.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# integer underflow
+
+# Output:
+# -2147483647
+# -2147483648
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  int x = -2147483647 ;
+  println x ;
+  x = x - 1 ;
+  println x ;
+  x = x - 1 ; #err here?
+  println x
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),NegNode(IntLiterNode(2147483647))), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),SubNode(IdentNode(x),IntLiterNode(1))), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),SubNode(IdentNode(x),IntLiterNode(1))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/integerOverflow/intWayOverflow.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# positive overflow
+
+# Output:
+# 2000000000
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  int x = 2000000000 ;
+  println x ;
+  x = x + 2000000000; #err here?
+  println x 
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),IntLiterNode(2000000000)), PrintlnNode(IdentNode(x)), LValuesAssignNode(IdentNode(x),AddNode(IdentNode(x),IntLiterNode(2000000000))), PrintlnNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/runtimeErr/nullDereference/freeNull.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Create and free a null pair
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+  pair(pair, pair) a = null ;
+  free a
+end
+
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(PETPairNode(),PETPairNode()),IdentNode(a),IdentNode(null)), FreeNode(IdentNode(a)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"Wrong type in free
+Test src/test/scala/wacc/valid/runtimeErr/nullDereference/readNull1.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt dereference of a null pair by reading into an element of it
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+	pair(int, int) p = null ;
+	read fst p
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),IdentNode(null)), ReadNode(FstNode(IdentNode(p))))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"Wrong type in read
+Test src/test/scala/wacc/valid/runtimeErr/nullDereference/readNull2.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt dereference of a null pair by reading into an element of it
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+	pair(int, int) p = null ;
+	read snd p
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),IdentNode(null)), ReadNode(SndNode(IdentNode(p))))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"Wrong type in read
+Test src/test/scala/wacc/valid/runtimeErr/nullDereference/setNull1.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt dereference of a null pair by setting an element of it
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+	pair(int, int) p = null ;
+	fst p = 1
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),IdentNode(null)), LValuesAssignNode(FstNode(IdentNode(p)),IntLiterNode(1)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"Reassignment to same variable:  to 
+Test src/test/scala/wacc/valid/runtimeErr/nullDereference/setNull2.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt dereference of a null pair by setting an element of it
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+	pair(int, int) p = null ;
+	snd p = 1
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),IdentNode(null)), LValuesAssignNode(SndNode(IdentNode(p)),IntLiterNode(1)))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"Reassignment to same variable:  to 
+Test src/test/scala/wacc/valid/runtimeErr/nullDereference/useNull1.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt dereference of a null pair by using it
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+	pair(int, int) p = null ;
+	int x = fst p
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),IdentNode(null)), AssignIdentNode(BaseTypeNode(int),IdentNode(x),FstNode(IdentNode(p))))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"LHS type "int" does not match RHS type "ERROR"
+Test src/test/scala/wacc/valid/runtimeErr/nullDereference/useNull2.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# attempt dereference of a null pair by using it
+
+# Output:
+# #runtime_error#
+
+# Exit:
+# 255
+
+# Program:
+
+begin
+	pair(int, int) p = null ;
+	int x = snd p
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(PairTypeNode(BaseTypeNode(int),BaseTypeNode(int)),IdentNode(p),IdentNode(null)), AssignIdentNode(BaseTypeNode(int),IdentNode(x),SndNode(IdentNode(p))))))
+#semantic_error#
+LHS type "pair" does not match RHS type "ERROR"LHS type "int" does not match RHS type "ERROR"
+Test src/test/scala/wacc/valid/scope/ifNested2.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Deeply nested conditional statement
+
+# Output:
+# correct
+#
+
+# Program:
+
+begin
+  int a = 13;
+  if a == 13
+  then
+    if a > 5
+    then
+      if a < 10
+      then
+        println "incorrect"
+      else
+        if a > 12
+        then
+          if a > 13
+          then
+            println "incorrect"
+          else
+            println "correct"
+          fi
+        else
+          println "incorrect"
+        fi
+      fi
+    else
+      println "incorrect"
+    fi
+  else
+    println "incorrect"
+  fi
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(a),IntLiterNode(13)), IfNode(EqNode(IdentNode(a),IntLiterNode(13)),IfNode(GTNode(IdentNode(a),IntLiterNode(5)),IfNode(LTNode(IdentNode(a),IntLiterNode(10)),PrintlnNode(StrLiterNode(incorrect)),IfNode(GTNode(IdentNode(a),IntLiterNode(12)),IfNode(GTNode(IdentNode(a),IntLiterNode(13)),PrintlnNode(StrLiterNode(incorrect)),PrintlnNode(StrLiterNode(correct))),PrintlnNode(StrLiterNode(incorrect)))),PrintlnNode(StrLiterNode(incorrect))),PrintlnNode(StrLiterNode(incorrect))))))
+#semantic_error#
+Binary op: unexpected rhs type ERROR, expected lhs type int
+Binary op: unexpected rhs type ERROR, expected lhs type int
+Binary op: unexpected rhs type ERROR, expected lhs type int
+Test src/test/scala/wacc/valid/scope/printAllTypes.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Tests scoping with most variable types
+
+# Output:
+# ( [1, 2, 3] , [a, b, c] )
+# [ #addrs# = (a, true), #addrs# = (b, false) ]
+# 1, 2
+# array, of, strings
+# true, false, true
+# xyz
+# 1, 2, 3
+# this is a string
+# true
+# x
+# 5
+#
+
+# Program:
+
+begin
+
+  string comma = ", ";
+  int x = 5;
+  begin
+    char x = 'x';
+    begin
+      bool x = true;
+      begin
+        string x = "this is a string";
+        begin
+          int[] x = [1,2,3];
+          begin
+            char[] x = ['x', 'y', 'z'];
+            begin
+              bool[] x = [true, false, true];
+              begin
+                string[] x = ["array", "of", "strings"];
+                begin
+                  pair(int, int) x = newpair(1, 2);
+                  begin
+                    pair(char, bool) y = newpair('a', true);
+                    pair(char, bool) z = newpair('b', false);
+                    pair(char, bool)[] x = [y, z];
+                    begin
+                      int[] y = [1, 2, 3];
+                      char[] z = ['a', 'b', 'c'];
+                      pair(int[], char[]) x = newpair(y, z);
+                      begin
+                        skip
+                      end;
+                      int[] a = fst x;
+                      char[] b = snd x;
+                      print "( [";
+                      print a[0];
+                      print comma;
+                      print a[1];
+                      print comma;
+                      print a[2];
+                      print "] , [";
+                      print b[0];
+                      print comma;
+                      print b[1];
+                      print comma;
+                      print b[2];
+                      println "] )" # ( [fst x] , [snd x] )
+                    end;
+                    pair(char, bool) a = x[0];
+                    char aa = fst a;
+                    bool ab = snd a;
+                    pair(char, bool) b = x[1];
+                    char ba = fst b;
+                    bool bb = snd b;
+                    print "[ ";
+                    print a;
+                    print " = (";
+                    print aa;
+                    print comma;
+                    print ab;
+                    print "), ";
+                    print b;
+                    print " = (";
+                    print ba;
+                    print comma;
+                    print bb;
+                    println ") ]" # [ x[0], x[1] ]
+                  end;
+                  int y = fst x;
+                  int z = snd x;
+                  print y;
+                  print comma;
+                  println z # fst x, snd x
+                end;
+                string a = x[0];
+                string b = x[1];
+                string c = x[2];
+                print a;
+                print comma;
+                print b;
+                print comma;
+                println c # string[]
+              end;
+              print x[0];
+              print comma;
+              print x[1];
+              print comma;
+              println x[2] # bool[]
+            end;
+            println x # char[]
+          end;
+          int a = x[0];
+          int b = x[1];
+          int c = x[2];
+          print a;
+          print comma;
+          print b;
+          print comma;
+          println c # int[]
+        end;
+        println x # string
+      end;
+      println x # bool
+    end;
+    println x # char
+  end;
+  println x # int
+
+end
+#syntax_error#
+(line 24, column 17):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or end
+  >  begin
+  >    char x = 'x';
+                   ^
+  >    begin
+Test src/test/scala/wacc/valid/scope/scopeIfRedefine.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# variable scoping test that redefines a variable within an if-statement
+
+# Output:
+# true
+# 12
+#
+
+# Program:
+
+begin
+  int x = 12 ;
+  if x == 12 then
+    bool x = true ;
+    println x
+  else
+    char x = 'a';
+    println x
+  fi ;
+  println x
+end
+#syntax_error#
+(line 13, column 19):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or else
+  >  if x == 12 then
+  >    bool x = true ;
+                     ^
+  >    println x
+Test src/test/scala/wacc/valid/scope/scopeRedefine.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# more complex variable scoping test that redefines a variable
+
+# Output:
+# true
+# 2
+#
+
+# Program:
+
+begin
+  int x = 1 ;
+  begin
+    x = 2 ;
+    bool x = true ;
+    println x
+  end ;
+  println x
+end
+#syntax_error#
+(line 13, column 11):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or end
+  >  begin
+  >    x = 2 ;
+             ^
+  >    bool x = true ;
+Test src/test/scala/wacc/valid/scope/scopeSimpleRedefine.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# variable scoping test that redefines a variable
+
+# Output:
+# true
+# 12
+#
+
+# Program:
+
+begin
+  int x = 12 ;
+  begin
+    bool x = true ;
+    println x
+  end ;
+  println x
+end
+#syntax_error#
+(line 13, column 19):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or end
+  >  begin
+  >    bool x = true ;
+                     ^
+  >    println x
+Test src/test/scala/wacc/valid/scope/scopeVars.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple variable scoping test
+
+# Output:
+# 2
+# 4
+# 2
+#
+
+# Program:
+
+begin
+  int x = 2 ;
+  println x ;
+  begin
+    int x = 4 ;
+    println x
+  end ;
+  println x
+end
+#syntax_error#
+(line 15, column 15):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or end
+  >  begin
+  >    int x = 4 ;
+                 ^
+  >    println x
+Test src/test/scala/wacc/valid/scope/scopeWhileNested.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# variable scoping nested within a while-loop
+
+# Output:
+# counting... 5
+# counting... 4
+# counting... 3
+# counting... 2
+# counting... 1
+# 0 Boom!
+#
+
+# Program:
+
+begin
+  int x = 5 ;
+  while x > 0 do
+    begin
+      string x = "counting... " ;
+      print x
+    end ;
+    println x ;
+    x = x - 1
+  done ;
+  print x ;
+  println " Boom!"
+end
+#syntax_error#
+(line 18, column 33):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or end
+  >    begin
+  >      string x = "counting... " ;
+                                   ^
+  >      print x
+Test src/test/scala/wacc/valid/scope/scopeWhileRedefine.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# variable scoping test that redefines a variable within a while-loop
+
+# Output:
+# counting... 5
+# counting... 4
+# counting... 3
+# counting... 2
+# counting... 1
+# 0 Boom!
+#
+
+# Program:
+
+begin
+  int x = 5 ;
+  string y = " Boom!" ;
+  while x > 0 do
+    string y = "counting... " ;
+    print y;
+    println x;
+    x = x - 1
+  done ;
+  print x;
+  println y
+end
+#syntax_error#
+(line 18, column 31):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >  while x > 0 do
+  >    string y = "counting... " ;
+                                 ^
+  >    print y;
+Test src/test/scala/wacc/valid/scope/splitScope.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# splits the first appearances of variables by a new scope to ensure proper grouping
+
+# Output:
+# 3
+# 2
+#
+
+# Program:
+
+begin
+  int x = 1 ;
+  begin
+    x = 3 ;
+    bool z = true
+  end ;
+  int y = 2 ;
+  println x ;
+  println y
+end
+#syntax_error#
+(line 13, column 11):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or end
+  >  begin
+  >    x = 3 ;
+             ^
+  >    bool z = true
+Test src/test/scala/wacc/valid/sequence/boolAssignment.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple boolean variable declaration and assignment
+
+# Output:
+
+# Program:
+
+begin
+  bool b = false ;
+  b = true
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(bool),IdentNode(b),BoolLiterNode(false)), LValuesAssignNode(IdentNode(b),BoolLiterNode(true)))))
+#semantic_error#
+b is not in scope or not declared
+Test src/test/scala/wacc/valid/sequence/charAssignment.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple character variable declaration and assignment
+
+# Output:
+
+# Program:
+
+begin
+  char c = 'a' ;
+  c = 'Z'
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(char),IdentNode(c),CharLiterNode(a)), LValuesAssignNode(IdentNode(c),CharLiterNode(Z)))))
+#semantic_error#
+c is not in scope or not declared
+Test src/test/scala/wacc/valid/sequence/intAssignment.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple integer variable declaration and assignment
+
+# Output:
+
+# Exit:
+# 20
+
+# Program:
+
+begin
+  int x = 10 ;
+  x = 20 ;
+  exit x
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(int),IdentNode(x),IntLiterNode(10)), LValuesAssignNode(IdentNode(x),IntLiterNode(20)), ExitNode(IdentNode(x)))))
+#semantic_error#
+x is not in scope or not declared
+Test src/test/scala/wacc/valid/sequence/stringAssignment.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple string variable declaration and assignment
+
+# Output:
+
+# Program:
+
+begin
+  string s = "foo" ;
+  s = "bar"
+end
+AST = ProgramNode(List(),StatJoinNode(List(AssignIdentNode(BaseTypeNode(string),IdentNode(s),StrLiterNode(foo)), LValuesAssignNode(IdentNode(s),StrLiterNode(bar)))))
+#semantic_error#
+s is not in scope or not declared
+Test src/test/scala/wacc/valid/variables/stringCarriageReturn.wacc failed! Exited 200 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# carriage returns should be parsable, but their behaviour is non-portable, so the IO is not currently tested
+
+# Output:
+
+# Program:
+
+begin
+  string s = "Hello \r World!\n"
+end
+AST = ProgramNode(List(),AssignIdentNode(BaseTypeNode(string),IdentNode(s),StrLiterNode(Hello  World!
+)))
+#semantic_error#
+String cannot contain newline
+Test src/test/scala/wacc/valid/while/fibonacciFullIt.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# iteratively calculate the given fibonacci number
+
+# Input: 30
+
+# Output:
+# This program calculates the nth fibonacci number iteratively.
+# Please enter n (should not be too large): The input n is 30
+# The nth fibonacci number is 832040
+#
+
+# Program:
+
+begin
+  println "This program calculates the nth fibonacci number iteratively." ;
+  print "Please enter n (should not be too large): " ;
+  int n = 0;
+  read n ;
+  print "The input n is " ;
+  println n ;
+  print "The nth fibonacci number is " ;
+  int f0 = 0 ;
+  int f1 = 1 ;
+  int save = 0;
+  while n > 0 do
+    save = f0 ;
+    f0 = f1 ;
+    f1 = save + f1 ;
+    n = n - 1
+  done ;
+  println f0
+end
+#syntax_error#
+(line 25, column 15):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "[", "||", or done
+  >  while n > 0 do
+  >    save = f0 ;
+                 ^
+  >    f0 = f1 ;
+Test src/test/scala/wacc/valid/while/fibonacciIterative.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# iterative calculation of the first 20 fibonacci numbers
+
+# Output:
+# The first 20 fibonacci numbers are:
+# 0, 1, 1, 2, 3, 5, 8, 13, 21, 34, 55, 89, 144, 233, 377, 610, 987, 1597, 2584, 4181, ...
+#
+
+# Program:
+
+begin
+  int i = 0 ;
+  int f0 = 0 ;
+  int f1 = 1 ;
+  int save = 0;
+  println "The first 20 fibonacci numbers are:" ;
+  while i < 20 do
+    print f0 ;
+    print ", " ;
+    save = f0 ;
+    f0 = f1 ;
+    f1 = save + f1 ;
+    i = i + 1
+  done ;
+  println "..."
+end
+#syntax_error#
+(line 17, column 14):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "[", "||", or done
+  >  while i < 20 do
+  >    print f0 ;
+                ^
+  >    print ", " ;
+Test src/test/scala/wacc/valid/while/loopCharCondition.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Use a character as a loop condition. Enter the loop once only, then exit the loop.
+
+# Output:
+# Change c
+# Should print "Change c" once before.
+#
+
+# Program:
+
+begin
+	char c = '\0' ;
+	while c == '\0' do
+		c = 'a' ;
+		println "Change c"
+	done ;
+	println "Should print \"Change c\" once before."
+end
+#syntax_error#
+(line 13, column 17):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  > while c == '\0' do
+  >  c = 'a' ;
+             ^
+  >  println "Change c"
+Test src/test/scala/wacc/valid/while/loopIntCondition.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# Use an integer as a loop condition. Enter the loop once only, then exit the loop.
+
+# Output:
+# Change n
+# Should print "Change n" once before.
+#
+
+# Program:
+
+begin
+	int n = 0 ;
+	while n != 1 do
+		n = 1 ;
+		println "Change n"
+	done ;
+	println "Should print \"Change n\" once before."
+end
+#syntax_error#
+(line 13, column 15):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  > while n != 1 do
+  >  n = 1 ;
+           ^
+  >  println "Change n"
+Test src/test/scala/wacc/valid/while/max.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# find the max of two numbers
+
+# Output:
+# max value = 17
+#
+
+# Program:
+
+begin
+  int i = 0 ;
+  int x = 10 ;
+  int y = 17 ;
+  while (y > 0 || x > 0) do
+    x = x - 1 ;
+    y = y - 1 ;
+    i = i + 1
+  done ;
+  print "max value = ";
+  println i
+end
+#syntax_error#
+(line 14, column 15):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >  while (y > 0 || x > 0) do
+  >    x = x - 1 ;
+                 ^
+  >    y = y - 1 ;
+Test src/test/scala/wacc/valid/while/min.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# find the min of two numbers
+
+# Output:
+# min value = 10
+#
+
+# Program:
+
+begin
+  int i = 0 ;
+  int x = 10 ;
+  int y = 17 ;
+  while y > 0 && x > 0 do
+    x = x - 1 ;
+    y = y - 1 ;
+    i = i + 1
+  done ;
+  print "min value = " ;
+  println i
+end
+#syntax_error#
+(line 14, column 15):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >  while y > 0 && x > 0 do
+  >    x = x - 1 ;
+                 ^
+  >    y = y - 1 ;
+Test src/test/scala/wacc/valid/while/rmStyleAddIO.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# register machine style addition
+
+# Input: 2 40
+
+# Output:
+# Enter the first number: Enter the second number: Initial value of x: 2
+# (+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)(+)
+# final value of x: 42
+#
+
+# Program:
+
+begin
+  int x = 0 ;
+  int y = 0 ;
+  print "Enter the first number: " ;
+  read x ;
+  print "Enter the second number: " ;
+  read y ;
+  print "Initial value of x: " ;
+  println x ;
+  while y > 0 do
+    print "(+)" ;
+    x = x + 1 ;
+    y = y - 1
+  done ;
+  println "" ;
+  print "final value of x: " ;
+  println x
+end
+#syntax_error#
+(line 23, column 17):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >  while y > 0 do
+  >    print "(+)" ;
+                   ^
+  >    x = x + 1 ;
+Test src/test/scala/wacc/valid/while/rmStyleAdd.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# register machine style addition
+
+# Output:
+# initial value of x: 3
+# (+)(+)(+)(+)(+)(+)(+)
+# final value of x: 10
+#
+
+# Program:
+
+begin
+  int x = 3 ;
+  int y = 7 ;
+  print "initial value of x: " ;
+  println x ;
+  while y > 0 do
+    print "(+)" ;
+    x = x + 1 ;
+    y = y - 1
+  done ;
+  println "" ;
+  print "final value of x: " ;
+  println x
+end
+#syntax_error#
+(line 17, column 17):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >  while y > 0 do
+  >    print "(+)" ;
+                   ^
+  >    x = x + 1 ;
+Test src/test/scala/wacc/valid/while/whileBoolFlip.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# while loop flips bool to terminate
+
+# Output:
+# flip b!
+# end of loop
+#
+
+# Program:
+
+begin
+  bool b = true ;
+  while b do
+    println "flip b!" ;
+    b = !b
+  done ;
+  println "end of loop"
+end
+#syntax_error#
+(line 13, column 23):
+  unexpected ";"
+  expected "!=", "%", "&&", "*", "+", "-", "/", "<", "<=", "==", ">", ">=", "||", or done
+  >  while b do
+  >    println "flip b!" ;
+                         ^
+  >    b = !b
+Test src/test/scala/wacc/valid/while/whileCount.wacc failed! Exited 100 instead of 0
+Output: \n Hello WACC_45!
+File contents:
+# simple counting while loop
+
+# Output:
+# Can you count to 10?
+# 1
+# 2
+# 3
+# 4
+# 5
+# 6
+# 7
+# 8
+# 9
+# 10
+#
+
+# Program:
+
+begin
+  int i = 1 ;
+  println "Can you count to 10?" ;
+  while i <= 10 do
+    println i ;
+    i = i + 1
+  done
+end
+#syntax_error#
+(line 22, column 11):
+  unexpected "<="
+  expected "[" or do
+  >  println "Can you count to 10?" ;
+  >  while i <= 10 do
+             ^^
+  >    println i ;
+Current progress: 64.68 % of tests in wacc_example passed
+125 tests failed! 229 tests passed

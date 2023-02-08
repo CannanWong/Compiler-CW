@@ -51,10 +51,11 @@ do
 
     if [ $pass -eq 1 ]
         then 
-        echo -e "Test $file passed"
+        # echo -e "Test $file passed"
         ((passcount=passcount+1))
     else
         echo -e "Test $file failed! Exited $exit instead of $expected_exit"
+        echo "Output: \n $output"
         ((failcount=failcount+1))
         allpass=0
     fi

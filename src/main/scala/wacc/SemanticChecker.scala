@@ -7,6 +7,7 @@ object SemanticChecker {
     var symbolTable = new SymbolTable()
     var nextScope = 0
     var scopeStack = Stack[Int]()
+    var insideFunc = true
 
     def check(node: ProgramNode): String = {
         resetSemanticChecker()

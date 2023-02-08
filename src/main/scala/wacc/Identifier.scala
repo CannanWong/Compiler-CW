@@ -16,7 +16,7 @@ case class FuncIdentifier(paramtype: List[String], returntype: String) extends I
 
 //case class ArrayIdentifier(ty: String, size: Int, elements: List[Any]) extends Identifier
 
-case class ArrayIdentifier(ty: String, dim: Int, size: Int, elements: List[Any]) extends Identifier
+case class ArrayIdentifier(ty: String, dim: Int) extends Identifier
 
 case class PairIdentifier(ty1: String, ty2: String) extends Identifier
 

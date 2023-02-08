@@ -16,9 +16,9 @@ class SymbolTable {
     }
 
     // Add array to symbol table
-    def addArray(name: String, ty: String, dim: Int, size: Int, elements: List[Any]): Unit = {
+    def addArray(name: String, ty: String, dim: Int): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
-        val identifier = new ArrayIdentifier(ty, dim, size, elements)
+        val identifier = new ArrayIdentifier(ty, dim)
         map.addOne(varName, identifier)
     }
 
