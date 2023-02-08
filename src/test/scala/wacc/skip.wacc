@@ -7,10 +7,12 @@
 begin
   # Testing functions with statements inside, array supported
   int f(int[] asdf, char cccc, pair(int, char) a) is
-    int asdf = 5
+    int asdf = 5;
+    return asdf
   end
   int g(string sss, bool b) is
-    skip
+    skip;
+    return 4
   end
   # Statement atoms (and statJoin in general)
   int x = 514;
