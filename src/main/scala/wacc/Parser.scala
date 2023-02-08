@@ -5,11 +5,13 @@ import parsley.Parsley.{attempt, lookAhead, notFollowedBy}
 import parsley.implicits.character.charLift
 import parsley.implicits.lift.{Lift1, Lift2, Lift3, Lift4}
 import parsley.token.{Lexer, descriptions, predicate}
+import parsley.token.text.Character
 import parsley.expr.{Atoms, precedence, Postfix, Ops, InfixL, Prefix}
 import parsley.expr.chain.postfix1
 import descriptions.numeric.{NumericDesc, PlusSignPresence}
 import PlusSignPresence.Optional
-import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc}
+import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc, text}
+import text.{TextDesc, EscapeDesc}
 import parsley.combinator.{sepBy, sepBy1, some, manyUntil, choice}
 import parsley.character.{noneOf, stringOfMany, string, strings, spaces}
 
@@ -32,7 +34,8 @@ object lexer {
                 "if", "then", "else", "fi", 
                 "while", "do", "done", 
                 "call", 
-                "fst", "snd", "newpair", "pair")
+                "fst", "snd", "newpair", "pair",
+                "null")
         ),
         nameDesc = NameDesc.plain.copy(
             identifierStart = predicate.Basic(validIdentStart),
@@ -40,10 +43,18 @@ object lexer {
         ),
         numericDesc = NumericDesc.plain.copy(
             positiveSign = Optional
+        ),
+        textDesc = TextDesc.plain.copy(
+            escapeSequences = EscapeDesc.plain.copy(
+                literals = Set('0', 'b', 't', 'n', 'f', 'r', '\"', '\'', '\\')
+            ),
+            multiStringEnds = Set.empty,
+            graphicCharacter = predicate.Basic(validChar)
         )
     )
     private def validIdentStart(c: Char) = c == '_' || (c <= 'z' && c.isLetter)
     private def validIdentLetter(c: Char) = validIdentStart(c) || c.isDigit
+    private def validChar(c: Char) = !(List('\\', '\'', '\"', '\n').contains(c))
     //private val comment = symbol("#") *> manyUntil(item, endOfLine)
     //private val skipWhitespace = skipMany(whitespace <|> comment).hide
     private val lexer = new Lexer(desc)
@@ -53,13 +64,16 @@ object lexer {
     //def symbol(s: String): Parsley[Unit] = 
     //    lexer.lexeme.symbol(s)
     val implicits = lexer.lexeme.symbol.implicits
-    val identifier = lexer.lexeme(lexer.lexeme.names.identifier)
+    val identifier = lexer.lexeme.names.identifier
+    val character = lexer.lexeme.text.character.ascii
+    val string = lexer.lexeme.text.string.ascii
 
     val num = lexer.lexeme.numeric.signed.decimal32
+    def lexeme[A](p: Parsley[A]): Parsley[A] = lexer.lexeme(p)
 }
 
 object Parser {
-    import lexer.{fully, identifier, num}
+    import lexer.{fully, identifier, num, character, string, lexeme}
     import lexer.implicits.implicitSymbol
 
     /* General expressions */
@@ -73,6 +87,7 @@ object Parser {
         charLiter          <|> 
         strLiter           <|>
         ident              <|>
+        pairLiter          <|>
         bracketExpr
 
     lazy val bracketExpr: Parsley[ExprNode] =
@@ -152,13 +167,13 @@ object Parser {
             '\\'
         )
 
-    lazy val character: Parsley[Char] =
-        escapedChar <|> noneOf('\\', '\'', '\"')
+    // lazy val character: Parsley[Char] =
+    //     escapedChar <|> ascii.noneOf('\\', '\'', '\"')
     lazy val charLiter: Parsley[CharLiterNode] = 
-        CharLiterNode.lift("'" ~> character <~ "'")
+        CharLiterNode.lift(character)
     
     lazy val strLiter: Parsley[StrLiterNode] =
-        StrLiterNode.lift("\"" ~> stringOfMany(character) <~ "\"")
+        StrLiterNode.lift(string)
 
     lazy val arrayType: Parsley[ArrayTypeNode] =
         postfix1(arrayBaseType, "[]" #> ArrayTypeNode)
@@ -229,13 +244,13 @@ object Parser {
         PrintlnNode.lift("println" ~> expr)
 
     lazy val ifCon =
-        IfNode.lift("if" ~> expr, "then" ~> stat, "else" ~> stat <~ "fi")
+        IfNode.lift("if" ~> expr, "then" ~> stats, "else" ~> stats <~ "fi")
 
     lazy val whileCon =
-        WhileNode.lift("while" ~> expr, "do" ~> stat <~ "done")
+        WhileNode.lift("while" ~> expr, "do" ~> stats <~ "done")
 
     lazy val beginEnd =
-        BeginEndNode.lift("begin" ~> stat <~ "end")
+        BeginEndNode.lift("begin" ~> stats <~ "end")
 
     lazy val assignIdent: Parsley[AssignIdentNode] =
         AssignIdentNode.lift(generalType, ident <~ "=", rValue)
@@ -243,7 +258,7 @@ object Parser {
     lazy val valuesEqual: Parsley[LValuesAssignNode] =
         LValuesAssignNode.lift(lValue, "=" ~> rValue)
 
-    lazy val stat: Parsley[StatNode] =
+    lazy val stat: Parsley[StatNode] = lexer.lexeme(
         skip        <|>
         read        <|>
         free        <|>
@@ -255,7 +270,7 @@ object Parser {
         whileCon    <|>
         beginEnd    <|>
         attempt(assignIdent) <|>
-        valuesEqual
+        valuesEqual)
     
     lazy val stats: Parsley[StatNode] =
         attempt(stat <~ notFollowedBy(";")) <|> statJoin
