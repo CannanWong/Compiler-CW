@@ -22,51 +22,12 @@ object SemanticChecker {
         scopeStack.push(0)
     }
 
-    def validDeclaration(id: IdentNode): Boolean = {
-        symbolTable.lookUpVar(id.name) match {
-            case Some(n) => {
-                errorMessage += "Variable name \"" + id.name + "\" is already used in the same scope\n"
-                false
-            }
-            case _ => {
-                symbolTable.lookUpFunc(id.name) match {
-                    case Some(n) => {
-                        errorMessage += "Function name \"" + id.name + "\" is already used\n"
-                        false
-                    }
-                    case _ => true
-                }
-            }
-        }  
-    }
-
     def tableContainsIdentifier(id :IdentNode): Boolean = {
         if (symbolTable.lookUpVar(id.name) == None) {
             errorMessage += "variable name \"" + id.name + "\" is is not defined in this scope\n"
             return false
         }
         return true
-    }
-
-    /* function returns -1 if idNode is not definded in any scope */
-    def identifierScope(id: IdentNode): Int = {
-        var ret = -1
-        /* can only return 0 or 1 result */
-        var idx = 0
-        while (idx < scopeStack.size && ret != -1) {
-            val scope = scopeStack.indexOf(idx)
-            symbolTable.lookUp(s"${scope}!" + id.name) match {
-                case Some(identif) => {
-                    ret = scope
-                }
-                case None => 
-            }
-            idx += 1
-        }
-        if (ret == -1) {
-            errorMessage += s"${id.name} is not in scope or not declared\n"
-        }
-        ret
     }
 
     def typeCheck(lhs: TypeNode, rhs: RValueNode): Boolean = {

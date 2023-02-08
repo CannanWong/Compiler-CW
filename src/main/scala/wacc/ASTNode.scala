@@ -47,16 +47,21 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         var paramtypeList = ListBuffer[String]()
         for (param <- paramList.paramList) {
             // Check for repeated parameter names
-            if (SemanticChecker.validDeclaration(param.ident)) {
+            
+            if (SemanticChecker.tableContainsIdentifier(param.ident)) {
                 paramtypeList += param.ty.typeVal()
                 SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.typeVal())
             }
         }
 
-        // Check ident
-        if (SemanticChecker.validDeclaration(ident)) {
+        // Check ident is used
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(n) => {
+                SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is already used\n"
+                false
+            }
             // Add to symbol table
-            SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
+            case _ => SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
         }
         
         // Check return type
@@ -109,13 +114,31 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         ty.semanticCheck()
         ident.semanticCheck()
         rvalue.semanticCheck()
-        if (SemanticChecker.validDeclaration(ident) && SemanticChecker.typeCheck(ty, rvalue)) {
-            // add var to symbol table
-            SemanticChecker.symbolTable.addVar(ident.name, rvalue.typeVal())
+        if (SemanticChecker.symbolTable.checkVarDefined(ident.name)){
+            SemanticChecker.errorMessage += "Variable name \"" + ident.name + "\" is already used in the same scope\n"
         }
+        else {
+            if (SemanticChecker.typeCheck(ty, rvalue)) {
+                ty match {
+                    case b: BaseTypeNode => SemanticChecker.symbolTable.addVar(ident.name, ty.typeVal())
+                    case _ =>
+                }
+            }
+        }
+
+        rvalue match{
+            case id: IdentNode => SemanticChecker.tableContainsIdentifier(id)
+            case a: ArrayElemNode => SemanticChecker.tableContainsIdentifier(a.ident)
+            // ! case f: FstNode =>
+            // ! case f: SndNode =>
+            case _ =>
+        }
+        SemanticChecker.typeCheck(ty, rvalue)
+
     }
 }
 
+// Example: a=5
 case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode {
     /**
       * check for:
@@ -126,48 +149,21 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         lvalue.semanticCheck()
         rvalue.semanticCheck()
 
-        var lname = ""
-        var rname = ""
-
-        var bothDefined = true
-
-        /* check that ident(left) is not asssigned to itself */
-        val lValTableHName = lvalue match{
-            case id: IdentNode => {
-                val varName = SemanticChecker.currScope().toString() + "!" + id.name
-                lname = id.name
-                if (SemanticChecker.identifierScope(id) >= 0) {
-                    varName
-                } else {
-                    bothDefined = false
-                    "NO SUCH THING AS -" + SemanticChecker.currScope() + "!" + id.name
-                }
-            }              
-            case _ => "ARRAY: should pass test PAIR: TODO"
+        lvalue match{
+            case id: IdentNode => SemanticChecker.tableContainsIdentifier(id)
+            case a: ArrayElemNode => SemanticChecker.tableContainsIdentifier(a.ident)
+            // ! case f: FstNode =>
+            // ! case f: SndNode =>
+            case _ =>
         }
-
-        val rValTableHName = rvalue match{
-            case id: IdentNode => {
-                val varName = SemanticChecker.currScope().toString() + "!" + id.name
-                rname = id.name
-                if (SemanticChecker.identifierScope(id) >= 0) {
-                    varName
-                } else {
-                    bothDefined = false
-                    "NO SUCH THING AS -" + SemanticChecker.currScope() + "!" + id.name
-                }
-            }     
-            case _ => "ARRAY: should pass test PAIR: TODO"
+        rvalue match{
+            case id: IdentNode => SemanticChecker.tableContainsIdentifier(id)
+            case a: ArrayElemNode => SemanticChecker.tableContainsIdentifier(a.ident)
+            // ! case f: FstNode =>
+            // ! case f: SndNode =>
+            case _ =>
         }
-
-        if (lValTableHName == rValTableHName) {
-            SemanticChecker.errorMessage += "Reassignment to same variable: " + lname + " to " + rname + "\n"
-        }     
-        else if (bothDefined) {
-            if (SemanticChecker.typeCheck(lvalue, rvalue)) {
-                SemanticChecker.errorMessage += "successful assignment of variable: " + lValTableHName + " to " + rValTableHName + "\n"
-            }
-        }
+        SemanticChecker.typeCheck(lvalue, rvalue)
     }
 }
 
@@ -309,27 +305,24 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
     }
 }
 
-// Example: a: (typeval: int:2), a[1] (typeval: int:1)
+// Example: a[1][b]
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
     
     override def typeVal() = "TBC"
     override def semanticCheck(): Unit = {
         typeVal()
-        SemanticChecker.validDeclaration(ident)
         var elemDim = 0
-        if (SemanticChecker.identifierScope(ident) >= 0) {
             for (e <- exprList) {
                 elemDim += 1
                 e.semanticCheck()
                 if (e.typeVal() != "int") {
-                    SemanticChecker.errorMessage += s"array elem index: unexpected type ${e.typeVal}, expected int\n"
+                    SemanticChecker.errorMessage += s"array elem index: unexpected type ${e.typeVal()}, expected int\n"
                 }
             }
             /* ERROR: will not stay when everyting abstracted to concrete type identifier */
             // if (elemDim > typeVal.charAt(typeVal.length - 2).toInt) {
             //     SemanticChecker.errorMessage += s"array elem type: unexpected type ${ident.typeVal}:${elemDim}, expected ${arrIdentType}\n"
             // }
-        } 
     }
 }
 
@@ -360,6 +353,7 @@ sealed trait RValueNode extends ASTNode {
 
 sealed trait ExprNode extends RValueNode
 
+// Example: [1,a] (a=2) / [a,b] (a=[1,2],b=[3,4])
 case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
     val size = exprList.size
     override def typeVal() = {
@@ -398,6 +392,7 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
     }
 }
 
+// Example: newpair(1,a)
 case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode {
     override def typeVal() = {
         fstExpr.typeVal() + "-" + sndExpr.typeVal()
@@ -459,7 +454,6 @@ case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
     }
 }
 
-
 case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
     override def semanticCheck(): Unit = {
         for (e <- exprList) {
@@ -476,6 +470,7 @@ case class BaseTypeNode(ty: String) extends TypeNode with PairElemTypeNode {
     override def typeVal() = ty
 }
 
+// Example: int[]
 case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
     override def typeVal(): String = {
         val dimension = countDimension(ty)
@@ -502,6 +497,7 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
     }
 }
 
+// Example: Pair(bool, int[])
 case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) extends TypeNode {
     override def typeVal() = "pair"
     override def semanticCheck(): Unit = {
