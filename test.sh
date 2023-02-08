@@ -9,7 +9,7 @@ shopt -s globstar
 for file in src/test/scala/wacc/**/*.wacc
 do 
     ((testcount=testcount+1))
-    echo "Testing $file:"
+    # echo "Testing $file:"
     expected=$(grep -A1 "# Output" $file)
     if echo $expected | grep -q "# #syntax_error"
         then
@@ -26,35 +26,35 @@ do
 
     output=$(./compile $file)
     exit=$?
-    echo "Expected output: $expected_output"
-    echo "Output: $output"
-    echo "Expected exit: $expected_exit"
-    echo "Exit: $exit"
+    # echo "Expected output: $expected_output"
+    # echo "Output: $output"
+    # echo "Expected exit: $expected_exit"
+    # echo "Exit: $exit"
     
     pass=1
 
     # Check if program outputs correct error
     if echo $output | grep -q $expected_output
-        then echo "Output correct"
+        then : # echo "Output correct"
     else
-        echo "Output wrong!"
+        # echo "Output wrong!"
         pass=0
     fi
 
     # Check if program outputs correct exit code
     if [ $exit -eq $expected_exit ]
-        then echo "Exit code correct"
+        then : # echo "Exit code correct"
     else
-        echo "Exit code wrong!"
+        # echo "Exit code wrong!"
         pass=0
     fi
 
     if [ $pass -eq 1 ]
         then 
-        echo -e "Test passed\n"
+        echo -e "Test $file passed"
         ((passcount=passcount+1))
     else
-        echo -e "Test failed!\n"
+        echo -e "Test $file failed! Exited $exit instead of $expected_exit"
         ((failcount=failcount+1))
         allpass=0
     fi
@@ -70,6 +70,5 @@ if [ $allpass -eq 1 ]
     exit 0
 else
     echo -e "$failcount tests failed! $passcount tests passed"
-    echo -e "Current progress: $progess% of tests in wacc_example passed"
     exit 1
 fi
