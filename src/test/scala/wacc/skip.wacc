@@ -4,4 +4,54 @@
 
 # Program:
 
+<<<<<<< HEAD
 begin skip end
+=======
+begin
+  # Testing functions with statements inside, array supported
+  int f(int[] asdf, char cccc, pair(int, char) a) is
+    int asdf = 5;
+    return asdf
+  end
+  int g(string sss, bool b) is
+    skip;
+    return 4
+  end
+  # Statement atoms (and statJoin in general)
+  int x = 514;
+  int[][] y = [1, 2];
+  int z = y[1][1];
+  a = 1;
+  read a;
+  free 1;
+  return 1;
+  exit 1;
+  print 1;
+  println 1;
+  if 1 then skip else skip fi;
+  while 1 do skip done;
+  begin skip end;
+  skip;
+  bool a = true;
+  bool b = false;
+  char c = 'a';
+  string d = "abc";
+  pair(int, int) p = newpair(1, 2);
+  pair(int, pair) q = newpair(1, p);
+  int x = fst a;
+  int y = fst snd q;
+  pair(int, int)[] a = [p, p];
+  fst a[0] = 3;
+  int xxa = fst a[1];
+  int test = !b;
+  int test2 = --4;
+  int length = len d;
+  int order = ord 'c';
+  int charact = chr 43;
+  x = 1*1;
+  x = 1 * 1;
+  x = 1*(1+2);
+  x = 1*1+2;
+  x = 1 < moveRow
+end
+>>>>>>> parser
