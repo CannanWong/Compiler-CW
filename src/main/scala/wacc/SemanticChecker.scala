@@ -25,11 +25,19 @@ object SemanticChecker {
     def validDeclaration(id: IdentNode): Boolean = {
         symbolTable.lookUpVar(id.name) match {
             case Some(n) => {
-                errorMessage += "variable name \"" + id.name + "\" is already used in the same scope\n"
-                return false
+                errorMessage += "Variable name \"" + id.name + "\" is already used in the same scope\n"
+                false
             }
-            case _ => true
-        }
+            case _ => {
+                symbolTable.lookUpFunc(id.name) match {
+                    case Some(n) => {
+                        errorMessage += "Function name \"" + id.name + "\" is already used\n"
+                        false
+                    }
+                    case _ => true
+                }
+            }
+        }  
     }
 
     def tableContainsIdentifier(id :IdentNode): Boolean = {
@@ -76,17 +84,16 @@ object SemanticChecker {
         /* basic types (int, bool, char, string) */
         /* array type */
         /* pair type */
-        val res = lhs.typeVal == rhs.typeVal()
+        val res = lhs.typeVal() == rhs.typeVal()
         if (!res) {
             errorMessage += "LHS type \"" + lhs.typeVal() + "\" does not match RHS type \"" + rhs.typeVal() + "\"\n"
         }
         return res
     }
-
     
     def basicTypeCheck(ty: String, expr: ExprNode): Boolean = {
         val res = ty == expr.typeVal()
-        if (expr.typeVal == "NO TYPE") {
+        if (expr.typeVal() == "NO TYPE") {
             throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
         }
         if (!res) {

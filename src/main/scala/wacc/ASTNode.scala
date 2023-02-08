@@ -106,7 +106,8 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
       */
 
     override def semanticCheck(): Unit = {
-        SemanticChecker.validDeclaration(ident)
+        ty.semanticCheck()
+        ident.semanticCheck()
         rvalue.semanticCheck()
         if (SemanticChecker.validDeclaration(ident) && SemanticChecker.typeCheck(ty, rvalue)) {
             // add var to symbol table
@@ -174,7 +175,7 @@ case class ReadNode(lvalue: LValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
         val ty = lvalue.typeVal()
-        if (ty == "pair") {  // ! pair or wrong fst/snd
+        if (ty.contains("-")) {  // ! pair or wrong fst/snd
             SemanticChecker.errorMessage += "Wrong type in read\n"
         }
         else if (ty != "int" && ty != "char") {
@@ -188,7 +189,7 @@ case class FreeNode(expr: ExprNode) extends StatNode {
         expr.semanticCheck()
         val ty = expr.typeVal()
         // Check if type is array or pair
-        if (!((ty contains ":") || (ty contains "-"))) {
+        if (!(ty.contains(":") || ty.contains("-"))) {
             SemanticChecker.errorMessage += "Wrong type in free\n"
         }
     }
@@ -333,7 +334,7 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
 }
 
 sealed trait PairElemNode extends LValueNode with RValueNode {
-    override def typeVal() = "any"
+    override def typeVal() = "-"
 }
 
 case class FstNode(lvalue: LValueNode) extends PairElemNode {
@@ -538,7 +539,12 @@ case class CharLiterNode(c: Char) extends ExprNode {
 
 case class StrLiterNode(s: String) extends ExprNode {
     override def typeVal() = "string"
-    override def semanticCheck(): Unit = typeVal()
+    override def semanticCheck(): Unit = {
+        if (s.contains("\n")) {
+            SemanticChecker.errorMessage += "String cannot contain newline\n"
+        }
+        typeVal()
+    }
 }
 
 case class PairLiterNode() extends ExprNode
@@ -681,18 +687,12 @@ sealed trait BinOpExprNode extends ExprNode {
                     if (fstExpr.typeVal() != sndExpr.typeVal()) {
                         SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
                     }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", "char", fstExpr)
-                    }
             }
             case IEqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
                     if (fstExpr.typeVal() != sndExpr.typeVal()) {
                         SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", "char", fstExpr)
                     }
             }
             case AndNode(fstExpr, sndExpr) => {
