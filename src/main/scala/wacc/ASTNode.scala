@@ -17,6 +17,7 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
         for (f <- funcList) {
             f.semanticCheck()
         }
+        SemanticChecker.insideFunc = false
         stat.semanticCheck()
     }
 }
@@ -31,8 +32,6 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         4. leagal func ident
         5. return type matches function type
       */
-
-    // ! Check all execution paths contain return or exit
     override def semanticCheck(): Unit = {
         
         ty.semanticCheck()
@@ -47,29 +46,41 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         var paramtypeList = ListBuffer[String]()
         for (param <- paramList.paramList) {
             // Check for repeated parameter names
-            if (SemanticChecker.validDeclaration(param.ident)) {
+            
+            if (SemanticChecker.tableContainsIdentifier(param.ident)) {
                 paramtypeList += param.ty.typeVal()
                 SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.typeVal())
             }
         }
 
-        // Check ident
-        if (SemanticChecker.validDeclaration(ident)) {
+        // Check ident is used
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(n) => {
+                SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is already used\n"
+                false
+            }
             // Add to symbol table
-            SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
+            case _ => SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
         }
         
-        // Check return type
+        // Check that return type matches function return type
+        checkReturnType(ty, stat)
+    }
+
+    def checkReturnType(ty: TypeNode, stat: StatNode): Unit = {
         stat match {
-            case s: StatJoinNode => { 
-                    for (stat <- s.statList) {
-                        stat match {
-                            case ReturnNode(expr) 
-                                => SemanticChecker.typeCheck(ty, expr)
-                            case _ => // ! Find all return nodes
-                        }
-                    }
+            case r: ReturnNode => SemanticChecker.typeCheck(ty, r.expr)
+            case b: BeginEndNode => checkReturnType(ty, b.stat)
+            case i: IfNode => {
+                checkReturnType(ty, i.fstStat)
+                checkReturnType(ty, i.sndStat)
+            }
+            case w: WhileNode => checkReturnType(ty, w.stat)
+            case s: StatJoinNode => {
+                for (st <- s.statList) {
+                    checkReturnType(ty, st)
                 }
+            }
             case _ =>
         }
     }
@@ -106,15 +117,47 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
       */
 
     override def semanticCheck(): Unit = {
-        SemanticChecker.validDeclaration(ident)
+        ty.semanticCheck()
+        ident.semanticCheck()
         rvalue.semanticCheck()
-        if (SemanticChecker.validDeclaration(ident) && SemanticChecker.typeCheck(ty, rvalue)) {
-            // add var to symbol table
-            SemanticChecker.symbolTable.addVar(ident.name, rvalue.typeVal())
+
+        var lhsArrayType = ""
+        var lhsArrayDim = 0
+
+        if (SemanticChecker.symbolTable.checkVarDefined(ident.name)){
+            SemanticChecker.errorMessage += "Variable name \"" + ident.name + "\" is already used in the same scope\n"
         }
+        else {
+            ty match {
+                case b: BaseTypeNode => SemanticChecker.symbolTable.addVar(ident.name, b.typeVal())
+                case a: ArrayTypeNode => {
+                    SemanticChecker.symbolTable.addArray(ident.name, a.arrayType, a.arrayDim)
+                    lhsArrayType = a.arrayType
+                    lhsArrayDim = a.arrayDim
+                }
+                case _ =>
+            }
+        }
+
+        rvalue match{
+            case id: IdentNode => SemanticChecker.tableContainsIdentifier(id)
+            case a: ArrayElemNode => {
+                if (lhsArrayType != a.arrayType) {
+                    SemanticChecker.errorMessage += "Wrong type of array declaration\n"
+                }
+                if (lhsArrayDim != a.arrayDim) {
+                    SemanticChecker.errorMessage += "Wrong dimension of array declaration\n"
+                }
+            }
+            case _ => 
+        }
+            // ! case f: FstNode =>
+            // ! case f: SndNode =>
     }
+        SemanticChecker.typeCheck(ty, rvalue)
 }
 
+// Example: a=5
 case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode {
     /**
       * check for:
@@ -125,48 +168,34 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         lvalue.semanticCheck()
         rvalue.semanticCheck()
 
-        var lname = ""
-        var rname = ""
+        var lhsArrayType = ""
+        var lhsArrayDim = 0
 
-        var bothDefined = true
-
-        /* check that ident(left) is not asssigned to itself */
-        val lValTableHName = lvalue match{
-            case id: IdentNode => {
-                val varName = SemanticChecker.currScope().toString() + "!" + id.name
-                lname = id.name
-                if (SemanticChecker.identifierScope(id) >= 0) {
-                    varName
-                } else {
-                    bothDefined = false
-                    "NO SUCH THING AS -" + SemanticChecker.currScope() + "!" + id.name
-                }
-            }              
-            case _ => "ARRAY: should pass test PAIR: TODO"
-        }
-
-        val rValTableHName = rvalue match{
-            case id: IdentNode => {
-                val varName = SemanticChecker.currScope().toString() + "!" + id.name
-                rname = id.name
-                if (SemanticChecker.identifierScope(id) >= 0) {
-                    varName
-                } else {
-                    bothDefined = false
-                    "NO SUCH THING AS -" + SemanticChecker.currScope() + "!" + id.name
-                }
-            }     
-            case _ => "ARRAY: should pass test PAIR: TODO"
-        }
-
-        if (lValTableHName == rValTableHName) {
-            SemanticChecker.errorMessage += "Reassignment to same variable: " + lname + " to " + rname + "\n"
-        }     
-        else if (bothDefined) {
-            if (SemanticChecker.typeCheck(lvalue, rvalue)) {
-                SemanticChecker.errorMessage += "successful assignment of variable: " + lValTableHName + " to " + rValTableHName + "\n"
+        lvalue match{
+            case id: IdentNode => SemanticChecker.tableContainsIdentifier(id)
+            case a: ArrayElemNode => {
+                lhsArrayType = a.arrayType
+                lhsArrayDim = a.arrayDim
             }
+            // ! case f: FstNode =>
+            // ! case f: SndNode =>
+            case _ =>
         }
+        rvalue match{
+            case id: IdentNode => SemanticChecker.tableContainsIdentifier(id)
+            case a: ArrayElemNode => {
+                if (lhsArrayType != a.arrayType) {
+                    SemanticChecker.errorMessage += "Wrong type of array declaration\n"
+                }
+                if (lhsArrayDim != a.arrayDim) {
+                    SemanticChecker.errorMessage += "Wrong dimension of array declaration\n"
+                }
+            }
+            // ! case f: FstNode =>
+            // ! case f: SndNode =>
+            case _ =>
+        }
+        SemanticChecker.typeCheck(lvalue, rvalue)
     }
 }
 
@@ -174,7 +203,7 @@ case class ReadNode(lvalue: LValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
         val ty = lvalue.typeVal()
-        if (ty == "pair") {  // ! pair or wrong fst/snd
+        if (ty.contains("-")) {  // ! pair or wrong fst/snd
             SemanticChecker.errorMessage += "Wrong type in read\n"
         }
         else if (ty != "int" && ty != "char") {
@@ -188,7 +217,7 @@ case class FreeNode(expr: ExprNode) extends StatNode {
         expr.semanticCheck()
         val ty = expr.typeVal()
         // Check if type is array or pair
-        if (!((ty contains ":") || (ty contains "-"))) {
+        if (!(ty.contains(":") || ty.contains("-"))) {
             SemanticChecker.errorMessage += "Wrong type in free\n"
         }
     }
@@ -196,6 +225,9 @@ case class FreeNode(expr: ExprNode) extends StatNode {
 
 case class ReturnNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
+        if (!SemanticChecker.insideFunc) {
+            SemanticChecker.errorMessage += "No return in main\n"
+        }
         expr.semanticCheck()
         expr match {
             case i: IdentNode => SemanticChecker.tableContainsIdentifier(i)
@@ -297,7 +329,7 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
         identifier match {
             case Some(VarIdentifier(ty)) => ty
-            case Some(ArrayIdentifier(ty, dim, size, elements)) => ty + ":" + dim.toString()
+            case Some(ArrayIdentifier(ty, dim)) => ty + ":" + dim.toString()
             case Some(PairIdentifier(ty1, ty2)) => ty1 + "-" + ty2
             case _ => "ERROR"
         }
@@ -308,32 +340,46 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
     }
 }
 
-// Example: a: (typeval: int:2), a[1] (typeval: int:1)
+// Example: a[1][b]
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
-    
-    override def typeVal() = "TBC"
+    var arrayType = "ERROR"
+    var arrayDim = 0
+    override def typeVal() = {
+        if (arrayDim > 0) {
+            "array"
+        }
+        else if (arrayDim == 0) {
+            arrayType
+        }
+        else {
+            SemanticChecker.errorMessage += "Array dimension incorrect\n"
+            "ERROR"
+        }
+    }
     override def semanticCheck(): Unit = {
-        typeVal()
-        SemanticChecker.validDeclaration(ident)
-        var elemDim = 0
-        if (SemanticChecker.identifierScope(ident) >= 0) {
-            for (e <- exprList) {
-                elemDim += 1
-                e.semanticCheck()
-                if (e.typeVal() != "int") {
-                    SemanticChecker.errorMessage += s"array elem index: unexpected type ${e.typeVal}, expected int\n"
+        if (SemanticChecker.tableContainsIdentifier(ident)) {
+            val identifier = SemanticChecker.symbolTable.lookUpVar(ident.name)
+            identifier match {
+                case Some(ArrayIdentifier(ty: String, dim: Int)) => {
+                    arrayType = ty
+                    arrayDim = dim
+                    for (e <- exprList) {
+                        arrayDim -= 1
+                        e.semanticCheck()
+                        if (e.typeVal() != "int") {
+                            SemanticChecker.errorMessage += s"array elem index: unexpected type ${e.typeVal()}, expected int\n"
+                        }
+                    }
                 }
+                case _ =>
             }
-            /* ERROR: will not stay when everyting abstracted to concrete type identifier */
-            // if (elemDim > typeVal.charAt(typeVal.length - 2).toInt) {
-            //     SemanticChecker.errorMessage += s"array elem type: unexpected type ${ident.typeVal}:${elemDim}, expected ${arrIdentType}\n"
-            // }
-        } 
+        }
+        typeVal()
     }
 }
 
 sealed trait PairElemNode extends LValueNode with RValueNode {
-    override def typeVal() = "any"
+    override def typeVal() = "-"
 }
 
 case class FstNode(lvalue: LValueNode) extends PairElemNode {
@@ -359,44 +405,34 @@ sealed trait RValueNode extends ASTNode {
 
 sealed trait ExprNode extends RValueNode
 
+// Example: [1,a] (a=2) / [a,b] (a=[1,2],b=[3,4])
 case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
-    val size = exprList.size
-    override def typeVal() = {
-        if (!exprList.isEmpty) {
-            val exprTypes = exprList.map(expr => {
-                expr.typeVal()
-            })
-            exprTypes
-            .map(ty => ty == exprTypes(0))
-            .fold(true)((x,y) => {
-                val equals = x == y
-                if (!equals) {
-                    SemanticChecker.errorMessage += s"array literal expr sould have type ${x}, but was ${y}" 
-                }
-                equals
-            })
+    var arrayType = "ERROR"
+    var arrayDim = 1
+    override def typeVal() = "array"
 
-            var dim = 1
-            val arrayPattern: Regex = "[a-z]+:[0-9]+".r
-            /* ERROR: will not stay when everyting abstracted to concrete type identifier */
-            // if (!arrayPattern.matches(exprTypes(0))) {
-            //     //exprTypes(0).length - 2
-            //     //dim += exprTypes(0).charAt(exprTypes(0).length - 2).toInt
-            // } else {
-                exprTypes(0) + ":" + dim
-            } else {
-            /* ERROR: will not stay when everyting abstracted to concrete type identifier */
-                "any:1"
-            }
-    
-        
-    }
     override def semanticCheck(): Unit = {
-        exprList.map(expr => expr.typeVal())
 
+        if (!exprList.isEmpty) {
+            arrayType = exprList.head.typeVal()
+            // ! arrayDim = ??
+            val exprTypes = exprList.map(expr => expr.typeVal())
+            exprTypes.map(ty => ty == exprTypes(0))
+                     .fold(true)((x,y) => {
+                        val equals = x == y
+                        if (!equals) {
+                            SemanticChecker.errorMessage += s"array literal expr should have type ${x}, but was ${y}" 
+                        }
+                        equals
+                    })
+        }
+        else {
+            arrayType = "any"
+        }
     }
 }
 
+// Example: newpair(1,a)
 case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode {
     override def typeVal() = {
         fstExpr.typeVal() + "-" + sndExpr.typeVal()
@@ -458,7 +494,6 @@ case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
     }
 }
 
-
 case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
     override def semanticCheck(): Unit = {
         for (e <- exprList) {
@@ -475,15 +510,16 @@ case class BaseTypeNode(ty: String) extends TypeNode with PairElemTypeNode {
     override def typeVal() = ty
 }
 
+// Example: int[]
 case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
-    override def typeVal(): String = {
-        val dimension = countDimension(ty)
-        val baseType = getType(ty)
-        baseType.typeVal() + ":" + dimension
-    }
+    var arrayType = ""
+    var arrayDim = 1
+    override def typeVal(): String = "array"
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
         typeVal()
+        arrayType = ty.typeVal()
+        arrayDim = countDimension(ty)
     }
 
     def countDimension(ty: TypeNode): Int = {
@@ -501,6 +537,7 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
     }
 }
 
+// Example: Pair(bool, int[])
 case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) extends TypeNode {
     override def typeVal() = "pair"
     override def semanticCheck(): Unit = {
@@ -538,7 +575,12 @@ case class CharLiterNode(c: Char) extends ExprNode {
 
 case class StrLiterNode(s: String) extends ExprNode {
     override def typeVal() = "string"
-    override def semanticCheck(): Unit = typeVal()
+    override def semanticCheck(): Unit = {
+        if (s.contains("\n")) {
+            SemanticChecker.errorMessage += "String cannot contain newline\n"
+        }
+        typeVal()
+    }
 }
 
 case class PairLiterNode() extends ExprNode
@@ -681,18 +723,12 @@ sealed trait BinOpExprNode extends ExprNode {
                     if (fstExpr.typeVal() != sndExpr.typeVal()) {
                         SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
                     }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", "char", fstExpr)
-                    }
             }
             case IEqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
                     if (fstExpr.typeVal() != sndExpr.typeVal()) {
                         SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", "char", fstExpr)
                     }
             }
             case AndNode(fstExpr, sndExpr) => {

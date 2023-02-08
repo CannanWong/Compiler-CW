@@ -16,9 +16,9 @@ class SymbolTable {
     }
 
     // Add array to symbol table
-    def addArray(name: String, ty: String, dim: Int, size: Int, elements: List[Any]): Unit = {
+    def addArray(name: String, ty: String, dim: Int): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
-        val identifier = new ArrayIdentifier(ty, dim, size, elements)
+        val identifier = new ArrayIdentifier(ty, dim)
         map.addOne(varName, identifier)
     }
 
@@ -36,21 +36,31 @@ class SymbolTable {
         map.addOne(funcName, identifier)
     }
 
-    // Look up variable or array from symbol table
+    // Look up variable or array from symbol table in same or higer scopes
     def lookUpVar(name: String): Option[Identifier] = {
+        var idx = 0
+        var scope = SemanticChecker.scopeStack.indexOf(idx)
+        var varName = scope.toString() + "!" + name
+        var identifier = map.get(varName)
+        while (idx < SemanticChecker.scopeStack.size && identifier.isEmpty) {
+            idx += 1
+            scope = SemanticChecker.scopeStack.indexOf(idx)
+            varName = scope.toString() + "!" + name
+            identifier = map.get(varName)
+        }
+        identifier
+    }
+
+    // Check if variable is defined in the same scope
+    def checkVarDefined(name: String): Boolean = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
-        return map.get(varName)
+        map.contains(varName)
     }
 
     // Look up function from symbol table
     def lookUpFunc(name: String): Option[Identifier] = {
         val funcName = "f!" + name
-        return map.get(funcName)
-    }
-
-    // Look up any from symbol table
-    def lookUp(tableName: String): Option[Identifier] = {
-        return map.get(tableName)
+        map.get(funcName)
     }
 }
 

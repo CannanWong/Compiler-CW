@@ -7,6 +7,7 @@ object SemanticChecker {
     var symbolTable = new SymbolTable()
     var nextScope = 0
     var scopeStack = Stack[Int]()
+    var insideFunc = true
 
     def check(node: ProgramNode): String = {
         resetSemanticChecker()
@@ -22,43 +23,12 @@ object SemanticChecker {
         scopeStack.push(0)
     }
 
-    def validDeclaration(id: IdentNode): Boolean = {
-        symbolTable.lookUpVar(id.name) match {
-            case Some(n) => {
-                errorMessage += "variable name \"" + id.name + "\" is already used in the same scope\n"
-                return false
-            }
-            case _ => true
-        }
-    }
-
     def tableContainsIdentifier(id :IdentNode): Boolean = {
         if (symbolTable.lookUpVar(id.name) == None) {
             errorMessage += "variable name \"" + id.name + "\" is is not defined in this scope\n"
             return false
         }
         return true
-    }
-
-    /* function returns -1 if idNode is not definded in any scope */
-    def identifierScope(id: IdentNode): Int = {
-        var ret = -1
-        /* can only return 0 or 1 result */
-        var idx = 0
-        while (idx < scopeStack.size && ret != -1) {
-            val scope = scopeStack.indexOf(idx)
-            symbolTable.lookUp(s"${scope}!" + id.name) match {
-                case Some(identif) => {
-                    ret = scope
-                }
-                case None => 
-            }
-            idx += 1
-        }
-        if (ret == -1) {
-            errorMessage += s"${id.name} is not in scope or not declared\n"
-        }
-        ret
     }
 
     def typeCheck(lhs: TypeNode, rhs: RValueNode): Boolean = {
@@ -76,17 +46,16 @@ object SemanticChecker {
         /* basic types (int, bool, char, string) */
         /* array type */
         /* pair type */
-        val res = lhs.typeVal == rhs.typeVal()
+        val res = lhs.typeVal() == rhs.typeVal()
         if (!res) {
             errorMessage += "LHS type \"" + lhs.typeVal() + "\" does not match RHS type \"" + rhs.typeVal() + "\"\n"
         }
         return res
     }
-
     
     def basicTypeCheck(ty: String, expr: ExprNode): Boolean = {
         val res = ty == expr.typeVal()
-        if (expr.typeVal == "NO TYPE") {
+        if (expr.typeVal() == "NO TYPE") {
             throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
         }
         if (!res) {
