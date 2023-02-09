@@ -36,33 +36,45 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         
         ty.semanticCheck()
         ident.semanticCheck()
-        paramList.semanticCheck()
+
+        // Check if function name is used
+        val funcNameUsed = SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(n) => {
+                SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is already used\n"
+                true
+            }
+            case _ => false
+        }
 
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
-        stat.semanticCheck()
-        SemanticChecker.scopeStack.pop()
+
+        paramList.semanticCheck()
 
         var paramtypeList = ListBuffer[String]()
         for (param <- paramList.paramList) {
             // Check for repeated parameter names
-            
-            if (SemanticChecker.tableContainsIdentifier(param.ident)) {
+            if (SemanticChecker.symbolTable.checkVarDefined(param.ident.name)) {
+                SemanticChecker.errorMessage += "Repeated parameter name " + param.ident.name + "\n"
+            }
+            else {
                 paramtypeList += param.ty.typeVal()
                 SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.typeVal())
             }
         }
-
-        // Check ident is used
-        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
-            case Some(n) => {
-                SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is already used\n"
-                false
-            }
-            // Add to symbol table
-            case _ => SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
+        // Add to symbol table
+        if (!funcNameUsed) {
+            SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
         }
+
+        stat.semanticCheck()
         
+        SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
+        SemanticChecker.nextScope += 1
+        stat.semanticCheck()
+        SemanticChecker.scopeStack.pop()
+        SemanticChecker.scopeStack.pop()
+
         // Check that return type matches function return type
         checkReturnType(ty, stat)
     }
@@ -143,10 +155,7 @@ case class ReadNode(lvalue: LValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
         val ty = lvalue.typeVal()
-        if (ty.contains("-")) {  // ! pair or wrong fst/snd
-            SemanticChecker.errorMessage += "Wrong type in read\n"
-        }
-        else if (ty != "int" && ty != "char") {
+        if (ty != "int" && ty != "char" && ty != "null") {
             SemanticChecker.errorMessage += "Wrong type in read\n"
         }
     }
@@ -437,7 +446,11 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
     }
     override def arrayDim() = {
         if (!exprList.isEmpty) {
-            exprList.head.arrayDim() + 1
+            exprList.head match {
+                case i: IdentNode => i.arrayDim() + 1
+                case a: ArrayElemNode => a.arrayDim() + 1
+                case _ => 1
+            }
         }
         else {
             1
@@ -450,7 +463,7 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
                 (x,y) => {
                         val equals = x == y
                         if (!equals) {
-                            SemanticChecker.errorMessage += s"array literal expr should have type ${x}, but was ${y}" 
+                            SemanticChecker.errorMessage += s"array literal expr should have type ${x}, but was ${y}\n" 
                         }
                         equals
             })
@@ -567,7 +580,7 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
     def countDimension(ty: TypeNode): Int = {
         ty match {
             case ArrayTypeNode(arrayTy) => 1 + countDimension(arrayTy)
-            case node => 1
+            case _ => 1
         }  
     }
 
@@ -656,10 +669,13 @@ case class NegNode(expr: ExprNode) extends UnOpExprNode {
 case class LenNode(expr: ExprNode) extends UnOpExprNode {
     override def typeVal() = "int"
     override def semanticCheck(): Unit = {
-        /* arrays have their types in the form of: <baseType>:<dimension> */
-        val arrayPattern: Regex = "[a-z]+:[0-9]+".r
-        if (!arrayPattern.matches(expr.typeVal())) {
-            SemanticChecker.errorMessage += "Type error: expected at least 1-dimensional array.\n"
+        if (expr.typeVal() != "array") {
+            SemanticChecker.errorMessage += "Wrong type in len(), expected array\n"
+        }
+        else {
+            if (expr.arrayDim() <= 0) {
+                SemanticChecker.errorMessage += "Wrong array dimension in len(), expected at least 1-dimensional array\n"
+            }
         }
     }
 }

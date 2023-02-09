@@ -36,7 +36,7 @@ class SymbolTable {
         map.addOne(funcName, identifier)
     }
 
-    // Look up variable or array from symbol table in same or higer scopes
+    // Look up variable or array from symbol table in same or higher scopes
     def lookUpVar(name: String): Option[Identifier] = {
         var idx = 0
         var scope = SemanticChecker.scopeStack.indexOf(idx)

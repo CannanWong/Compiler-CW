@@ -23,12 +23,13 @@ object SemanticChecker {
         scopeStack.push(0)
     }
 
-    def tableContainsIdentifier(id :IdentNode): Boolean = {
+    // Check if symbol table contains variable in current or higher scopes
+    def tableContainsIdentifier(id: IdentNode): Boolean = {
         if (symbolTable.lookUpVar(id.name) == None) {
-            errorMessage += "variable name \"" + id.name + "\" is is not defined in this scope\n"
-            return false
+            errorMessage += "variable name \"" + id.name + "\" is not defined in this scope\n"
+            false
         }
-        return true
+        true
     }
 
     def typeCheck(ty: TypeNode, rvalue: RValueNode): Unit = {
@@ -36,7 +37,7 @@ object SemanticChecker {
         val rhsType = rvalue.typeVal()
         if (lhsType == rhsType) {
             if (lhsType == "array") {
-                if (ty.arrayType() != rvalue.arrayType()) {
+                if (ty.arrayType() != rvalue.arrayType() && rvalue.arrayType() != "any") {
                     errorMessage += "Wrong type in array declaration\n"
                 }
                 if (ty.arrayDim() != rvalue.arrayDim()) {
@@ -49,8 +50,8 @@ object SemanticChecker {
                 }
             }
         }
-        else {
-            errorMessage += "Wrong type in declaration"
+        else if (!(lhsType == "pair" && rhsType == "null")) {
+            errorMessage += "Wrong type in declaration\n"
         }
     }
 
@@ -59,7 +60,7 @@ object SemanticChecker {
         val rhsType = rvalue.typeVal()
         if (lhsType == rhsType) {
             if (lhsType == "array") {
-                if (lvalue.arrayType() != rvalue.arrayType()) {
+                if (lvalue.arrayType() != rvalue.arrayType() && rvalue.arrayType() != "any") {
                     errorMessage += "Wrong type in array declaration\n"
                 }
                 if (lvalue.arrayDim() != rvalue.arrayDim()) {
@@ -73,7 +74,7 @@ object SemanticChecker {
             }
         }
         else {
-            errorMessage += "Wrong type in declaration"
+            errorMessage += "Wrong type in declaration\n"
         }
     }
     
@@ -83,7 +84,7 @@ object SemanticChecker {
             throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
         }
         if (!res) {
-           errorMessage += "unexpected type " + expr.typeVal() + ", expected  type " + ty + "\n"
+           errorMessage += "unexpected type " + expr.typeVal() + ", expected type " + ty + "\n"
         }
         res       
     }
@@ -98,16 +99,6 @@ object SemanticChecker {
         }
         res       
     }
-
-    // def arrayTypeCheck(ty: String, expr: ExprNode): Boolean = {
-    //     if (expr.typeVal() == "NO TYPE") {
-    //         throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
-    //     }
-    //     if (!res) {
-    //        errorMessage += "unexpected type " + expr.typeVal() + ", expected  type " + ty + "\n"
-    //     }
-    //     res       
-    // }
 
     def currScope(): Int = {
         return scopeStack.top
