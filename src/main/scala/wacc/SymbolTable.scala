@@ -6,37 +6,36 @@ class SymbolTable {
 
     val map: mutable.Map[String, Identifier] = mutable.Map()
 
-    var size = 0; // ?
     
     // Add variable to symbol table
-    def addVar(name: String, ty: String): Unit = {
+    def addVar(name: String, ty: Identifier): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
         val identifier = new VarIdentifier(ty)
         map.addOne(varName, identifier)
     }
 
     // Add array to symbol table
-    def addArray(name: String, ty: String, dim: Int): Unit = {
+    def addArray(name: String, ty: Identifier, dim: Int): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
         val identifier = new ArrayIdentifier(ty, dim)
         map.addOne(varName, identifier)
     }
 
     // Add pair to symbol table
-    def addPair(name: String, ty1: String, ty2: String): Unit = {
+    def addPair(name: String, ty1: Identifier, ty2: Identifier): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
         val identifier = new PairIdentifier(ty1, ty2)
         map.addOne(varName, identifier)
     }
 
     // Add function to symbol table
-    def addFunc(name: String, paramtype: List[String], returntype: String): Unit = {
+    def addFunc(name: String, paramtype: List[Identifier], returntype: Identifier): Unit = {
         val funcName = "f!" + name
         val identifier = new FuncIdentifier(paramtype, returntype)
         map.addOne(funcName, identifier)
     }
 
-    // Look up variable or array from symbol table in same or higer scopes
+    // Look up variable or array from symbol table in same or higher scopes
     def lookUpVar(name: String): Option[Identifier] = {
         var idx = 0
         var scope = SemanticChecker.scopeStack.indexOf(idx)

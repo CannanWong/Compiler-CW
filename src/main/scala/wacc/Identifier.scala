@@ -1,24 +1,126 @@
 package wacc
 
-sealed trait Identifier
+sealed trait Identifier {
+  def typeEquals(id: Any): Boolean
+}
 
-// case class IntIdentifier() extends Identifier
+// when ident node not in symbol table
+sealed class AnyIdentifier() extends Identifier {
+  override def typeEquals(id: Any): Boolean = {
+      true
+  }
+  override def toString(): String = "any"
+}
 
-// case class BoolIdentifier() extends Identifier
+sealed trait BasicTypeIdentifier extends AnyIdentifier
 
-// case class StrIdentifier() extends Identifier
+case class IntIdentifier() extends BasicTypeIdentifier {
+  override def typeEquals(id: Any): Boolean = {
+    id match {
+      case i: IntIdentifier => true
+      case a: AnyIdentifier => true
+      case _ => false
+    }
+  }
+  override def toString(): String = "int"
+}
 
-// case class CharIdentifier() extends Identifier
+case class BoolIdentifier() extends BasicTypeIdentifier {
+  override def typeEquals(id: Any): Boolean = {
+    id match {
+      case b: BoolIdentifier => true
+      case a: AnyIdentifier => true
+      case _ => false
+    }
+  }
+  override def toString(): String = "boolean"
+}
 
-case class VarIdentifier(ty: String) extends Identifier
+case class StrIdentifier() extends BasicTypeIdentifier {
+  override def typeEquals(id: Any): Boolean = {
+    id match {
+      case str: StrIdentifier => true
+      case a: AnyIdentifier => true      
+      case _ => false
+    }
+  }
+  override def toString(): String = "string"
+}
 
-case class FuncIdentifier(paramtype: List[String], returntype: String) extends Identifier
+case class CharIdentifier() extends BasicTypeIdentifier {
+  override def typeEquals(id: Any): Boolean = {
+    id match {
+      case c: CharIdentifier => {
+        SemanticChecker.errorMessage += "char identified\n"
+        true
+      }
+      case a: AnyIdentifier => true
+      case _ => false
+    }
+  }
+  override def toString(): String = "char"
+}
 
-//case class ArrayIdentifier(ty: String, size: Int, elements: List[Any]) extends Identifier
+case class VarIdentifier(ty: Identifier) extends AnyIdentifier {
+  override def typeEquals(id: Any): Boolean = {
+    id match {
+      case VarIdentifier(vtype) => ty.typeEquals(vtype)
+      case _ => false
+    }
+  }
+  override def toString(): String = ty.toString()
+}
 
-case class ArrayIdentifier(ty: String, dim: Int) extends Identifier
+case class FuncIdentifier(paramtype: List[Identifier], returntype: Identifier) extends AnyIdentifier {
+  override def typeEquals(id: Any): Boolean = {
+    id match {
+      case FuncIdentifier(plist, retType) => {
+        val paramsTypeValid = (paramtype.length == plist.length) &&
+                              paramtype
+                              .zip(plist)
+                              .map{case (a: Identifier, b: Identifier) => a.typeEquals(b)}
+                              .fold(true)((x, y) => x && y)
+        paramsTypeValid && returntype.typeEquals(retType)
+      }
+      case _ => false
+    }
+  }
 
-case class PairIdentifier(ty1: String, ty2: String) extends Identifier
+  override def toString(): String = returntype.toString()
+}
 
-// val a = newArrayIdentifier("int[]", 3, [1,2,3])
-// a.ty == "int[]"
+case class ArrayIdentifier(baseTy: Identifier, dim: Int) extends AnyIdentifier {
+  override def typeEquals(id: Any): Boolean = {
+    id match {
+      case ArrayIdentifier(tyId, d) => {
+        baseTy.typeEquals(tyId) && d == dim
+      }
+      case a: AnyIdentifier => true
+      case _ => false
+    }
+  }
+  override def toString(): String = {
+    val sb = new StringBuilder()
+    val brackets = for (i <- 1 to dim) {
+      sb.++=("[]")
+    }
+    s"${baseTy.toString()}${brackets}"
+
+  }
+}
+
+case class PairIdentifier(ty1: Identifier, ty2: Identifier) extends AnyIdentifier {
+  override def typeEquals(id: Any): Boolean = {
+    id match {
+      case PairIdentifier(otherTy1, otherTy2) => {
+        ty1.typeEquals(otherTy1) && ty2.typeEquals(otherTy2)
+      }
+      case a: AnyIdentifier => true
+      case _ => false
+    }
+  }
+
+  override def toString(): String = {
+    s"(${ty1.toString()},${ty2.toString()})"
+  }
+}
