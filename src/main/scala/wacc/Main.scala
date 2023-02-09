@@ -27,8 +27,10 @@ object Main {
             }
             case Failure(msg) => {
                 Error.addErr(msg)
-                println("#syntax_error#\n")
-                Error.printErr
+                println("#syntax_error#\n" +
+                  "Syntax error detected during parsing, Exit code: 100.\n" +
+                  "Error at")
+                Error.printErr()
                 //Disabling exit code for sbt debug session
                 sys.exit(100)
             }
