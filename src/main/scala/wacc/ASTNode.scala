@@ -361,8 +361,8 @@ sealed trait PairElemNode extends LValueNode with RValueNode {
 case class FstNode(lvalue: LValueNode) extends PairElemNode {
     override def typeVal() = {
         lvalue match {
-            case i: IdentNode => i.typeVal()
-            case a: ArrayElemNode => a.typeVal()
+            case i: IdentNode => i.fstType()
+            case a: ArrayElemNode => a.fstType()
             case f: FstNode => "pair"
             case s: SndNode => "pair"
         }
@@ -393,8 +393,8 @@ case class FstNode(lvalue: LValueNode) extends PairElemNode {
 case class SndNode(lvalue: LValueNode) extends PairElemNode {
     override def typeVal() = {
         lvalue match {
-            case i: IdentNode => i.typeVal()
-            case a: ArrayElemNode => a.typeVal()
+            case i: IdentNode => i.sndType()
+            case a: ArrayElemNode => a.sndType()
             case f: FstNode => "pair"
             case s: SndNode => "pair"
         }
