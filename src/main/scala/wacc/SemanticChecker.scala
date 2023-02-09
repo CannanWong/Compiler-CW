@@ -35,23 +35,18 @@ object SemanticChecker {
     def typeCheck(ty: TypeNode, rvalue: RValueNode): Unit = {
         val lhsType = ty.typeVal()
         val rhsType = rvalue.typeVal()
-        // $ SemanticChecker.errorMessage += "4Type of rvalue: " + rvalue.typeVal() + "\n"
         if (lhsType == rhsType) {
             if (lhsType == "array") {
-                if (ty.arrayType() != rvalue.arrayType() && rvalue.arrayType() != "any") {
-                    errorMessage += "Wrong type in array declaration\n"
-                }
-                if (ty.arrayDim() != rvalue.arrayDim()) {
-                    errorMessage += "Wrong dimension in array declaration\n"
-                }
+                typeCheckArray(ty.arrayType(), rvalue.arrayType(), ty.arrayDim(), rvalue.arrayDim())
             }
             else if (lhsType == "pair") {
-                if (ty.fstType() != rvalue.fstType() || ty.sndType() != rvalue.sndType()) {
-                    errorMessage += "Wrong type in pair declaration\n"
-                }
+                typeCheckPair(ty.fstType(), rvalue.fstType(), ty.sndType(), rvalue.sndType())
+            }
+            if (lhsType == "any") {
+                errorMessage += "Undefined type in declaration\n"
             }
         }
-        else if (!(lhsType == "pair" && rhsType == "null")) {
+        else if (!(lhsType == "pair" && rhsType == "null" || lhsType == "any" || rhsType == "any")) {
             errorMessage += "Wrong type in declaration, expected " + lhsType + " instead of " + rhsType + "\n"
         }
     }
@@ -61,44 +56,65 @@ object SemanticChecker {
         val rhsType = rvalue.typeVal()
         if (lhsType == rhsType) {
             if (lhsType == "array") {
-                if (lvalue.arrayType() != rvalue.arrayType() && rvalue.arrayType() != "any") {
-                    errorMessage += "Wrong type in array declaration\n"
-                }
-                if (lvalue.arrayDim() != rvalue.arrayDim()) {
-                    errorMessage += "Wrong dimension in array declaration\n"
-                }
+                typeCheckArray(lvalue.arrayType(), rvalue.arrayType(), lvalue.arrayDim(), rvalue.arrayDim())
             }
             else if (lhsType == "pair") {
-                if (lvalue.fstType() != rvalue.fstType() || lvalue.sndType() != rvalue.sndType()) {
-                    errorMessage += "Wrong type in pair declaration\n"
-                }
+                typeCheckPair(lvalue.fstType(), rvalue.fstType(), lvalue.sndType(), rvalue.sndType())
+            }
+            if (lhsType == "any") {
+                errorMessage += "Undefined type in assignment\n"
             }
         }
-        else {
-            errorMessage += "Wrong type in declaration\n"
+        else if (!(lhsType == "pair" && rhsType == "null" || lhsType == "any" || rhsType == "any")) {
+            errorMessage += "Wrong type in assignment, expected " + lhsType + " instead of " + rhsType + "\n"
         }
-    }
-    
-    def basicTypeCheck(ty: String, expr: ExprNode): Boolean = {
-        val res = ty == expr.typeVal()
-        if (expr.typeVal() == "NO TYPE") {
-            throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
-        }
-        if (!res) {
-           errorMessage += "unexpected type " + expr.typeVal() + ", expected type " + ty + "\n"
-        }
-        res       
     }
 
-    def basicTypeCheck(ty1: String, ty2: String, expr: ExprNode): Boolean = {
-        val res = ty1 == expr.typeVal() || ty2 == expr.typeVal()
-        if (expr.typeVal() == "NO TYPE") {
-            throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
+    def typeCheckArray(lhsArrayType: String, rhsArrayType: String, lhsArrayDim: Int, rhsArrayDim: Int) {
+        if (lhsArrayType != rhsArrayType && rhsArrayType != "any") {
+            errorMessage += "Wrong type in array assignment\n"
         }
+        if (lhsArrayDim != rhsArrayDim) {
+            errorMessage += "Wrong dimension in array assignment\n"
+        }
+    }
+
+    def typeCheckPair(lhsFstType: String, rhsFstType: String, lhsSndType: String, rhsSndType: String) {
+        if (lhsFstType != "null" && rhsFstType != "null" &&
+            lhsFstType != "any" && rhsFstType != "any") {
+            if (lhsFstType != rhsFstType) {
+                errorMessage += "Wrong type in pair declaration, expected " + lhsFstType + " instead of " + rhsFstType + "\n"
+            }
+        }
+        if (lhsSndType != "null" && rhsSndType != "null" && 
+            lhsSndType != "any" && rhsSndType != "any") {
+            if (lhsSndType != rhsSndType) {
+                errorMessage += "Wrong type in pair declaration, expected " + lhsSndType + " instead of " + rhsSndType + "\n"
+            }
+        }
+        if (lhsFstType == "any" && rhsFstType == "any" ||
+                 lhsSndType == "any" && rhsSndType == "any") {
+            errorMessage += "Undefined type in assignment\n"
+        }
+    
+    }
+    
+    def basicTypeCheck(ty: String, expr: ExprNode): Unit = {
+        if (expr.typeVal() == "any") {
+            true
+        } else if (expr.typeVal() == "null") {
+            false
+        }
+        if (ty != expr.typeVal()) {
+            errorMessage += "unexpected type " + expr.typeVal() + ", expected type " + ty + "\n"
+        }     
+    }
+
+    def basicTypeCheck(ty1: String, ty2: String, expr: ExprNode): Unit = {
+        val res = ty1 == expr.typeVal() || ty2 == expr.typeVal() || expr.typeVal() == "any"
         if (!res) {
            errorMessage += s"unexpected type ${expr.typeVal()}, expected type ${ty1} / ${ty2}\n"
-        }
-        res       
+        }      
     }
 
     def currScope(): Int = {
