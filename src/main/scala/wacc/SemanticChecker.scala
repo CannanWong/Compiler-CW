@@ -31,26 +31,50 @@ object SemanticChecker {
         return true
     }
 
-    def typeCheck(lhs: TypeNode, rhs: RValueNode): Boolean = {
-        /* find type of RHS */
-        val lhsType = lhs.typeVal()
-        val rhsType = rhs.typeVal()
-        val res = (lhsType == rhsType)
-        if (!res) {
-            errorMessage += "LHS type \"" + lhsType + "\" does not match RHS type \"" + rhsType + "\""
+    def typeCheck(ty: TypeNode, rvalue: RValueNode): Unit = {
+        val lhsType = ty.typeVal()
+        val rhsType = rvalue.typeVal()
+        if (lhsType == rhsType) {
+            if (lhsType == "array") {
+                if (ty.arrayType() != rvalue.arrayType()) {
+                    errorMessage += "Wrong type in array declaration\n"
+                }
+                if (ty.arrayDim() != rvalue.arrayDim()) {
+                    errorMessage += "Wrong dimension in array declaration\n"
+                }
+            }
+            else if (lhsType == "pair") {
+                if (ty.fstType() != rvalue.fstType() || ty.sndType() != rvalue.sndType()) {
+                    errorMessage += "Wrong type in pair declaration\n"
+                }
+            }
         }
-        return res
+        else {
+            errorMessage += "Wrong type in declaration"
+        }
     }
 
-    def typeCheck(lhs: LValueNode, rhs: RValueNode): Boolean = {
-        /* basic types (int, bool, char, string) */
-        /* array type */
-        /* pair type */
-        val res = lhs.typeVal() == rhs.typeVal()
-        if (!res) {
-            errorMessage += "LHS type \"" + lhs.typeVal() + "\" does not match RHS type \"" + rhs.typeVal() + "\"\n"
+    def typeCheck(lvalue: LValueNode, rvalue: RValueNode): Unit = {
+        val lhsType = lvalue.typeVal()
+        val rhsType = rvalue.typeVal()
+        if (lhsType == rhsType) {
+            if (lhsType == "array") {
+                if (lvalue.arrayType() != rvalue.arrayType()) {
+                    errorMessage += "Wrong type in array declaration\n"
+                }
+                if (lvalue.arrayDim() != rvalue.arrayDim()) {
+                    errorMessage += "Wrong dimension in array declaration\n"
+                }
+            }
+            else if (lhsType == "pair") {
+                if (lvalue.fstType() != rvalue.fstType() || lvalue.sndType() != rvalue.sndType()) {
+                    errorMessage += "Wrong type in pair declaration\n"
+                }
+            }
         }
-        return res
+        else {
+            errorMessage += "Wrong type in declaration"
+        }
     }
     
     def basicTypeCheck(ty: String, expr: ExprNode): Boolean = {
