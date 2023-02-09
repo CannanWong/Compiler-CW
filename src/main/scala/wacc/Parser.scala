@@ -115,10 +115,11 @@ object Parser {
                         "%" #> ModNode),
             Ops(InfixL)("+" #> AddNode,
                         "-" #> SubNode),
-            Ops(InfixL)(">" #> GTNode,
-                        ">=" #> GTENode,
-                        "<" #> LTNode,
-                        "<=" #> LTENode),
+            Ops(InfixL)(">=" #> GTENode,
+                        ">" #> GTNode,
+                        "<=" #> LTENode,
+                        "<" #> LTNode
+                        ),
             Ops(InfixL)("==" #> EqNode,
                         "!=" #> IEqNode),
             Ops(InfixL)("&&" #> AndNode),
@@ -267,7 +268,7 @@ object Parser {
     lazy val assignIdent: Parsley[AssignIdentNode] =
         AssignIdentNode.lift(generalType, ident <~ "=", rValue)
 
-    lazy val valuesEqual: Parsley[LValuesAssignNode] =
+    lazy val lValueAssign: Parsley[LValuesAssignNode] =
         LValuesAssignNode.lift(lValue, "=" ~> rValue)
 
     lazy val stat: Parsley[StatNode] = lexer.lexeme(
@@ -282,7 +283,7 @@ object Parser {
         whileCon    <|>
         beginEnd    <|>
         attempt(assignIdent) <|>
-        valuesEqual)
+        lValueAssign)
     
     lazy val stats: Parsley[StatNode] =
         attempt(stat <~ notFollowedBy(";")) <|> statJoin
