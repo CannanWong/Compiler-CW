@@ -19,71 +19,103 @@ object SemanticChecker {
     def resetSemanticChecker(): Unit = {
         errorMessage = ""
         symbolTable = new SymbolTable()
-        nextScope = 0
         scopeStack.push(0)
+        nextScope = 1
     }
 
-    def tableContainsIdentifier(id :IdentNode): Boolean = {
+    // Check if symbol table contains variable in current or higher scopes
+    def tableContainsIdentifier(id: IdentNode): Boolean = {
         if (symbolTable.lookUpVar(id.name) == None) {
-            errorMessage += "variable name \"" + id.name + "\" is is not defined in this scope\n"
-            return false
+            errorMessage += "variable name \"" + id.name + "\" is not defined in this scope\n"
+            false
         }
-        return true
+        true
     }
 
-    def typeCheck(lhs: TypeNode, rhs: RValueNode): Boolean = {
-        /* find type of RHS */
-        val lhsType = lhs.typeVal()
-        val rhsType = rhs.typeVal()
-        val res = (lhsType == rhsType)
-        if (!res) {
-            errorMessage += "LHS type \"" + lhsType + "\" does not match RHS type \"" + rhsType + "\""
+    def typeCheck(ty: TypeNode, rvalue: RValueNode): Unit = {
+        val lhsType = ty.typeVal()
+        val rhsType = rvalue.typeVal()
+        if (lhsType == rhsType) {
+            if (lhsType == "array") {
+                typeCheckArray(ty.arrayType(), rvalue.arrayType(), ty.arrayDim(), rvalue.arrayDim())
+            }
+            else if (lhsType == "pair") {
+                typeCheckPair(ty.fstType(), rvalue.fstType(), ty.sndType(), rvalue.sndType())
+            }
+            if (lhsType == "any") {
+                errorMessage += "Undefined type in declaration\n"
+            }
         }
-        return res
+        else if (!(lhsType == "pair" && rhsType == "null" || lhsType == "any" || rhsType == "any")) {
+            errorMessage += "Wrong type in declaration, expected " + lhsType + " instead of " + rhsType + "\n"
+        }
     }
 
-    def typeCheck(lhs: LValueNode, rhs: RValueNode): Boolean = {
-        /* basic types (int, bool, char, string) */
-        /* array type */
-        /* pair type */
-        val res = lhs.typeVal() == rhs.typeVal()
-        if (!res) {
-            errorMessage += "LHS type \"" + lhs.typeVal() + "\" does not match RHS type \"" + rhs.typeVal() + "\"\n"
+    def typeCheck(lvalue: LValueNode, rvalue: RValueNode): Unit = {
+        val lhsType = lvalue.typeVal()
+        val rhsType = rvalue.typeVal()
+        if (lhsType == rhsType) {
+            if (lhsType == "array") {
+                typeCheckArray(lvalue.arrayType(), rvalue.arrayType(), lvalue.arrayDim(), rvalue.arrayDim())
+            }
+            else if (lhsType == "pair") {
+                typeCheckPair(lvalue.fstType(), rvalue.fstType(), lvalue.sndType(), rvalue.sndType())
+            }
+            if (lhsType == "any") {
+                errorMessage += "Undefined type in assignment\n"
+            }
         }
-        return res
+        else if (!(lhsType == "pair" && rhsType == "null" || lhsType == "any" || rhsType == "any")) {
+            errorMessage += "Wrong type in assignment, expected " + lhsType + " instead of " + rhsType + "\n"
+        }
+    }
+
+    def typeCheckArray(lhsArrayType: String, rhsArrayType: String, lhsArrayDim: Int, rhsArrayDim: Int) {
+        if (lhsArrayType != rhsArrayType && rhsArrayType != "any") {
+            errorMessage += "Wrong type in array assignment\n"
+        }
+        if (lhsArrayDim != rhsArrayDim) {
+            errorMessage += "Wrong dimension in array assignment\n"
+        }
+    }
+
+    def typeCheckPair(lhsFstType: String, rhsFstType: String, lhsSndType: String, rhsSndType: String) {
+        if (lhsFstType != "null" && rhsFstType != "null" &&
+            lhsFstType != "any" && rhsFstType != "any") {
+            if (lhsFstType != rhsFstType) {
+                errorMessage += "Wrong type in pair declaration, expected " + lhsFstType + " instead of " + rhsFstType + "\n"
+            }
+        }
+        if (lhsSndType != "null" && rhsSndType != "null" && 
+            lhsSndType != "any" && rhsSndType != "any") {
+            if (lhsSndType != rhsSndType) {
+                errorMessage += "Wrong type in pair declaration, expected " + lhsSndType + " instead of " + rhsSndType + "\n"
+            }
+        }
+        if (lhsFstType == "any" && rhsFstType == "any" ||
+                 lhsSndType == "any" && rhsSndType == "any") {
+            errorMessage += "Undefined type in assignment\n"
+        }
+    
     }
     
-    def basicTypeCheck(ty: String, expr: ExprNode): Boolean = {
-        val res = ty == expr.typeVal()
-        if (expr.typeVal() == "NO TYPE") {
-            throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
+    def basicTypeCheck(ty: String, expr: ExprNode): Unit = {
+        if (expr.typeVal() == "any") {
+            true
+        } else if (expr.typeVal() == "null") {
+            false
         }
-        if (!res) {
-           errorMessage += "unexpected type " + expr.typeVal() + ", expected  type " + ty + "\n"
-        }
-        res       
+        if (ty != expr.typeVal()) {
+            errorMessage += "unexpected type " + expr.typeVal() + ", expected type " + ty + "\n"
+        }     
     }
 
-    def basicTypeCheck(ty1: String, ty2: String, expr: ExprNode): Boolean = {
-        val res = ty1 == expr.typeVal() || ty2 == expr.typeVal()
-        if (expr.typeVal() == "NO TYPE") {
-            throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
-        }
+    def basicTypeCheck(ty1: String, ty2: String, expr: ExprNode): Unit = {
+        val res = ty1 == expr.typeVal() || ty2 == expr.typeVal() || expr.typeVal() == "any"
         if (!res) {
            errorMessage += s"unexpected type ${expr.typeVal()}, expected type ${ty1} / ${ty2}\n"
-        }
-        res       
+        }      
     }
-
-    // def arrayTypeCheck(ty: String, expr: ExprNode): Boolean = {
-    //     if (expr.typeVal() == "NO TYPE") {
-    //         throw new IllegalArgumentException("Type for EXPR has not been assigned. Please check order of evaluation")
-    //     }
-    //     if (!res) {
-    //        errorMessage += "unexpected type " + expr.typeVal() + ", expected  type " + ty + "\n"
-    //     }
-    //     res       
-    // }
 
     def currScope(): Int = {
         return scopeStack.top
