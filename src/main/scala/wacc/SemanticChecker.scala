@@ -19,8 +19,8 @@ object SemanticChecker {
     def resetSemanticChecker(): Unit = {
         errorMessage = ""
         symbolTable = new SymbolTable()
-        nextScope = 0
         scopeStack.push(0)
+        nextScope = 1
     }
 
     // Check if symbol table contains variable in current or higher scopes
@@ -35,6 +35,7 @@ object SemanticChecker {
     def typeCheck(ty: TypeNode, rvalue: RValueNode): Unit = {
         val lhsType = ty.typeVal()
         val rhsType = rvalue.typeVal()
+        // $ SemanticChecker.errorMessage += "4Type of rvalue: " + rvalue.typeVal() + "\n"
         if (lhsType == rhsType) {
             if (lhsType == "array") {
                 if (ty.arrayType() != rvalue.arrayType() && rvalue.arrayType() != "any") {
@@ -51,7 +52,7 @@ object SemanticChecker {
             }
         }
         else if (!(lhsType == "pair" && rhsType == "null")) {
-            errorMessage += "Wrong type in declaration\n"
+            errorMessage += "Wrong type in declaration, expected " + lhsType + " instead of " + rhsType + "\n"
         }
     }
 

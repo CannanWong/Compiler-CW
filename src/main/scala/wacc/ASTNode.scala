@@ -23,17 +23,10 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 }
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
-    
-    /**
-      * Checks for:
-        1. legal params
-        2. legal stats
-        3. legal type (tbc)
-        4. leagal func ident
-        5. return type matches function type
-      */
+
     override def semanticCheck(): Unit = {
         
+        // $SemanticChecker.errorMessage += "1. Curr scope: " + SemanticChecker.currScope().toString + "\n"
         ty.semanticCheck()
         ident.semanticCheck()
 
@@ -59,6 +52,7 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
             }
             else {
                 paramtypeList += param.ty.typeVal()
+                // $SemanticChecker.errorMessage += "2. Curr scope: " + SemanticChecker.currScope().toString + "\n"
                 SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.typeVal())
             }
         }
@@ -66,22 +60,26 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         if (!funcNameUsed) {
             SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
         }
-
-        stat.semanticCheck()
         
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
-        stat.semanticCheck()
-        SemanticChecker.scopeStack.pop()
-        SemanticChecker.scopeStack.pop()
 
+        // $SemanticChecker.errorMessage += "3. Curr scope: " + SemanticChecker.currScope().toString + "\n"
+        stat.semanticCheck()
         // Check that return type matches function return type
         checkReturnType(ty, stat)
+        SemanticChecker.scopeStack.pop()
+        SemanticChecker.scopeStack.pop()
+        // $SemanticChecker.errorMessage += "4. Curr scope: " + SemanticChecker.currScope().toString + "\n"
     }
 
     def checkReturnType(ty: TypeNode, stat: StatNode): Unit = {
         stat match {
-            case r: ReturnNode => SemanticChecker.typeCheck(ty, r.expr)
+            case r: ReturnNode => {
+                // $SemanticChecker.errorMessage += "5Typecheck\n"
+                // $SemanticChecker.errorMessage += "5. Curr scope: " + SemanticChecker.currScope().toString + "\n"
+                SemanticChecker.typeCheck(ty, r.expr)
+            }
             case b: BeginEndNode => checkReturnType(ty, b.stat)
             case i: IfNode => {
                 checkReturnType(ty, i.fstStat)
@@ -121,9 +119,11 @@ case class SkipNode() extends StatNode
 // Example: int a = 5
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
+        //$ SemanticChecker.errorMessage += "1Type of rvalue: " + rvalue.typeVal() + "\n"
         ty.semanticCheck()
         ident.semanticCheck()
         rvalue.semanticCheck()
+        //$ SemanticChecker.errorMessage += "2Type of rvalue: " + rvalue.typeVal() + "\n"
         
         // Check if variable name is already declared in the same scope
         if (SemanticChecker.symbolTable.checkVarDefined(ident.name)){
@@ -138,6 +138,8 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
             }
         }
         // Type check
+        //$ SemanticChecker.errorMessage += "3Type of rvalue: " + rvalue.typeVal() + "\n"
+        //$ SemanticChecker.errorMessage += "2Typecheck\n"
         SemanticChecker.typeCheck(ty, rvalue)
     }        
 }
@@ -147,6 +149,7 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
         rvalue.semanticCheck()
+        //$ SemanticChecker.errorMessage += "1Typecheck\n"
         SemanticChecker.typeCheck(lvalue, rvalue)
     }
 }
@@ -180,6 +183,8 @@ case class ReturnNode(expr: ExprNode) extends StatNode {
         expr.semanticCheck()
         expr match {
             case i: IdentNode => SemanticChecker.tableContainsIdentifier(i)
+            case a: ArrayElemNode => SemanticChecker.tableContainsIdentifier(a.ident)
+
             case _ =>
         }
     }
@@ -424,7 +429,7 @@ case class SndNode(lvalue: LValueNode) extends PairElemNode {
 
 // RValueNode
 sealed trait RValueNode extends ASTNode {
-    def typeVal(): String = "ERROR"
+    def typeVal(): String = "ERROR!"
     def arrayType(): String = "ERROR"
     def arrayDim(): Int = -1
     def fstType(): String = "ERROR"
@@ -491,49 +496,33 @@ case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode 
 
 case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
     override def typeVal() = {
-        val lookUp = SemanticChecker.symbolTable.lookUpFunc(ident.name)
-        if (lookUp == None) {
-            "ERROR"
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(FuncIdentifier(_,returntype)) => returntype
+            case _ => "ERROR!!"
         }
-        else {
-            val identifier = lookUp.get
-            identifier match {
-                case f: FuncIdentifier => f.returntype
-                case _ => "ERROR"
-            }
-        }
-
     }
     override def semanticCheck(): Unit = {
         ident.semanticCheck()
         argList.semanticCheck()
         typeVal()
 
-        // Check if function is declared
-        val lookUp = SemanticChecker.symbolTable.lookUpFunc(ident.name)
-        if (lookUp == None) {
-            SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is not defined in this scope\n"
-        }
-        // Check if arg list is of correct type and number
-        else {
-            val identifier = lookUp.get
-            identifier match {
-                case f: FuncIdentifier => {
-                    if (argList.exprList.length != f.paramtype.length) {
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            // Check if arg list is of correct type and number
+            case Some(FuncIdentifier(paramtype,_)) => {
+                if (argList.exprList.length != paramtype.length) {
                         SemanticChecker.errorMessage += "Function argument number is different from function parameter number\n"
                     }
-                    else {
-                        var index = 0
-                        for (arg <- argList.exprList) {
-                            if (arg.typeVal() != f.paramtype.apply(index)) {
-                                SemanticChecker.errorMessage += "Function argument type is incorrect\n"
-                            }
-                            index += 1
+                else {
+                    var index = 0
+                    for (arg <- argList.exprList) {
+                        if (arg.typeVal() != paramtype.apply(index)) {
+                            SemanticChecker.errorMessage += "Function argument type is incorrect\n"
                         }
+                        index += 1
                     }
                 }
-                case _ => SemanticChecker.errorMessage += "[Not possible!]"
             }
+            case _ => SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is not defined\n"
         }
     }
 }
@@ -695,9 +684,10 @@ sealed trait BinOpExprNode extends ExprNode {
         this match {
             case MulNode(_,_) | DivNode(_,_) | ModNode(_,_) | AddNode(_,_) | SubNode(_,_) => "int"
             case _ => "bool"
-            }
+        }
     }
     override def semanticCheck(): Unit = {
+        typeVal()
         this match {
             case MulNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
