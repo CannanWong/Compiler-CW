@@ -14,6 +14,7 @@ import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc, text}
 import text.{TextDesc, EscapeDesc}
 import parsley.combinator.{sepBy, sepBy1, some, manyUntil, choice}
 import parsley.character.{noneOf, stringOfMany, string, strings, spaces}
+import parsley.errors.combinator.ErrorMethods
 
 object lexer {
     val desc = LexicalDesc.plain.copy(
@@ -114,10 +115,11 @@ object Parser {
                         "%" #> ModNode),
             Ops(InfixL)("+" #> AddNode,
                         "-" #> SubNode),
-            Ops(InfixL)(">" #> GTNode,
-                        ">=" #> GTENode,
-                        "<" #> LTNode,
-                        "<=" #> LTENode),
+            Ops(InfixL)(">=" #> GTENode,
+                        ">" #> GTNode,
+                        "<=" #> LTENode,
+                        "<" #> LTNode
+                        ),
             Ops(InfixL)("==" #> EqNode,
                         "!=" #> IEqNode),
             Ops(InfixL)("&&" #> AndNode),
@@ -212,7 +214,18 @@ object Parser {
             generalType,
             ident,
             "(" ~> paramList <~ ")",
-            "is" ~> stats <~ "end")
+            "is" ~> stats.filterOut {
+                case s if notExitStmt(s) => s"Missing exit or return statement"
+            } <~ "end")
+
+    def notExitStmt(s: StatNode): Boolean = s match {
+        case IfNode(_, fstStat, sndStat) => notExitStmt(fstStat) || notExitStmt(sndStat)
+        case WhileNode(_, stat) => notExitStmt(stat)
+        case BeginEndNode(stat) => notExitStmt(stat)
+        case StatJoinNode(statList) => notExitStmt(statList.last)
+        case _: ExitNode | _: ReturnNode => false
+        case _ => true
+    }
     
     lazy val funcCall: Parsley[CallNode] =
         CallNode.lift("call" ~> ident, "(" ~> argList <~ ")")
@@ -255,7 +268,7 @@ object Parser {
     lazy val assignIdent: Parsley[AssignIdentNode] =
         AssignIdentNode.lift(generalType, ident <~ "=", rValue)
 
-    lazy val valuesEqual: Parsley[LValuesAssignNode] =
+    lazy val lValueAssign: Parsley[LValuesAssignNode] =
         LValuesAssignNode.lift(lValue, "=" ~> rValue)
 
     lazy val stat: Parsley[StatNode] = lexer.lexeme(
@@ -270,7 +283,7 @@ object Parser {
         whileCon    <|>
         beginEnd    <|>
         attempt(assignIdent) <|>
-        valuesEqual)
+        lValueAssign)
     
     lazy val stats: Parsley[StatNode] =
         attempt(stat <~ notFollowedBy(";")) <|> statJoin
