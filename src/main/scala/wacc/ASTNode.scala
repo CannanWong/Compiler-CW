@@ -3,12 +3,9 @@ package wacc
 import parsley.genericbridges
 
 import scala.collection.mutable.ListBuffer
-import scala.util.matching.Regex
 
 sealed trait ASTNode {
-    def semanticCheck(): Unit = {
-
-    }
+    def semanticCheck(): Unit = {}
 }
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
@@ -26,7 +23,6 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
 
     override def semanticCheck(): Unit = {
         
-        // $SemanticChecker.errorMessage += "1. Curr scope: " + SemanticChecker.currScope().toString + "\n"
         ty.semanticCheck()
         ident.semanticCheck()
 
@@ -52,7 +48,6 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
             }
             else {
                 paramtypeList += param.ty.typeVal()
-                // $SemanticChecker.errorMessage += "2. Curr scope: " + SemanticChecker.currScope().toString + "\n"
                 SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.typeVal())
             }
         }
@@ -64,20 +59,17 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
 
-        // $SemanticChecker.errorMessage += "3. Curr scope: " + SemanticChecker.currScope().toString + "\n"
+        
         stat.semanticCheck()
         // Check that return type matches function return type
         checkReturnType(ty, stat)
         SemanticChecker.scopeStack.pop()
         SemanticChecker.scopeStack.pop()
-        // $SemanticChecker.errorMessage += "4. Curr scope: " + SemanticChecker.currScope().toString + "\n"
     }
 
     def checkReturnType(ty: TypeNode, stat: StatNode): Unit = {
         stat match {
             case r: ReturnNode => {
-                // $SemanticChecker.errorMessage += "5Typecheck\n"
-                // $SemanticChecker.errorMessage += "5. Curr scope: " + SemanticChecker.currScope().toString + "\n"
                 SemanticChecker.typeCheck(ty, r.expr)
             }
             case b: BeginEndNode => checkReturnType(ty, b.stat)
@@ -119,11 +111,9 @@ case class SkipNode() extends StatNode
 // Example: int a = 5
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
-        //$ SemanticChecker.errorMessage += "1Type of rvalue: " + rvalue.typeVal() + "\n"
         ty.semanticCheck()
         ident.semanticCheck()
         rvalue.semanticCheck()
-        //$ SemanticChecker.errorMessage += "2Type of rvalue: " + rvalue.typeVal() + "\n"
         
         // Check if variable name is already declared in the same scope
         if (SemanticChecker.symbolTable.checkVarDefined(ident.name)){
@@ -138,8 +128,6 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
             }
         }
         // Type check
-        //$ SemanticChecker.errorMessage += "3Type of rvalue: " + rvalue.typeVal() + "\n"
-        //$ SemanticChecker.errorMessage += "2Typecheck\n"
         SemanticChecker.typeCheck(ty, rvalue)
     }        
 }
@@ -149,7 +137,6 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
         rvalue.semanticCheck()
-        //$ SemanticChecker.errorMessage += "1Typecheck\n"
         SemanticChecker.typeCheck(lvalue, rvalue)
     }
 }
@@ -284,7 +271,9 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
         SemanticChecker.symbolTable.lookUpVar(name) match {
             case Some(VarIdentifier(ty)) => ty
             case Some(ArrayIdentifier(ty, dim)) => "array"
-            case Some(PairIdentifier(ty1, ty2)) => "pair"
+            case Some(PairIdentifier(ty1, ty2)) => {
+                "pair"
+            }
             case _ => "ERROR"
         }
     }
@@ -302,13 +291,17 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
     }
     override def fstType(): String = {
         SemanticChecker.symbolTable.lookUpVar(name) match {
-            case Some(PairIdentifier(ty,_)) => ty
+            case Some(PairIdentifier(ty,_)) => {
+                ty
+            }
             case _ => "ERROR"
         }
     }
     override def sndType(): String = {
         SemanticChecker.symbolTable.lookUpVar(name) match {
-            case Some(PairIdentifier(_,ty)) => ty
+            case Some(PairIdentifier(_,ty)) => {
+                ty
+            }
             case _ => "ERROR"
         }
     }
@@ -365,64 +358,66 @@ sealed trait PairElemNode extends LValueNode with RValueNode {
 
 case class FstNode(lvalue: LValueNode) extends PairElemNode {
     override def typeVal() = {
-        lvalue match {
-            case i: IdentNode => i.fstType()
-            case a: ArrayElemNode => a.fstType()
-            case f: FstNode => "pair"
-            case s: SndNode => "pair"
+        if (lvalue.typeVal() == "any") {
+            "any"
+        }
+        else {
+            lvalue.fstType()
         }
     }
     override def fstType() = {
         lvalue match {
+            case i: IdentNode => {
+                if (i.fstType() == "pair") {
+                    "any"
+                }
+                else {
+                    "ERROR"
+                }
+            }
             case f: FstNode => "any"
             case s: SndNode => "any"
             case _ => "ERROR"
         }
     }
-    override def sndType() = {
-        lvalue match {
-            case f: FstNode => "any"
-            case s: SndNode => "any"
-            case _ => "ERROR"
-        }
-    }
+    override def sndType() = fstType()
 
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
         typeVal()
-        fstType()
         sndType()
     }
 }
 
 case class SndNode(lvalue: LValueNode) extends PairElemNode {
     override def typeVal() = {
-        lvalue match {
-            case i: IdentNode => i.sndType()
-            case a: ArrayElemNode => a.sndType()
-            case f: FstNode => "pair"
-            case s: SndNode => "pair"
+        if (lvalue.typeVal() == "any") {
+            "any"
+        }
+        else {
+            lvalue.sndType()
         }
     }
     override def fstType() = {
         lvalue match {
+            case i: IdentNode => {
+                if (i.sndType() == "pair") {
+                    "any"
+                }
+                else {
+                    "ERROR"
+                }
+            }
             case f: FstNode => "any"
             case s: SndNode => "any"
             case _ => "ERROR"
         }
     }
-    override def sndType() = {
-        lvalue match {
-            case f: FstNode => "any"
-            case s: SndNode => "any"
-            case _ => "ERROR"
-        }
-    }
+    override def sndType() = fstType()
 
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
         typeVal()
-        fstType()
         sndType()
     }
 }
@@ -692,126 +687,82 @@ sealed trait BinOpExprNode extends ExprNode {
             case MulNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", sndExpr)
             }
             case DivNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", sndExpr)
             }
             case ModNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", sndExpr)
             }
             case AddNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", sndExpr)
             }
             case SubNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", sndExpr)
             }
             case GTNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", "char", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", "char", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", "char", sndExpr)
             }
             case GTENode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", "char", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", "char", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", "char", sndExpr)
             }
             case LTNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", "char", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", "char", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", "char", sndExpr)
             }
             case LTENode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("int", "char", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("int", "char", fstExpr)
+                    SemanticChecker.basicTypeCheck("int", "char", sndExpr)
             }
             case EqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
                     if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
+                        SemanticChecker.errorMessage += s"Binary op: wrong type, expected ${fstExpr.typeVal()} instead of ${sndExpr.typeVal()}\n"
                     }
             }
             case IEqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
                     if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
+                        SemanticChecker.errorMessage += s"Binary op: wrong type, expected ${fstExpr.typeVal()} instead of ${sndExpr.typeVal()}\n"
                     }
             }
             case AndNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("bool", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("bool", fstExpr)
+                    SemanticChecker.basicTypeCheck("bool", sndExpr)
             }
             case OrNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: unexpected rhs type ${fstExpr.typeVal()}, expected lhs type ${sndExpr.typeVal()}\n"
-                    }
-                    else {
-                        SemanticChecker.basicTypeCheck("bool", fstExpr)
-                    }
+                    SemanticChecker.basicTypeCheck("bool", fstExpr)
+                    SemanticChecker.basicTypeCheck("bool", sndExpr)
             }
         }
     }
