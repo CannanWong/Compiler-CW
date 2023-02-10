@@ -95,24 +95,24 @@ object Parser {
         ("(".label("open paranthesis") ~> expr <~ ")".label("closed paranthesis"))
     
     lazy val expr: Parsley[ExprNode] =
-        (op <|> literals).label("literal of any type, identifier, null, (, uOp, binOp")
+        op <|> literals
 
     lazy val op: Parsley[ExprNode] =
         precedence(literals)(
-            Ops(Prefix)("!".label("unOp") #> NotNode,
-                        attempt("-" <~ notFollowedBy(digit)).label("unOp") #> NegNode,
-                        "len".label("unOp") #> LenNode,
-                        "ord".label("unOp") #> OrdNode,
-                        "chr".label("unOp") #> ChrNode),
-            Ops(InfixL)("*".label("binOp") #> MulNode,
-                        "/".label("binOp") #> DivNode,
-                        "%".label("binOp") #> ModNode),
-            Ops(InfixL)("+".label("binOp") #> AddNode,
-                        "-".label("binOp") #> SubNode),
-            Ops(InfixL)(">=".label("binOp") #> GTENode,
-                        ">".label("binOp")#> GTNode,
-                        "<=".label("binOp") #> LTENode,
-                        "<".label("binOp")#> LTNode
+            Ops(Prefix)("!".label(unOp) #> NotNode,
+                        attempt("-" <~ notFollowedBy(digit)).label(unOp) #> NegNode,
+                        "len".label(unOp) #> LenNode,
+                        "ord".label(unOp) #> OrdNode,
+                        "chr".label(unOp) #> ChrNode),
+            Ops(InfixL)("*".label(binOp) #> MulNode,
+                        "/".label(binOp) #> DivNode,
+                        "%".label(binOp) #> ModNode),
+            Ops(InfixL)("+".label(binOp) #> AddNode,
+                        "-".label(binOp) #> SubNode),
+            Ops(InfixL)(">=".label(binOp) #> GTENode,
+                        ">".label(binOp)#> GTNode,
+                        "<=".label(binOp) #> LTENode,
+                        "<".label(binOp)#> LTNode
                         ),
             Ops(InfixL)("==".label(binOp) #> EqNode,
                         "!=".label(binOp) #> IEqNode),
@@ -250,11 +250,17 @@ object Parser {
         BeginEndNode.lift("begin" ~> stats <~ "end")
 
     lazy val assignIdent: Parsley[AssignIdentNode] =
-        AssignIdentNode.lift(generalType, ident <~ notFollowedBy("(").explain("function declaration format mismatch or is within body"), "=".label("new identifier assignment") ~> rValue).label("new identifier assignment")
+        AssignIdentNode.lift(generalType, ident <~ notFollowedBy("(").explain(funcErrMsg), "=".label("new identifier assignment") ~> rValue).label("new identifier assignment")
 
     lazy val lValueAssign: Parsley[LValuesAssignNode] =
-        LValuesAssignNode.lift(lValue <~ notFollowedBy("(").hide.explain("function declaration format mismatch or is within body"), "=".label("assignment") ~> rValue)
+        LValuesAssignNode.lift(lValue <~ notFollowedBy("(").hide.explain(funcErrMsg), "=".label("assignment") ~> rValue)
 
+
+    val funcErrMsg = "Function declaration format mismatch. Correct structure should be:\n" +
+      "     [type] [identifier] (arguments) is\n" +
+      "         body\n" +
+      "     end\n" +
+      "   All functions should be defined before main program body."
     lazy val stat: Parsley[StatNode] = lexer.lexeme(
         skip        <|>
         read        <|>
