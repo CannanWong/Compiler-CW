@@ -84,6 +84,7 @@ object SemanticChecker {
 
     def typeCheckPair(lhsFstType: String, rhsFstType: String,
                             lhsSndType: String, rhsSndType: String): Unit = {
+
         if (lhsFstType != "null" && rhsFstType != "null" &&
             lhsFstType != "any" && rhsFstType != "any") {
             if (lhsFstType != rhsFstType) {

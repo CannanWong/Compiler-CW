@@ -11,6 +11,9 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 
     override def semanticCheck(): Unit = {
         for (f <- funcList) {
+            f.addToSymbolTable()
+        }
+        for (f <- funcList) {
             f.semanticCheck()
         }
         SemanticChecker.insideFunc = false
@@ -20,8 +23,7 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, 
                     stat: StatNode) extends ASTNode {
-    override def semanticCheck(): Unit = {
-        
+    def addToSymbolTable(): Unit = {
         ty.semanticCheck()
         ident.semanticCheck()
 
@@ -39,7 +41,7 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
 
         paramList.semanticCheck()
 
-        val paramtypeList = ListBuffer[String]()
+        var paramtypeList = ListBuffer[String]()
         for (param <- paramList.paramList) {
             // Check for repeated parameter names
             if (SemanticChecker.symbolTable.checkVarDefined(param.ident.name)) {
@@ -54,11 +56,12 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
         if (!funcNameUsed) {
             SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
         }
+    }
+    override def semanticCheck(): Unit = {
         
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
 
-        
         stat.semanticCheck()
         // Check that return type matches function return type
         checkReturnType(ty, stat)
@@ -82,7 +85,7 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
                     checkReturnType(ty, st)
                 }
             }
-            case _ => // ! array pair
+            case _ =>
         }
     }
 }
@@ -383,6 +386,7 @@ case class FstNode(lvalue: LValueNode) extends PairElemNode {
             }
             case f: FstNode => "any"
             case s: SndNode => "any"
+            case a: ArrayElemNode => "any"
             case _ => "ERROR"
         }
     }
@@ -416,6 +420,7 @@ case class SndNode(lvalue: LValueNode) extends PairElemNode {
             }
             case f: FstNode => "any"
             case s: SndNode => "any"
+            case a: ArrayElemNode => "any"
             case _ => "ERROR"
         }
     }
@@ -439,7 +444,6 @@ sealed trait RValueNode extends ASTNode {
 
 sealed trait ExprNode extends RValueNode
 
-// Example: [1,a] (a=2) / [a,b] (a=[1,2],b=[3,4])
 case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
     override def typeVal() = "array"
     override def arrayType() = {
@@ -480,7 +484,6 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
     }
 }
 
-// Example: newpair(1,a)
 case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode {
     override def typeVal() = "pair"
     override def fstType() = fstExpr.typeVal()
@@ -500,6 +503,32 @@ case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
         SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
             case Some(FuncIdentifier(_,returntype)) => returntype
             case _ => "ERROR!!"
+        }
+    }
+    override def fstType(): String = {
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(FuncIdentifier(_,returntype)) => {
+                if (returntype == "pair") {
+                    "any"
+                }
+                else {
+                    "ERROR"
+                }
+            }
+            case _ => "ERROR"
+        }
+    }
+    override def sndType(): String = {
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(FuncIdentifier(_,returntype)) => {
+                if (returntype == "pair") {
+                    "any"
+                }
+                else {
+                    "ERROR"
+                }
+            }
+            case _ => "ERROR"
         }
     }
     override def semanticCheck(): Unit = {
@@ -773,18 +802,21 @@ sealed trait BinOpExprNode extends ExprNode {
             case EqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                         Error.addSemErr(
-                            s"Binary op: wrong type, expected ${fstExpr.typeVal()}" +
-                              s"instead of ${sndExpr.typeVal()}")
+                    if (fstExpr.typeVal() != sndExpr.typeVal() &&
+                        fstExpr.typeVal() != "null" && sndExpr.typeVal() != "null" &&
+                        fstExpr.typeVal() != "any" && sndExpr.typeVal() != "any") {
+                        Error.addSemErr(s"Binary op: wrong type, expected ${fstExpr.typeVal()} " +
+                                        s"instead of ${sndExpr.typeVal()}")
                     }
             }
             case IEqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                         Error.addSemErr(s"Binary op: wrong type, expected " +
-                          s"${fstExpr.typeVal()} instead of ${sndExpr.typeVal()}")
+                    if (fstExpr.typeVal() != sndExpr.typeVal() &&
+                        fstExpr.typeVal() != "null" && sndExpr.typeVal() != "null" &&
+                        fstExpr.typeVal() != "any" && sndExpr.typeVal() != "any")  {
+                        Error.addSemErr(s"Binary op: wrong type, expected ${fstExpr.typeVal()}" +
+                                        s"instead of ${sndExpr.typeVal()}")
                     }
             }
             case AndNode(fstExpr, sndExpr) => {
