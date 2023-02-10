@@ -2,19 +2,17 @@ package wacc
 
 import parsley.Parsley
 import parsley.Parsley.{attempt, lookAhead, notFollowedBy}
-import parsley.implicits.character.charLift
 import parsley.implicits.lift.{Lift1, Lift2, Lift3, Lift4}
 import parsley.token.{Lexer, descriptions, predicate}
-import parsley.token.text.Character
-import parsley.expr.{Atoms, precedence, Postfix, Ops, InfixL, Prefix}
+import parsley.expr.{precedence, Ops, InfixL, Prefix}
 import parsley.expr.chain.postfix1
 import descriptions.numeric.{NumericDesc, PlusSignPresence}
 import PlusSignPresence.Optional
 import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc, text}
 import text.{TextDesc, EscapeDesc}
-import parsley.combinator.{sepBy, sepBy1, some, manyUntil, choice}
-import parsley.character.{digit, noneOf, stringOfMany, string, strings, spaces}
-import parsley.errors.combinator.{amend, ErrorMethods}
+import parsley.combinator.{sepBy, sepBy1, some, manyUntil}
+import parsley.character.digit
+import parsley.errors.combinator.{ErrorMethods}
 
 object lexer {
     val desc = LexicalDesc.plain.copy(
@@ -261,7 +259,7 @@ object Parser {
       "         body\n" +
       "     end\n" +
       "   All functions should be defined before main program body."
-    lazy val stat: Parsley[StatNode] = lexer.lexeme(
+    lazy val stat: Parsley[StatNode] = lexeme(
         skip        <|>
         read        <|>
         free        <|>
