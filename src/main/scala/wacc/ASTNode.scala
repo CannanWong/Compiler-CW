@@ -12,6 +12,9 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 
     override def semanticCheck(): Unit = {
         for (f <- funcList) {
+            f.addToSymbolTable()
+        }
+        for (f <- funcList) {
             f.semanticCheck()
         }
         SemanticChecker.insideFunc = false
@@ -20,9 +23,7 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 }
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
-
-    override def semanticCheck(): Unit = {
-        
+    def addToSymbolTable(): Unit = {
         ty.semanticCheck()
         ident.semanticCheck()
 
@@ -55,11 +56,12 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
         if (!funcNameUsed) {
             SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
         }
+    }
+    override def semanticCheck(): Unit = {
         
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
 
-        
         stat.semanticCheck()
         // Check that return type matches function return type
         checkReturnType(ty, stat)
@@ -377,6 +379,7 @@ case class FstNode(lvalue: LValueNode) extends PairElemNode {
             }
             case f: FstNode => "any"
             case s: SndNode => "any"
+            case a: ArrayElemNode => "any"
             case _ => "ERROR"
         }
     }
@@ -410,6 +413,7 @@ case class SndNode(lvalue: LValueNode) extends PairElemNode {
             }
             case f: FstNode => "any"
             case s: SndNode => "any"
+            case a: ArrayElemNode => "any"
             case _ => "ERROR"
         }
     }
@@ -494,6 +498,32 @@ case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
         SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
             case Some(FuncIdentifier(_,returntype)) => returntype
             case _ => "ERROR!!"
+        }
+    }
+    override def fstType(): String = {
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(FuncIdentifier(_,returntype)) => {
+                if (returntype == "pair") {
+                    "any"
+                }
+                else {
+                    "ERROR"
+                }
+            }
+            case _ => "ERROR"
+        }
+    }
+    override def sndType(): String = {
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(FuncIdentifier(_,returntype)) => {
+                if (returntype == "pair") {
+                    "any"
+                }
+                else {
+                    "ERROR"
+                }
+            }
+            case _ => "ERROR"
         }
     }
     override def semanticCheck(): Unit = {

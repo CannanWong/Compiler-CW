@@ -70,7 +70,7 @@ object SemanticChecker {
         }
     }
 
-    def typeCheckArray(lhsArrayType: String, rhsArrayType: String, lhsArrayDim: Int, rhsArrayDim: Int) {
+    def typeCheckArray(lhsArrayType: String, rhsArrayType: String, lhsArrayDim: Int, rhsArrayDim: Int) = {
         if (lhsArrayType != rhsArrayType && rhsArrayType != "any") {
             errorMessage += "Wrong type in array assignment\n"
         }
@@ -79,7 +79,7 @@ object SemanticChecker {
         }
     }
 
-    def typeCheckPair(lhsFstType: String, rhsFstType: String, lhsSndType: String, rhsSndType: String) {
+    def typeCheckPair(lhsFstType: String, rhsFstType: String, lhsSndType: String, rhsSndType: String) = {
         if (lhsFstType != "null" && rhsFstType != "null" &&
             lhsFstType != "any" && rhsFstType != "any") {
             if (lhsFstType != rhsFstType) {
