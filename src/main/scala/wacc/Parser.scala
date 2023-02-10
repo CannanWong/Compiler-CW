@@ -13,7 +13,7 @@ import PlusSignPresence.Optional
 import descriptions.{LexicalDesc, SpaceDesc, SymbolDesc, NameDesc, text}
 import text.{TextDesc, EscapeDesc}
 import parsley.combinator.{sepBy, sepBy1, some, manyUntil, choice}
-import parsley.character.{noneOf, stringOfMany, string, strings, spaces}
+import parsley.character.{digit, noneOf, stringOfMany, string, strings, spaces}
 import parsley.errors.combinator.{amend, ErrorMethods}
 
 object lexer {
@@ -98,12 +98,12 @@ object Parser {
         ("(" ~> expr <~ ")").label("brackets")
     
     lazy val expr: Parsley[ExprNode] =
-        (attempt(op) <|> literals).label("literal of any type, identifier, null, (, uOp, binOp")
+        (op <|> literals).label("literal of any type, identifier, null, (, uOp, binOp")
 
     lazy val op: Parsley[ExprNode] =
         precedence(literals)(
             Ops(Prefix)("!".label("unOp") #> NotNode,
-                        "-".label("unOp") #> NegNode,
+                        attempt("-" <~ notFollowedBy(digit)).label("unOp") #> NegNode,
                         "len".label("unOp") #> LenNode,
                         "ord".label("unOp") #> OrdNode,
                         "chr".label("unOp") #> ChrNode),
