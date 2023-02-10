@@ -5,8 +5,6 @@ import scala.collection.mutable
 class SymbolTable {
 
     val map: mutable.Map[String, Identifier] = mutable.Map()
-
-    var size = 0; // ?
     
     // Add variable to symbol table
     def addVar(name: String, ty: String): Unit = {

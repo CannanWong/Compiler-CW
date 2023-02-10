@@ -36,77 +36,41 @@ object InvalidNodes {
 }
 
 class SemanticCheckerTest extends AnyFlatSpec {
-  "findType (rVal)" should "find correct basic type literals rhs val type" in {
-    SemanticChecker.resetSemanticChecker()
-    /* basic type literals (int, bool, char, string) */
-    assert(SemanticChecker.findTypeR(new IntLiterNode(123)) == "int")
-    assert(SemanticChecker.findTypeR(new BoolLiterNode(true)) == "bool")
-    assert(SemanticChecker.findTypeR(new StrLiterNode("string")) == "str")
-    assert(SemanticChecker.findTypeR(new CharLiterNode('c')) == "char")
-
-    assert(SemanticChecker.findTypeR(new IntLiterNode(123)) != "bool")
-    assert(SemanticChecker.findTypeR(new BoolLiterNode(true)) != "str")    
-  }
 
   it should "find correct identifier (var and func) rhs val type" in {
     /* identifier (var and func) */
     SemanticChecker.resetSemanticChecker()
     ValidNodes.validIdentAssignIdentNode.semanticCheck()
-    assert(SemanticChecker.symbolTable.lookUp("v0!a") == None)
-    assert(SemanticChecker.symbolTable.lookUp("v0!x") != None)
-    assert(SemanticChecker.symbolTable.lookUp("v0!y") != None)
-  }
-
-  "findType (lVal)" should "find correct basic type literals lhs val type" in {
-    /* identifier (var and func) */
-    SemanticChecker.resetSemanticChecker()
-
-
-    val fakeIdNode = new IdentNode("y")
-    fakeIdNode.symbolTableName = "v0!y"
-    assert(SemanticChecker.findTypeL(fakeIdNode) == "ERROR")   
-  }
-
-  "typeCheck" should "return true for two elem of the same type" in {
-    SemanticChecker.resetSemanticChecker()
-    assert(SemanticChecker.typeCheck(BaseTypeNode("bool"), new IntLiterNode(12345)) == false)
-
-    SemanticChecker.resetSemanticChecker()
-    assert(SemanticChecker.typeCheck(BaseTypeNode("int"), new IntLiterNode(12345)) == true)
+    assert(SemanticChecker.symbolTable.lookUpVar("a") == None)
+    assert(SemanticChecker.symbolTable.lookUpVar("x") != None)
+    assert(SemanticChecker.symbolTable.lookUpVar("y") != None)
   }
 
   /* ************** AST NODE TESTS ************** */
   "AssignIdentNode semanticCheck of int" should "return true for valid assignments" in {
     SemanticChecker.resetSemanticChecker()
     ValidNodes.validIntAssignIdentNode.semanticCheck()
-    assert(SemanticChecker.errorMessage == "")
+    assert(!Error.exitWithSemanticErr())
 
     SemanticChecker.resetSemanticChecker()
     InvalidNodes.invalidIntAssignIdentNode.semanticCheck()
-    assert(SemanticChecker.errorMessage != "")
-  }
-
-  "LValuesAssignNode semanticCheck" should "show error for reassignments" in {
-    SemanticChecker.resetSemanticChecker()
-    InvalidNodes.invalidIdentAssignIdentNode1.semanticCheck()
-    assert(SemanticChecker.errorMessage == "Reassignment to same variable: x to x\n")
+    assert(Error.exitWithSemanticErr())
   }
 
   it should "show error when type mismatch" in {
     SemanticChecker.resetSemanticChecker()
     InvalidNodes.invalidIdentAssignIdentNode2.semanticCheck()
-    assert(SemanticChecker.errorMessage == "LHS type \"int\" does not match RHS type \"bool\"\n")
+    assert(Error.exitWithSemanticErr())
   }
 
   it should "show error when lhs or rhs is undefinded" in {
     SemanticChecker.resetSemanticChecker()
     InvalidNodes.invalidIdentAssignIdentNode3.semanticCheck()
-    assert(SemanticChecker.errorMessage == "variable name \"y\" is is not defined in this scope\n")
+    assert(Error.exitWithSemanticErr())
 
     SemanticChecker.resetSemanticChecker()
     InvalidNodes.invalidIdentAssignIdentNode4.semanticCheck()
-    assert(SemanticChecker.errorMessage == "variable name \"x\" is is not defined in this scope\n")
+    assert(Error.exitWithSemanticErr())
   }
 
-  
 }

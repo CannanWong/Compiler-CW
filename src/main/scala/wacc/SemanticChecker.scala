@@ -3,21 +3,18 @@ package wacc
 import scala.collection.mutable.Stack
 
 object SemanticChecker {
-    var errorMessage = ""
     var symbolTable = new SymbolTable()
     var nextScope = 0
     var scopeStack = Stack[Int]()
     var insideFunc = true
 
-    def check(node: ProgramNode): String = {
+    def check(node: ProgramNode): Unit = {
         resetSemanticChecker()
         node.semanticCheck()
-        errorMessage
     }
 
     /* for running tests */
     def resetSemanticChecker(): Unit = {
-        errorMessage = ""
         symbolTable = new SymbolTable()
         scopeStack.push(0)
         nextScope = 1
@@ -26,7 +23,7 @@ object SemanticChecker {
     // Check if symbol table contains variable in current or higher scopes
     def tableContainsIdentifier(id: IdentNode): Boolean = {
         if (symbolTable.lookUpVar(id.name) == None) {
-            errorMessage += "variable name \"" + id.name + "\" is not defined in this scope\n"
+              Error.addSemErr("variable name \"" + id.name + "\" is not defined in this scope")
             false
         }
         true
@@ -43,11 +40,13 @@ object SemanticChecker {
                 typeCheckPair(ty.fstType(), rvalue.fstType(), ty.sndType(), rvalue.sndType())
             }
             if (lhsType == "any") {
-                errorMessage += "Undefined type in declaration\n"
+                Error.addSemErr("Undefined type in declaration")
             }
         }
-        else if (!(lhsType == "pair" && rhsType == "null" || lhsType == "any" || rhsType == "any")) {
-            errorMessage += "Wrong type in declaration, expected " + lhsType + " instead of " + rhsType + "\n"
+        else if (!(lhsType == "pair" && rhsType == "null" || lhsType == "any" ||
+                 rhsType == "any")) {
+            Error.addSemErr(
+                "Wrong type in declaration, expected " + lhsType + " instead of " + rhsType)
         }
     }
 
@@ -56,45 +55,52 @@ object SemanticChecker {
         val rhsType = rvalue.typeVal()
         if (lhsType == rhsType) {
             if (lhsType == "array") {
-                typeCheckArray(lvalue.arrayType(), rvalue.arrayType(), lvalue.arrayDim(), rvalue.arrayDim())
+                typeCheckArray(lvalue.arrayType(), rvalue.arrayType(),
+                                lvalue.arrayDim(), rvalue.arrayDim())
             }
             else if (lhsType == "pair") {
                 typeCheckPair(lvalue.fstType(), rvalue.fstType(), lvalue.sndType(), rvalue.sndType())
             }
             if (lhsType == "any") {
-                errorMessage += "Undefined type in assignment\n"
+                Error.addSemErr("Undefined type in assignment")
             }
         }
         else if (!(lhsType == "pair" && rhsType == "null" || lhsType == "any" || rhsType == "any")) {
-            errorMessage += "Wrong type in assignment, expected " + lhsType + " instead of " + rhsType + "\n"
+            Error.addSemErr("Wrong type in assignment, expected " +
+                                lhsType + " instead of " + rhsType)
         }
     }
 
-    def typeCheckArray(lhsArrayType: String, rhsArrayType: String, lhsArrayDim: Int, rhsArrayDim: Int) {
+    def typeCheckArray(lhsArrayType: String, rhsArrayType: String,
+                        lhsArrayDim: Int, rhsArrayDim: Int): Unit = {
         if (lhsArrayType != rhsArrayType && rhsArrayType != "any") {
-            errorMessage += "Wrong type in array assignment\n"
+            Error.addSemErr(s"array assignment type error: expect: " +
+                            s"${lhsArrayType}, provided: ${rhsArrayType}")
         }
         if (lhsArrayDim != rhsArrayDim) {
-            errorMessage += "Wrong dimension in array assignment\n"
+            Error.addSemErr("Wrong dimension in array assignment")
         }
     }
 
-    def typeCheckPair(lhsFstType: String, rhsFstType: String, lhsSndType: String, rhsSndType: String) {
+    def typeCheckPair(lhsFstType: String, rhsFstType: String,
+                            lhsSndType: String, rhsSndType: String): Unit = {
         if (lhsFstType != "null" && rhsFstType != "null" &&
             lhsFstType != "any" && rhsFstType != "any") {
             if (lhsFstType != rhsFstType) {
-                errorMessage += "Wrong type in pair declaration, expected " + lhsFstType + " instead of " + rhsFstType + "\n"
+                Error.addSemErr("Wrong type in pair declaration, expected " +
+                                lhsFstType + " instead of " + rhsFstType)
             }
         }
         if (lhsSndType != "null" && rhsSndType != "null" && 
             lhsSndType != "any" && rhsSndType != "any") {
             if (lhsSndType != rhsSndType) {
-                errorMessage += "Wrong type in pair declaration, expected " + lhsSndType + " instead of " + rhsSndType + "\n"
+                Error.addSemErr("Wrong type in pair declaration, expected " +
+                                lhsSndType + " instead of " + rhsSndType)
             }
         }
         if (lhsFstType == "any" && rhsFstType == "any" ||
                  lhsSndType == "any" && rhsSndType == "any") {
-            errorMessage += "Undefined type in assignment\n"
+            Error.addSemErr("Undefined type in assignment")
         }
     
     }
@@ -106,14 +112,14 @@ object SemanticChecker {
             false
         }
         if (ty != expr.typeVal()) {
-            errorMessage += "unexpected type " + expr.typeVal() + ", expected type " + ty + "\n"
+            Error.addSemErr(s"unexpected type ${expr.typeVal()}, expected type ${ty}")
         }     
     }
 
     def basicTypeCheck(ty1: String, ty2: String, expr: ExprNode): Unit = {
         val res = ty1 == expr.typeVal() || ty2 == expr.typeVal() || expr.typeVal() == "any"
         if (!res) {
-           errorMessage += s"unexpected type ${expr.typeVal()}, expected type ${ty1} / ${ty2}\n"
+           Error.addSemErr(s"unexpected type ${expr.typeVal()}, expected type ${ty1} / ${ty2}")
         }      
     }
 
