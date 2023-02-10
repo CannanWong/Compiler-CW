@@ -771,14 +771,18 @@ sealed trait BinOpExprNode extends ExprNode {
             case EqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
+                    if (fstExpr.typeVal() != sndExpr.typeVal() &&
+                        fstExpr.typeVal() != "null" && sndExpr.typeVal() != "null" &&
+                        fstExpr.typeVal() != "any" && sndExpr.typeVal() != "any") {
                         SemanticChecker.errorMessage += s"Binary op: wrong type, expected ${fstExpr.typeVal()} instead of ${sndExpr.typeVal()}\n"
                     }
             }
             case IEqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (fstExpr.typeVal() != sndExpr.typeVal()) {
+                    if (fstExpr.typeVal() != sndExpr.typeVal() &&
+                        fstExpr.typeVal() != "null" && sndExpr.typeVal() != "null" &&
+                        fstExpr.typeVal() != "any" && sndExpr.typeVal() != "any")  {
                         SemanticChecker.errorMessage += s"Binary op: wrong type, expected ${fstExpr.typeVal()} instead of ${sndExpr.typeVal()}\n"
                     }
             }
