@@ -56,14 +56,11 @@ object lexer {
     private def validIdentStart(c: Char) = c == '_' || (c <= 'z' && c.isLetter)
     private def validIdentLetter(c: Char) = validIdentStart(c) || c.isDigit
     private def validChar(c: Char) = !(List('\\', '\'', '\"', '\n').contains(c))
-    //private val comment = symbol("#") *> manyUntil(item, endOfLine)
-    //private val skipWhitespace = skipMany(whitespace <|> comment).hide
+
     private val lexer = new Lexer(desc)
 
-    def fully[A](p: Parsley[A]): Parsley[A] = lexer.fully(p)//skipWhitespace ~> p <~ eof 
+    def fully[A](p: Parsley[A]): Parsley[A] = lexer.fully(p)
 
-    //def symbol(s: String): Parsley[Unit] = 
-    //    lexer.lexeme.symbol(s)
     val implicits = lexer.lexeme.symbol.implicits
     val identifier = lexer.lexeme.names.identifier
     val character = lexer.lexeme.text.character.ascii
@@ -87,55 +84,54 @@ object Parser {
         attempt(boolLiter) <|> 
         charLiter          <|> 
         strLiter           <|>
-        literalIdent       <|>
+        identLiter       <|>
         pairLiter          <|>
         bracketExpr)
 
-    lazy val literalIdent = ident <~ notFollowedBy("(").explain(
+    lazy val identLiter = ident <~ notFollowedBy("(").explain(
         "function calls should start with call and not appear in expressions.")
 
     lazy val bracketExpr: Parsley[ExprNode] =
-        ("(" ~> expr <~ ")").label("brackets")
+        ("(".label("open paranthesis") ~> expr <~ ")".label("closed paranthesis"))
     
     lazy val expr: Parsley[ExprNode] =
-        (attempt(op) <|> literals).label("literal of any type, identifier, null, (, uOp, binOp")
+        attempt(op) <|> literals
 
     lazy val op: Parsley[ExprNode] =
         precedence(literals)(
-            Ops(Prefix)("!".label("unOp") #> NotNode,
-                        "-".label("unOp") #> NegNode,
-                        "len".label("unOp") #> LenNode,
-                        "ord".label("unOp") #> OrdNode,
-                        "chr".label("unOp") #> ChrNode),
-            Ops(InfixL)("*".label("binOp") #> MulNode,
-                        "/".label("binOp") #> DivNode,
-                        "%".label("binOp") #> ModNode),
-            Ops(InfixL)("+".label("binOp") #> AddNode,
-                        "-".label("binOp") #> SubNode),
-            Ops(InfixL)(">=".label("binOp") #> GTENode,
-                        ">".label("binOp")#> GTNode,
-                        "<=".label("binOp") #> LTENode,
-                        "<".label("binOp")#> LTNode
+            Ops(Prefix)("!".label(unOp) #> NotNode,
+                        "-".label(unOp) #> NegNode,
+                        "len".label(unOp) #> LenNode,
+                        "ord".label(unOp) #> OrdNode,
+                        "chr".label(unOp) #> ChrNode),
+            Ops(InfixL)("*".label(binOp) #> MulNode,
+                        "/".label(binOp) #> DivNode,
+                        "%".label(binOp) #> ModNode),
+            Ops(InfixL)("+".label(binOp) #> AddNode,
+                        "-".label(binOp) #> SubNode),
+            Ops(InfixL)(">=".label(binOp) #> GTENode,
+                        ">".label(binOp)#> GTNode,
+                        "<=".label(binOp) #> LTENode,
+                        "<".label(binOp)#> LTNode
                         ),
-            Ops(InfixL)("==".label("binOp") #> EqNode,
-                        "!=".label("binOp") #> IEqNode),
-            Ops(InfixL)("&&".label("binOp") #> AndNode),
-            Ops(InfixL)("||".label("binOp") #> OrNode)
-        )
-       
-    lazy val lValue = 
-        (pairElem <|> attempt(arrayElem) <|> ident).label("LVal").explain(
-            "LValue can be identifiers, array elements or pair elements (fst, snd)."
+            Ops(InfixL)("==".label(binOp) #> EqNode,
+                        "!=".label(binOp) #> IEqNode),
+            Ops(InfixL)("&&".label(binOp) #> AndNode),
+            Ops(InfixL)("||".label(binOp) #> OrNode)
         )
 
+    private val unOp = "unary operator"
+    private val binOp = "binary operator"
+       
+    lazy val lValue = 
+        pairElem <|> attempt(arrayElem) <|> ident
+
     lazy val rValue =
-        (arrayLiter     <|>
+        arrayLiter     <|>
         newPair         <|>
         pairElem        <|>
         funcCall        <|>
-        expr).label("RValue")
-        .explain("RValue can be array literals, new pair literal," +
-          " pair elements (fst, snd), function calls and expressions.")
+        expr
 
     /* Types */
 
@@ -152,24 +148,11 @@ object Parser {
         "string" #> BaseTypeNode("string")
 
     lazy val intLiter: Parsley[IntLiterNode] =
-        (IntLiterNode.lift(num)).label("num")
+        (IntLiterNode.lift(num)).label("integer")
     
     lazy val boolLiter: Parsley[BoolLiterNode] = 
         ("true" #> BoolLiterNode(true) <|>
         "false" #> BoolLiterNode(false)).label("bool")
-
-    lazy val escapedChar = 
-        "\\" ~> choice(
-            '0' #> '\u0000',
-            'b' #> '\b',
-            't' #> '\t',
-            'n' #> '\n',
-            'f' #> '\f',
-            'r' #> '\r',
-            '\"',
-            '\'',
-            '\\'
-        )
 
     lazy val charLiter: Parsley[CharLiterNode] = 
         (CharLiterNode.lift(character)).label("character")
@@ -181,7 +164,7 @@ object Parser {
         (postfix1(arrayBaseType, "[]".label("[] (as array type)") #> ArrayTypeNode))
 
     lazy val arrayElem: Parsley[ArrayElemNode] =
-        (ArrayElemNode.lift(ident, some("[" ~> expr <~ "]").label("array index"))).label("array element")
+        (ArrayElemNode.lift(ident, some("[" ~> expr <~ "]").label("array index (like 'xs[idx]')"))).label("array element")
 
     lazy val arrayLiter: Parsley[ArrayLiterNode] =
         ("[" ~> ArrayLiterNode.lift(sepBy(expr, ",")) <~ "]").label("array literal")
@@ -194,13 +177,13 @@ object Parser {
         (attempt(arrayType) <|> baseType <|> "pair" #> PETPairNode()).label("pair element type")
 
     lazy val pairLiter: Parsley[PairLiterNode] =
-        ("null" #> PairLiterNode()).label("pair literal")
+        ("null" #> PairLiterNode()).label("pair literal (null)")
 
     lazy val pairElem: Parsley[PairElemNode] =
-        "fst" ~> FstNode.lift(lValue) <|> "snd" ~> SndNode.lift(lValue).label("pair element: (fst / snd) LValue")
+        ("fst" ~> FstNode.lift(lValue) <|> "snd" ~> SndNode.lift(lValue)).label("pair element (fst / snd)")
 
     lazy val newPair: Parsley[NewPairNode] =
-        NewPairNode.lift("newpair(" ~> expr <~ ",", expr <~ ")").label("new pair literal")
+        NewPairNode.lift("newpair(" ~> expr <~ ",", expr <~ ")").label("new pair")
 
     /* Functions */
     
@@ -237,25 +220,25 @@ object Parser {
     /* Statements */
     
     lazy val skip: Parsley[StatNode] =
-        ("skip" #> SkipNode()).label("skip statement")
+        ("skip" #> SkipNode()).label("skip")
 
     lazy val read =
-        ReadNode.lift("read" ~> lValue).label("reading a value")
+        ReadNode.lift("read" ~> lValue).label("read")
 
     lazy val free =
-        FreeNode.lift("free" ~> expr).label("freeing a value")
+        FreeNode.lift("free" ~> expr).label("free")
 
     lazy val valReturn =
         ReturnNode.lift("return" ~> expr).label("return statement")
 
     lazy val exit =
-        ExitNode.lift("exit" ~> expr).label("program exit statement")
+        ExitNode.lift("exit" ~> expr).label("program exit")
 
     lazy val print =
-        PrintNode.lift("print" ~> expr).label("print statement")
+        PrintNode.lift("print" ~> expr).label("print")
 
     lazy val println =
-        PrintlnNode.lift("println" ~> expr).label("println statement")
+        PrintlnNode.lift("println" ~> expr).label("println")
 
     lazy val ifCon =
         IfNode.lift("if" ~> expr, "then" ~> stats, "else".explain("All if statements must have an else clause.") ~> stats <~ "fi".explain("Unclosed if statement")).label("if condition")
@@ -264,13 +247,13 @@ object Parser {
         WhileNode.lift("while" ~> expr, "do".explain("While-loop conditions should be bounded by the do keyword") ~> stats <~ "done".explain("Unclosed while-loop")).label("while loop")
 
     lazy val beginEnd =
-        BeginEndNode.lift("begin" ~> stats <~ "end").label("scoping statement")
+        BeginEndNode.lift("begin" ~> stats <~ "end")
 
     lazy val assignIdent: Parsley[AssignIdentNode] =
-        AssignIdentNode.lift(generalType, ident <~ notFollowedBy("(").hide.explain("function declaration format mismatch or is within body"), "=".label("Identifier assignment") ~> rValue).label("Identifier assignment")
+        AssignIdentNode.lift(generalType, ident <~ notFollowedBy("(").explain("function declaration format mismatch or is within body"), "=".label("new identifier assignment") ~> rValue).label("new identifier assignment")
 
     lazy val lValueAssign: Parsley[LValuesAssignNode] =
-        LValuesAssignNode.lift(lValue <~ notFollowedBy("(").hide.explain("function declaration format mismatch or is within body"), "=".label("LValue assignment") ~> rValue).label("LValue assignment")
+        LValuesAssignNode.lift(lValue <~ notFollowedBy("(").hide.explain("function declaration format mismatch or is within body"), "=".label("assignment") ~> rValue)
 
     lazy val stat: Parsley[StatNode] = lexer.lexeme(
         skip        <|>
@@ -295,8 +278,8 @@ object Parser {
     /* Top Level */
     
     lazy val prog: Parsley[ProgramNode] =
-        ("begin".label("beginning of program") ~> ProgramNode.lift(
-            manyUntil(func, lookAhead(attempt(stat))), stats) <~ "end".label("end of program"))
+        ("begin".label("begin") ~> ProgramNode.lift(
+            manyUntil(func, lookAhead(attempt(stat))), stats) <~ "end".label("\";\" or end"))
 
     val topLevel = fully(prog)
 }
