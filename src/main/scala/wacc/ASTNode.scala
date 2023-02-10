@@ -1,6 +1,5 @@
 package wacc
 
-import parsley.genericbridges
 
 import scala.collection.mutable.ListBuffer
 
@@ -29,8 +28,7 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
         // Check if function name is used
         val funcNameUsed = SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
             case Some(n) => {
-                SemanticChecker.errorMessage +=
-                    s"Function \"${ident.name}\" is defined more than once\n"
+                Error.addSemErr(s"Function \"${ident.name}\" is defined more than once")
                 true
             }
             case _ => false
@@ -41,11 +39,11 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
 
         paramList.semanticCheck()
 
-        var paramtypeList = ListBuffer[String]()
+        val paramtypeList = ListBuffer[String]()
         for (param <- paramList.paramList) {
             // Check for repeated parameter names
             if (SemanticChecker.symbolTable.checkVarDefined(param.ident.name)) {
-                SemanticChecker.errorMessage += s"Repeated parameter name \"${param.ident.name}\"\n"
+                 Error.addSemErr(s"Repeated parameter name \"${param.ident.name}\"")
             }
             else {
                 paramtypeList += param.ty.typeVal()
@@ -118,8 +116,7 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         
         // Check if variable name is already declared in the same scope
         if (SemanticChecker.symbolTable.checkVarDefined(ident.name)){
-            SemanticChecker.errorMessage += 
-                s"Variable name \"${ident.name}\" is already used in the same scope\n"
+             Error.addSemErr(s"Variable name \"${ident.name}\" is already used in the same scope")
         }
         // Add to symbol table and get type
         else {
@@ -149,8 +146,8 @@ case class ReadNode(lvalue: LValueNode) extends StatNode {
         lvalue.semanticCheck()
         val ty = lvalue.typeVal()
         if (ty != "int" && ty != "char" && ty != "null") {
-            SemanticChecker.errorMessage +=
-                s"read type error: unexpected ${lvalue.typeVal()} (expected: char and int)\n"
+             Error.addSemErr(s"read type error: unexpected ${lvalue.typeVal()} (expected: " +
+                            "char and int)")
         }
     }
 }
@@ -161,8 +158,8 @@ case class FreeNode(expr: ExprNode) extends StatNode {
         val ty = expr.typeVal()
         // Check if type is array or pair
         if (ty != "array" && ty != "pair") {
-            SemanticChecker.errorMessage += 
-                s"free type error: unexpected ${ty} (expected: at least 1-dimension array or pair)\n"
+             Error.addSemErr(s"free type error: unexpected ${ty} (expected: at least " +
+                            "1-dimension array or pair)")
         }
     }
 }
@@ -170,7 +167,7 @@ case class FreeNode(expr: ExprNode) extends StatNode {
 case class ReturnNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
         if (!SemanticChecker.insideFunc) {
-            SemanticChecker.errorMessage += "return outside of function is not allowed\n"
+            Error.addSemErr("return outside of function is not allowed")
         }
         expr.semanticCheck()
         expr match {
@@ -186,8 +183,7 @@ case class ExitNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
         expr.semanticCheck()
         if (expr.typeVal() != "int") {
-            SemanticChecker.errorMessage +=
-                s"free type error: unexpected ${expr.typeVal()} (expected: int)"
+             Error.addSemErr(s"free type error: unexpected ${expr.typeVal()} (expected: int)")
         }
     }
 }
@@ -227,8 +223,8 @@ case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends 
         SemanticChecker.scopeStack.pop()
         
         if (expr.typeVal() != "bool") {
-            SemanticChecker.errorMessage +=
-                s"if condition type error: unexpected ${expr.typeVal()} (expected: bool)\n"
+             Error.addSemErr(s"if condition type error: unexpected ${expr.typeVal()} " +
+                            "(expected: bool)")
         }
     }
 }
@@ -242,8 +238,8 @@ case class WhileNode(expr: ExprNode, stat: StatNode) extends StatNode  {
         SemanticChecker.scopeStack.pop()
 
         if (expr.typeVal() != "bool") {
-            SemanticChecker.errorMessage +=
-                s"while condition type error: unexpected ${expr.typeVal()} (expected: bool)\n"
+             Error.addSemErr(s"while condition type error: unexpected ${expr.typeVal()} " +
+                            "(expected: bool)")
         }
     }
 }
@@ -332,9 +328,8 @@ case class ArrayElemNode(ident: IdentNode,
             arrayType()
         }
         else {
-            SemanticChecker.errorMessage +=
-                s"array dimension exceeded: expected: " +
-                s"${ident.arrayDim()}, provided: ${exprList.length}\n"
+             Error.addSemErr(s"array dimension exceeded: expected: " +
+                            s"${ident.arrayDim()}, provided: ${exprList.length}")
             "ERROR"
         }
     }
@@ -351,8 +346,8 @@ case class ArrayElemNode(ident: IdentNode,
             for (e <- exprList) {
                 e.semanticCheck()
                 if (e.typeVal() != "int") {
-                    SemanticChecker.errorMessage +=
-                        s"array index type error: unexpected type ${e.typeVal()}, expected int\n"
+                     Error.addSemErr(s"array index type error: unexpected type ${e.typeVal()}, " +
+                                    "expected int")
                 }
             }
         }
@@ -474,8 +469,8 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
             .zip(exprTypes.map(ty => ty == exprTypes(0)))
             .map{case (ty: String, eq: Boolean) =>
                     if (!eq) {
-                        SemanticChecker.errorMessage +=
-                            s"array literal expr should have type ${exprTypes(0)}, but was ${ty}\n"   
+                         Error.addSemErr(s"array literal expr should have type" +
+                                            s" ${exprTypes(0)}, but was ${ty}")
                     }
                 }
             }
@@ -516,8 +511,8 @@ case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
             // Check if arg list is of correct type and number
             case Some(FuncIdentifier(paramtype,_)) => {
                 if (argList.exprList.length != paramtype.length) {
-                        SemanticChecker.errorMessage +=
-                            "function argument number is different from function parameter number\n"
+                        Error.addSemErr(
+                            "function argument number is different from function parameter number")
                     }
                 else {
                     // Check for tyoe mismatch in function call 
@@ -544,14 +539,14 @@ case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
                                     .map{case(func: String, prov: String) => func == prov}
                                     .fold(true)((x, y) => x && y)
                     if (!typeValid) {
-                        SemanticChecker.errorMessage +=
+                         Error.addSemErr(
                             s"function arguement type error: expected: (${argBuilder.toString()})" +
-                            s"provided: (${provBuilder.toString()})"
+                            s"provided: (${provBuilder.toString()})")
                     }
                 }
             }
-            case _ => SemanticChecker.errorMessage +=
-                "Function name \"" + ident.name + "\" is not defined\n"
+            case _ =>  Error.addSemErr(
+                        "Function name \"" + ident.name + "\" is not defined")
         }
     }
 }
@@ -662,7 +657,7 @@ case class StrLiterNode(s: String) extends ExprNode {
     override def typeVal() = "string"
     override def semanticCheck(): Unit = {
         if (s.contains("\n")) {
-            SemanticChecker.errorMessage += "String cannot contain non ASCII character\n"
+             Error.addSemErr("String cannot contain newline characters")
         }
         typeVal()
     }
@@ -688,14 +683,14 @@ case class LenNode(expr: ExprNode) extends UnOpExprNode {
     override def typeVal() = "int"
     override def semanticCheck(): Unit = {
         if (expr.typeVal() != "array") {
-            SemanticChecker.errorMessage +=
+             Error.addSemErr(
                 s"Wrong type in len(). unexpected ${expr.typeVal()}, " +
-                "expected at least a 1-dimension array\n"
+                "expected at least a 1-dimension array")
         }
         else {
             if (expr.arrayDim() <= 0) {
-                SemanticChecker.errorMessage +=
-                    "Wrong array dimension in len(), expected at least 1-dimensional array\n"
+                 Error.addSemErr(
+                    "Wrong array dimension in len(), expected at least 1-dimensional array")
             }
         }
     }
@@ -779,17 +774,17 @@ sealed trait BinOpExprNode extends ExprNode {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
                     if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage +=
+                         Error.addSemErr(
                             s"Binary op: wrong type, expected ${fstExpr.typeVal()}" +
-                              s"instead of ${sndExpr.typeVal()}\n"
+                              s"instead of ${sndExpr.typeVal()}")
                     }
             }
             case IEqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
                     if (fstExpr.typeVal() != sndExpr.typeVal()) {
-                        SemanticChecker.errorMessage += s"Binary op: wrong type, expected " +
-                          s"${fstExpr.typeVal()} instead of ${sndExpr.typeVal()}\n"
+                         Error.addSemErr(s"Binary op: wrong type, expected " +
+                          s"${fstExpr.typeVal()} instead of ${sndExpr.typeVal()}")
                     }
             }
             case AndNode(fstExpr, sndExpr) => {

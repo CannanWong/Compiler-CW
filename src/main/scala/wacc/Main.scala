@@ -16,12 +16,13 @@ object Main {
         topLevel.parse(fileContents) match {
             case Success(x) => {
                 println(s"AST = $x")
-                val result = SemanticChecker.check(x)
-                if (result == "") {
+                SemanticChecker.check(x)
+                if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
                 }
                 else {
-                    println("#semantic_error#\n" + result)
+                    println("#semantic_error#\n")
+                    Error.printErr()
                     sys.exit(200)
                 }
             }
