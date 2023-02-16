@@ -7,42 +7,41 @@ invalidcount=133
 
 shopt -s globstar
 for file in src/test/scala/wacc/back_end/**/*.wacc
-do 
-    expected=$(grep -A1 "# Output" $file)
-    if echo $expected | grep -q "# #syntax_error"
+do
+    expected_exit=0
+    expected_output=""
+    exit_line=$(grep -A1 "# Exit" $file)
+    if [ -n "$exit_line" ]
         then
-        expected_output="syntax_error"
-        expected_exit=100
-    elif echo $expected | grep -q "# #semantic_error"
-        then
-        expected_output="semantic_error"
-        expected_exit=200
+        expected_exit=$(echo $exit_line | grep -o -E '[0-9]+')
+        extracted=$(sed -n '/# Output:/,/# Exit:/ p' "$file")
+        expected_output=$(echo "$extracted" | head -n -2 | tail -n +2 | cut -c 3-)
     else
-        expected_output="WACC_45"
-        expected_exit=0
+        extracted=$(sed -n '/# Output:/,/# Program:/ p' "$file")
+        expected_output=$(echo "$extracted" | head -n -2 | tail -n +2 | cut -c 3-)        
     fi
 
-    ./compile $file
+    ./compile $file > /dev/null
     filename=$(basename $file .wacc)
-    arm-linux-gnueabi-gcc -o $filename -mcpu=arm1176jzf-s -mtune=arm1176jzf-s src/test/scala/wacc/back_end/$filename.s
+    arm-linux-gnueabi-gcc -o $filename -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $filename.s
     output=$(qemu-arm -L /usr/arm-linux-gnueabi/ $filename)
     exit=$?
     
     pass=1
 
-    # # Check program output
-    # if echo $output | grep -q $expected_output
-    #     then : # echo "Output correct"
-    # else
-    #     # echo "Output wrong!"
-    #     pass=0
-    # fi
+    # Check program output
+    if [ "$output" == "$expected_output" ]
+        then : # echo "Output correct"
+    else
+        echo -e "Outputted $output instead of $expected_output"
+        pass=0
+    fi
 
     # Check exit code
-    if [ $exit -eq $expected_exit ]
+    if [ "$exit" == "$expected_exit" ]
         then : # echo "Exit code correct"
     else
-        # echo "Exit code wrong!"
+        echo -e "Exited $exit instead of $expected_exit"
         pass=0
     fi
 
@@ -51,7 +50,7 @@ do
         echo -e "Test $file passed"
         ((passcount=passcount+1))
     else
-        echo -e "Test $file failed! Exited $exit instead of $expected_exit"
+        echo -e "Test $file failed!"
         ((failcount=failcount+1))
         allpass=0
     fi
