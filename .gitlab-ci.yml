@@ -7,13 +7,13 @@ build:
     - make
 
 front_end_test:
-  stage: front_end_test
+  stage: test
   script:
     - source "$HOME/.sdkman/bin/sdkman-init.sh"
     - make fe_test
 
 back_end_test:
-  stage: back_end_test
+  stage: test
   script:
     - source "$HOME/.sdkman/bin/sdkman-init.sh"
     - make be_test
