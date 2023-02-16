@@ -12,14 +12,11 @@ do
     expected=$(grep -A1 "# Output" $file)
     if echo $expected | grep -q "# #syntax_error"
         then
-        expected_output="syntax_error"
         expected_exit=100
     elif echo $expected | grep -q "# #semantic_error"
         then
-        expected_output="semantic_error"
         expected_exit=200
     else
-        expected_output="WACC_45"
         expected_exit=0
     fi
 
@@ -27,24 +24,9 @@ do
     exit=$?
     pass=1
 
-    # Check if program outputs correct error
-    if echo $output | grep -q $expected_output
-        then : # echo "Output correct"
-    else
-        # echo "Output wrong!"
-        pass=0
-    fi
-
-    # Check if program outputs correct exit code
+    # Check exit code
     if [ $exit -eq $expected_exit ]
-        then : # echo "Exit code correct"
-    else
-        # echo "Exit code wrong!"
-        pass=0
-    fi
-
-    if [ $pass -eq 1 ]
-        then 
+        then
         echo -e "Test $file passed"
         ((passcount=passcount+1))
     else

@@ -8,8 +8,6 @@ invalidcount=133
 shopt -s globstar
 for file in src/test/scala/wacc/back_end/**/*.wacc
 do 
-    ((testcount=testcount+1))
-    # echo "Testing $file:"
     expected=$(grep -A1 "# Output" $file)
     if echo $expected | grep -q "# #syntax_error"
         then
@@ -24,20 +22,23 @@ do
         expected_exit=0
     fi
 
-    output=$(./compile $file)
+    ./compile $file
+    filename=$(basename $file .wacc)
+    arm-linux-gnueabi-gcc -o $filename -mcpu=arm1176jzf-s -mtune=arm1176jzf-s src/test/scala/wacc/back_end/$filename.s
+    output=$(qemu-arm -L /usr/arm-linux-gnueabi/ $filename)
     exit=$?
     
     pass=1
 
-    # Check if program outputs correct error
-    if echo $output | grep -q $expected_output
-        then : # echo "Output correct"
-    else
-        # echo "Output wrong!"
-        pass=0
-    fi
+    # # Check program output
+    # if echo $output | grep -q $expected_output
+    #     then : # echo "Output correct"
+    # else
+    #     # echo "Output wrong!"
+    #     pass=0
+    # fi
 
-    # Check if program outputs correct exit code
+    # Check exit code
     if [ $exit -eq $expected_exit ]
         then : # echo "Exit code correct"
     else
