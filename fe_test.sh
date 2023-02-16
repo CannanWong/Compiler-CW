@@ -6,10 +6,9 @@ validcount=221
 invalidcount=133
 
 shopt -s globstar
-for file in src/test/scala/wacc/**/*.wacc
+for file in src/test/scala/wacc/front_end/**/*.wacc
 do 
     ((testcount=testcount+1))
-    # echo "Testing $file:"
     expected=$(grep -A1 "# Output" $file)
     if echo $expected | grep -q "# #syntax_error"
         then
@@ -26,11 +25,6 @@ do
 
     output=$(./compile $file)
     exit=$?
-    # echo "Expected output: $expected_output"
-    # echo "Output: $output"
-    # echo "Expected exit: $expected_exit"
-    # echo "Exit: $exit"
-    
     pass=1
 
     # Check if program outputs correct error

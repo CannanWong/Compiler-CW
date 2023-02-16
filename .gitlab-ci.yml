@@ -6,8 +6,14 @@ build:
     - source "$HOME/.sdkman/bin/sdkman-init.sh"
     - make
 
-test:
-  stage: test
+front_end_test:
+  stage: front_end_test
   script:
     - source "$HOME/.sdkman/bin/sdkman-init.sh"
-    - make test
+    - make fe_test
+
+back_end_test:
+  stage: back_end_test
+  script:
+    - source "$HOME/.sdkman/bin/sdkman-init.sh"
+    - make be_test
