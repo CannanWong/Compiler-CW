@@ -1,10 +1,16 @@
 package wacc
 
+import scala.collection.mutable.ListBuffer
+
 object ControlFlowGraph
 
 sealed trait ControlFlowBlock
 
-case class InstBlock(label: String, inst: List[Instruction], next: InstBlock) extends ControlFlowBlock
+case class InstBlock(label: String, instList: ListBuffer[Instruction], next: InstBlock) extends ControlFlowBlock {
+    def addInst(inst: Instruction) {
+        instList += inst
+    }
+}
 
 case class IfBlock(label: String, fst: InstBlock, snd: InstBlock) extends ControlFlowBlock
 
