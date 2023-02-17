@@ -32,17 +32,21 @@ object SemanticChecker {
     }
 
     // for AssignIdentNode
-    def typeCheck1(ty: TypeNode, rvalue: RValueNode): Boolean = {
-       ty.typeVal1().typeEquals(rvalue.typeVal1())
+    def TypeCheck(ty: TypeNode, rvalue: RValueNode): Boolean = {
+       ty.TypeVal().typeEquals(rvalue.TypeVal())
+    }
+
+    def TypeCheck(ty1: Identifier, ty2: Identifier): Boolean = {
+        ty1.typeEquals(ty2)
     }
 
     // LValuesAssignNode
-    def typeCheck1(lhs: LValueNode, rvalue: RValueNode): Boolean = {
-        lhs.typeVal1().typeEquals(rvalue.typeVal1())
+    def TypeCheck(lhs: LValueNode, rvalue: RValueNode): Boolean = {
+        lhs.TypeVal().typeEquals(rvalue.TypeVal()) 
     }
 
-    def typeCheck1(ty: Identifier, rvalue: RValueNode): Boolean = {
-        val rhsType = rvalue.typeVal1()
+    def TypeCheck(ty: Identifier, rvalue: RValueNode): Boolean = {
+        val rhsType = rvalue.TypeVal()
         ty.typeEquals(rhsType)
     }
 

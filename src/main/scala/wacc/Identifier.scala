@@ -1,78 +1,83 @@
 package wacc
 
 sealed trait Identifier {
-  def typeEquals(id: Any): Boolean
+  def typeEquals(id: Identifier): Boolean
+  override def toString(): String = "NO TYPE"
 }
 
 // when ident node not in symbol table
-sealed class AnyIdentifier() extends Identifier {
-  override def typeEquals(id: Any): Boolean = {
+case class AnyIdentifier() extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
       true
   }
   override def toString(): String = "any"
 }
 
-sealed trait BasicTypeIdentifier extends AnyIdentifier
-
-case class IntIdentifier() extends BasicTypeIdentifier {
-  override def typeEquals(id: Any): Boolean = {
+case class IntIdentifier() extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
     id match {
-      case i: IntIdentifier => true
-      case a: AnyIdentifier => true
+      case IntIdentifier() => true
+      case AnyIdentifier() => true
+      case VarIdentifier(varId) => {
+        this.typeEquals(varId)
+      }
       case _ => false
     }
   }
   override def toString(): String = "int"
 }
 
-case class BoolIdentifier() extends BasicTypeIdentifier {
-  override def typeEquals(id: Any): Boolean = {
-    id match {
-      case b: BoolIdentifier => true
-      case a: AnyIdentifier => true
+case class BoolIdentifier() extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
+      id match {
+      case BoolIdentifier() => true
+      case AnyIdentifier() => true
+      case VarIdentifier(varId) => {
+        this.typeEquals(varId)
+      }
       case _ => false
     }
   }
   override def toString(): String = "boolean"
 }
 
-case class StrIdentifier() extends BasicTypeIdentifier {
-  override def typeEquals(id: Any): Boolean = {
-    id match {
-      case str: StrIdentifier => true
-      case a: AnyIdentifier => true      
+case class StrIdentifier() extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
+  id match {
+      case StrIdentifier() => true
+      case AnyIdentifier() => true 
+      case VarIdentifier(varId) => {
+        this.typeEquals(varId)
+      }
       case _ => false
     }
   }
   override def toString(): String = "string"
 }
 
-case class CharIdentifier() extends BasicTypeIdentifier {
-  override def typeEquals(id: Any): Boolean = {
-    id match {
-      case c: CharIdentifier => {
-        SemanticChecker.errorMessage += "char identified\n"
-        true
+case class CharIdentifier() extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
+  id match {
+      case CharIdentifier() => true
+      case AnyIdentifier() => true
+      case VarIdentifier(varId) => {
+        this.typeEquals(varId)
       }
-      case a: AnyIdentifier => true
       case _ => false
     }
   }
   override def toString(): String = "char"
 }
 
-case class VarIdentifier(ty: Identifier) extends AnyIdentifier {
-  override def typeEquals(id: Any): Boolean = {
-    id match {
-      case VarIdentifier(vtype) => ty.typeEquals(vtype)
-      case _ => false
-    }
+case class VarIdentifier(ty: Identifier) extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
+    ty.typeEquals(id)
   }
   override def toString(): String = ty.toString()
 }
 
-case class FuncIdentifier(paramtype: List[Identifier], returntype: Identifier) extends AnyIdentifier {
-  override def typeEquals(id: Any): Boolean = {
+case class FuncIdentifier(paramtype: List[Identifier], returntype: Identifier) extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
     id match {
       case FuncIdentifier(plist, retType) => {
         val paramsTypeValid = (paramtype.length == plist.length) &&
@@ -82,6 +87,7 @@ case class FuncIdentifier(paramtype: List[Identifier], returntype: Identifier) e
                               .fold(true)((x, y) => x && y)
         paramsTypeValid && returntype.typeEquals(retType)
       }
+      case VarIdentifier(varId) => this.typeEquals(varId)
       case _ => false
     }
   }
@@ -89,12 +95,13 @@ case class FuncIdentifier(paramtype: List[Identifier], returntype: Identifier) e
   override def toString(): String = returntype.toString()
 }
 
-case class ArrayIdentifier(baseTy: Identifier, dim: Int) extends AnyIdentifier {
-  override def typeEquals(id: Any): Boolean = {
+case class ArrayIdentifier(baseTy: Identifier, dim: Int) extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
     id match {
       case ArrayIdentifier(tyId, d) => {
         baseTy.typeEquals(tyId) && d == dim
       }
+      case VarIdentifier(varId) => this.typeEquals(varId)
       case a: AnyIdentifier => true
       case _ => false
     }
@@ -109,13 +116,15 @@ case class ArrayIdentifier(baseTy: Identifier, dim: Int) extends AnyIdentifier {
   }
 }
 
-case class PairIdentifier(ty1: Identifier, ty2: Identifier) extends AnyIdentifier {
-  override def typeEquals(id: Any): Boolean = {
+case class PairIdentifier(ty1: Identifier, ty2: Identifier) extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
     id match {
       case PairIdentifier(otherTy1, otherTy2) => {
         ty1.typeEquals(otherTy1) && ty2.typeEquals(otherTy2)
       }
       case a: AnyIdentifier => true
+      case n: NullIdentifier => true
+      case VarIdentifier(varId) => this.typeEquals(varId)
       case _ => false
     }
   }
@@ -123,4 +132,17 @@ case class PairIdentifier(ty1: Identifier, ty2: Identifier) extends AnyIdentifie
   override def toString(): String = {
     s"(${ty1.toString()},${ty2.toString()})"
   }
+}
+
+case class NullIdentifier() extends Identifier {
+  override def typeEquals(id: Identifier): Boolean = {
+    id match {
+      case a: AnyIdentifier => true
+      case p: PairIdentifier => true
+      case VarIdentifier(varId) => this.typeEquals(varId)
+      case _ => false
+    }
+  }
+
+  override def toString(): String = "null"
 }

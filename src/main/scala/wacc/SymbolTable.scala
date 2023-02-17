@@ -5,7 +5,6 @@ import scala.collection.mutable
 class SymbolTable {
 
     val map: mutable.Map[String, Identifier] = mutable.Map()
-
     
     // Add variable to symbol table
     def addVar(name: String, ty: Identifier): Unit = {
@@ -71,4 +70,3 @@ class SymbolTable {
     scope index tracked using a stack
     new scope index assignment = max + 1
 */
-
