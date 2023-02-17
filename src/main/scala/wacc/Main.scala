@@ -37,5 +37,9 @@ object Main {
             }
         }
     }
+
+    def translate(ast: Parsley[ProgramNode]): Unit = {
+
+    }
 }
 
