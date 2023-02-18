@@ -4,6 +4,9 @@ import parsley.{Parsley, Success, Failure}
 import Parser.topLevel
 
 import scala.io.Source
+import better.files._
+import File._
+import java.io.{File => JFile}
 
 object Main {
     def main(args: Array[String]): Unit = {
@@ -19,6 +22,7 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
+                    translate(x)
                 }
                 else {
                     println("#semantic_error#\n")
@@ -38,8 +42,19 @@ object Main {
         }
     }
 
-    def translate(ast: Parsley[ProgramNode]): Unit = {
-
+    def translate(ast: ProgramNode): Unit = {
+        val f = File("/home/cannan/WACC_45/skip.s")
+        val str = (".data\n" +
+          ".text\n" +
+          ".global main\n" +
+          "main:\n" +
+          "  push {fp, lr}\n" +
+          "  push {r8, r10, r12}\n" +
+          "  mov fp, sp\n" +
+          "  mov r0, #0\n" +
+          "  pop {r8, r10, r12}\n" +
+          "  pop {fp, pc}\n")
+        f.overwrite(str)
     }
 }
 
