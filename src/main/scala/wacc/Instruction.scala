@@ -1,5 +1,7 @@
 package wacc
 
+import scala.collection.mutable.ListBuffer
+
 sealed trait Instruction
 
 case class AddInst(rd: Register, rn: Register, op: Operand) extends Instruction
@@ -16,6 +18,9 @@ case class PopInst(regList: List[Register]) extends Instruction
 
 // sealed trait Register
 // E.g. R1: Register(1)
-case class Register(num: Int)
+case class Register() {
+    var num = ControlFlowGraph.nextRegNum
+    ControlFlowGraph.nextRegNum += 1
+}
 sealed trait Operand
-case class ImmVal(num: Int) extends  Operand
+case class ImmVal(num: Int) extends Operand
