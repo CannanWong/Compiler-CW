@@ -43,7 +43,7 @@ object Main {
     }
 
     def translate(ast: ProgramNode): Unit = {
-        val f = File("/home/cannan/WACC_45/skip.s")
+        val f = File("skip.s")
         val str = (".data\n" +
           ".text\n" +
           ".global main\n" +
