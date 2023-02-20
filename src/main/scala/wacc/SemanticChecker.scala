@@ -40,12 +40,20 @@ object SemanticChecker {
         ty1 match {
             case p1: PairIdentifier =>{ 
                 ty2 match {
-                    case p2: PairIdentifier => typeCheckPair(p1, p2)
-                    case _ => ty2.typeEquals(p1)
+                    case p2: PairIdentifier => {
+                        debugMessage += "case pp\n"
+                        typeCheckPair(p1, p2)
+                    }
+                    case _ => {
+                        debugMessage += "case pn\n"
+                        ty2.typeEquals(p1)
+                    }
                 }
                 
             }
-            case _ => ty1.typeEquals(ty2)
+            case _ => {
+                debugMessage += s"case nn: ${ty1} vs ${ty2}\n"
+                ty1.typeEquals(ty2)}
         }
     }
 
@@ -73,13 +81,7 @@ object SemanticChecker {
                                 lhsSndType + " instead of " + rhsSndType +"\n"
                 ret = false
             }
-        }
-        // if (lhsFstType.typeEquals(new AnyIdentifier) && rhsFstType.typeEquals(new AnyIdentifier)
-        // || lhsSndType.typeEquals(new AnyIdentifier) && rhsSndType.typeEquals(new AnyIdentifier)) {
-        //     SemanticChecker.errorMessage += "Undefined type in assignment"
-        //     ret = false
-        // }
-        
+        }        
         ret    
     }
 

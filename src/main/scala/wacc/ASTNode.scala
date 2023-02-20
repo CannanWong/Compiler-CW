@@ -74,9 +74,8 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
     def checkReturnType(ty: TypeNode, stat: StatNode): Unit = {
         stat match {
             case r: ReturnNode => {
-                SemanticChecker.debugMessage += "checking " +ty.typeVal() + " and " + r.expr.typeVal() + "\n"
-                if (SemanticChecker.typeCheck(ty.typeVal(), r.expr.typeVal())) {
-                    SemanticChecker.debugMessage += "return type should be" +ty.typeVal() + ", unexpected " + r.expr.typeVal() + "\n"
+                if (!SemanticChecker.typeCheck(ty.typeVal(), r.expr.typeVal())) {
+                    SemanticChecker.errorMessage += "return type should be" +ty.typeVal() + ", unexpected " + r.expr.typeVal() + "\n"
                 }
             }
             case b: BeginEndNode => checkReturnType(ty, b.stat)
@@ -174,20 +173,37 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
             case _ => 
         }
         
-        if (!SemanticChecker.typeCheck(lvalue.typeVal(), rvalue.typeVal())) {
+        val lhsType = lvalue.typeVal()
+        val rhsType = rvalue.typeVal()
+        if (!SemanticChecker.typeCheck(lhsType, rhsType)) {
                 SemanticChecker.errorMessage += s"assignment: type mismatch: expected ${lvalue.typeVal().toString}, gets ${rvalue.typeVal().toString()}"
         }
-    }
-        if (rvalue.typeVal().typeEquals(new AnyIdentifier) && lvalue.typeVal().typeEquals(new AnyIdentifier)) {
+
+        val undefinedTypeAssign = lhsType match {
+            case a: AnyIdentifier => {
+                rhsType match {
+                    case a: AnyIdentifier => true
+                    case _ => false
+                }
+            }
+            case _ => false
+        }
+
+        if (undefinedTypeAssign) {
             SemanticChecker.errorMessage += "unidentified type for both LHS RHS type assignment\n"
         }
+        
+    }
+
 }
 
 case class ReadNode(lvalue: LValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
-        if ((!SemanticChecker.typeCheck(new IntIdentifier, lvalue.typeVal()) 
-            && !SemanticChecker.typeCheck(new CharIdentifier, lvalue.typeVal()))) {
+        val ty = lvalue.typeVal()
+        SemanticChecker.debugMessage += s"reading type ${ty}\n"
+        if ((!SemanticChecker.typeCheck(new IntIdentifier, ty) 
+            && !SemanticChecker.typeCheck(new CharIdentifier, ty))) {
             SemanticChecker.errorMessage += s"sread type error: unexpected ${lvalue.typeVal()} (expected: " +
                             "char and int)\n"
 
@@ -374,12 +390,10 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
                 case None => SemanticChecker.errorMessage += s"variable ${ident.name} \"is not in scope\"\n"
             }
         }
-        typeVal()
     }
 }
 
-sealed trait PairElemNode extends LValueNode with RValueNode {
-}
+sealed trait PairElemNode extends LValueNode with RValueNode
 
 case class FstNode(lvalue: LValueNode) extends PairElemNode {
     override def typeVal() = {
@@ -390,11 +404,11 @@ case class FstNode(lvalue: LValueNode) extends PairElemNode {
                     case Some(ty) => {
                         ty match {
                             case p: PairIdentifier => {
-                                SemanticChecker.debugMessage += s"type of ty1 is ${p.ty1.toString()}\n"
+                                SemanticChecker.debugMessage += s"${name} p: type of ty1 is ${p.ty1.toString()}\n"
                                 p.ty1
                             }
                             case VarIdentifier(PairIdentifier(ty1, ty2)) => {
-                                SemanticChecker.debugMessage += s"type of ty1 is ${ty1.toString()}\n"
+                                SemanticChecker.debugMessage += s"${name} v: type of ty1 is ${ty1.toString()}\n"
                                 ty1
                             }
                             case _ => new AnyIdentifier
@@ -402,14 +416,12 @@ case class FstNode(lvalue: LValueNode) extends PairElemNode {
                     }
                     case _ => new AnyIdentifier
                 }
-                new AnyIdentifier
             }
             case _ => new AnyIdentifier
         } 
     }
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
-        typeVal()
     }
 }
 
@@ -422,11 +434,11 @@ case class SndNode(lvalue: LValueNode) extends PairElemNode {
                     case Some(ty) => {
                         ty match {
                             case p: PairIdentifier => {
-                                SemanticChecker.debugMessage += s"type of ty2 is ${p.ty2.toString()}\n"
+                                SemanticChecker.debugMessage += s"${name} p: type of ty2 is ${p.ty2.toString()}\n"
                                 p.ty2
                             }
                             case VarIdentifier(PairIdentifier(ty1, ty2)) => {
-                                SemanticChecker.debugMessage += s"type of ty2 is ${ty1.toString()}\n"
+                                SemanticChecker.debugMessage += s"${name} v: type of ty2 is ${ty1.toString()}\n"
                                 ty2
                             }
                             case _ => {
@@ -437,7 +449,6 @@ case class SndNode(lvalue: LValueNode) extends PairElemNode {
                     }
                     case _ => new AnyIdentifier
                 }
-                new AnyIdentifier
             }
             case _ => new AnyIdentifier
         } 
@@ -445,7 +456,6 @@ case class SndNode(lvalue: LValueNode) extends PairElemNode {
 
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
-        typeVal()
     }
 }
 
@@ -455,6 +465,7 @@ sealed trait RValueNode extends ASTNode {
 }
 
 sealed trait ExprNode extends RValueNode
+
 // Example: [1,a] (a=2) / [a,b] (a=[1,2],b=[3,4])
 case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
     override def typeVal(): Identifier = {
@@ -490,7 +501,6 @@ case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode 
     override def semanticCheck(): Unit = {
         fstExpr.semanticCheck()
         sndExpr.semanticCheck()
-        typeVal()
     }
 }
 
@@ -590,7 +600,6 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
         ty.semanticCheck()
         arrayType = getType(ty).typeVal()
         arrayDim = countDimension(ty)
-        typeVal()
     }
 
     def countDimension(ty: TypeNode): Int = {
@@ -618,13 +627,12 @@ case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) exte
     override def semanticCheck(): Unit = {
         fstPET.semanticCheck()
         sndPET.semanticCheck()
-        typeVal()
     }
 }
 
 // PairElemTypeNode
 sealed trait PairElemTypeNode extends ASTNode {
-    def typeVal(): Identifier = new AnyIdentifier
+    def typeVal(): Identifier = new PairIdentifier(new AnyIdentifier, new AnyIdentifier)
 }
 // <pair>
 case class PETPairNode() extends PairElemTypeNode {
@@ -718,7 +726,6 @@ sealed trait BinOpExprNode extends ExprNode {
             }
     }
     override def semanticCheck(): Unit = {
-        typeVal()
         this match {
             case MulNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
