@@ -8,7 +8,7 @@ sealed trait Identifier {
 // when ident node not in symbol table
 case class AnyIdentifier() extends Identifier {
   override def typeEquals(id: Identifier): Boolean = {
-      true
+    true
   }
   override def toString(): String = "any"
 }
@@ -80,12 +80,12 @@ case class FuncIdentifier(paramtype: List[Identifier], returntype: Identifier) e
   override def typeEquals(id: Identifier): Boolean = {
     id match {
       case FuncIdentifier(plist, retType) => {
-        val paramsTypeValid = (paramtype.length == plist.length) &&
+        val paramstypeValid = (paramtype.length == plist.length) &&
                               paramtype
                               .zip(plist)
                               .map{case (a: Identifier, b: Identifier) => a.typeEquals(b)}
                               .fold(true)((x, y) => x && y)
-        paramsTypeValid && returntype.typeEquals(retType)
+        paramstypeValid && returntype.typeEquals(retType)
       }
       case VarIdentifier(varId) => this.typeEquals(varId)
       case _ => false
@@ -94,7 +94,7 @@ case class FuncIdentifier(paramtype: List[Identifier], returntype: Identifier) e
 
   override def toString(): String = returntype.toString()
 }
-
+ 
 case class ArrayIdentifier(baseTy: Identifier, dim: Int) extends Identifier {
   override def typeEquals(id: Identifier): Boolean = {
     id match {

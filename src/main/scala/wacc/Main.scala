@@ -18,10 +18,10 @@ object Main {
                 println(s"AST = $x")
                 val result = SemanticChecker.check(x)
                 if (result == "") {
-                    println("No semantic error")
+                    println("No semantic error" + "\n%%Debug Message%%\n" + SemanticChecker.debugMessage)
                 }
                 else {
-                    println("#semantic_error#\n" + result)
+                    println("#semantic_error#\n" + result + "\n%%Debug Message%%\n" + SemanticChecker.debugMessage)
                     sys.exit(200)
                 }
             }

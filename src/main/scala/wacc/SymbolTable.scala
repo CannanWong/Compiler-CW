@@ -37,14 +37,14 @@ class SymbolTable {
     // Look up variable or array from symbol table in same or higher scopes
     def lookUpVar(name: String): Option[Identifier] = {
         var idx = 0
-        var scope = SemanticChecker.scopeStack.indexOf(idx)
-        var varName = scope.toString() + "!" + name
-        var identifier = map.get(varName)
-        while (idx < SemanticChecker.scopeStack.size && identifier.isEmpty) {
-            idx += 1
-            scope = SemanticChecker.scopeStack.indexOf(idx)
+        var scope = -1
+        var varName = ""
+        var identifier: Option[Identifier] = None
+        while (!SemanticChecker.scopeStack.isEmpty && idx < SemanticChecker.scopeStack.size && identifier.isEmpty) {
+            scope = SemanticChecker.scopeStack.apply(idx)
             varName = scope.toString() + "!" + name
             identifier = map.get(varName)
+            idx += 1
         }
         identifier
     }
@@ -59,6 +59,14 @@ class SymbolTable {
     def lookUpFunc(name: String): Option[Identifier] = {
         val funcName = "f!" + name
         map.get(funcName)
+    }
+
+    override def toString(): String = {
+        var ret = ""
+        map.foreachEntry((name:String, ty:Identifier) =>{
+            ret += s"{name: ${name}, type: ${ty}}"
+        })
+        ret
     }
 }
 

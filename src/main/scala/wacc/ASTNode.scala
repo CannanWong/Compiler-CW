@@ -1,15 +1,18 @@
 package wacc
+
+
 import scala.collection.mutable.ListBuffer
 
 sealed trait ASTNode {
-    def semanticCheck(): Unit = {
-
-    }
+    def semanticCheck(): Unit = {}
 }
 
 case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode {
 
     override def semanticCheck(): Unit = {
+        for (f <- funcList) {
+            f.addToSymbolTable()
+        }
         for (f <- funcList) {
             f.semanticCheck()
         }
@@ -18,55 +21,62 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
     }
 }
 
-case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, stat: StatNode) extends ASTNode {
-    
-    /**
-      * Checks for:
-        1. legal params
-        2. legal stats
-        3. legal type (tbc)
-        4. leagal func ident
-        5. return type matches function type
-      */
+case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, 
+                    stat: StatNode) extends ASTNode {
+    def addToSymbolTable(): Unit = {
+        ty.semanticCheck()
+
+        // Check if function name is used
+        val funcNameUsed = SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(n) => {
+                SemanticChecker.errorMessage += s"Function \"${ident.name}\" is defined more than once"
+                true
+            }
+            case _ => false
+        }
+
+        val paramtypeList = ListBuffer[Identifier]()
+        for (param <- paramList.paramList) {
+            paramtypeList += param.ty.typeVal()
+        }
+
+        // Add to symbol table
+        if (!funcNameUsed) {
+            SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
+        }
+    }
     override def semanticCheck(): Unit = {
         
-        ty.semanticCheck()
-        ident.semanticCheck()
-        paramList.semanticCheck()
-
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
-        stat.semanticCheck()
-        SemanticChecker.scopeStack.pop()
 
-        var paramtypeList = ListBuffer[Identifier]()
+        paramList.semanticCheck()
+
         for (param <- paramList.paramList) {
             // Check for repeated parameter names
-            
-            if (SemanticChecker.tableContainsIdentifier(param.ident)) {
-                paramtypeList += param.ty.TypeVal()
-                SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.TypeVal())
+            if (SemanticChecker.symbolTable.checkVarDefined(param.ident.name)) {
+                SemanticChecker.errorMessage += s"Repeated parameter name \"${param.ident.name}\""
+            }
+            else {
+                SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.typeVal())
             }
         }
+        SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
+        SemanticChecker.nextScope += 1
 
-        // Check ident is used
-        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
-            case Some(n) => {
-                SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is already used\n"
-            }
-            // Add to symbol table
-            case _ => SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.TypeVal())
-        }
-        
+        stat.semanticCheck()
         // Check that return type matches function return type
         checkReturnType(ty, stat)
+        SemanticChecker.scopeStack.pop()
+        SemanticChecker.scopeStack.pop()
     }
 
     def checkReturnType(ty: TypeNode, stat: StatNode): Unit = {
         stat match {
             case r: ReturnNode => {
-            if (!SemanticChecker.TypeCheck(ty, r.expr)) {
-                    SemanticChecker.errorMessage += s"func type mismatch: expected ${ty.TypeVal().toString}, gets ${r.expr.TypeVal().toString()}\n"
+                SemanticChecker.debugMessage += "checking " +ty.typeVal() + " and " + r.expr.typeVal() + "\n"
+                if (SemanticChecker.typeCheck(ty.typeVal(), r.expr.typeVal())) {
+                    SemanticChecker.debugMessage += "return type should be" +ty.typeVal() + ", unexpected " + r.expr.typeVal() + "\n"
                 }
             }
             case b: BeginEndNode => checkReturnType(ty, b.stat)
@@ -85,6 +95,7 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, st
     }
 }
 
+
 case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
     override def semanticCheck(): Unit = {
         for (p <- paramList) {
@@ -96,7 +107,6 @@ case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
 case class ParamNode(ty: TypeNode, ident: IdentNode) extends ASTNode {
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
-        ident.semanticCheck()
     }
 }
 
@@ -105,58 +115,41 @@ sealed trait StatNode extends ASTNode
 
 case class SkipNode() extends StatNode
 
+
+
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
-
-    /**
-     * Checks for:
-       1. ident's name not declared in scope
-       2. RHS val and type consistent 
-       3. rval is semantically correct (TODO)
-       4. lhs type is not func (type check should catch)
-      */
-
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
-        //ident.semanticCheck()
+        SemanticChecker.debugMessage += s"assignment type of ${ident.name} is ${ty.typeVal().toString()}\n"
         rvalue.semanticCheck()
-
+        
+        // Check if variable name is already declared in the same scope
         if (SemanticChecker.symbolTable.checkVarDefined(ident.name)){
-            SemanticChecker.errorMessage += "Variable name \"" + ident.name + "\" is already used in the same scope\n"
+             SemanticChecker.errorMessage += s"Variable name \"${ident.name}\" is already used in the same scope"
         }
-        else {
+        // Add to symbol table and get type
+         else {
             ty match {
-                case b: BaseTypeNode => SemanticChecker.symbolTable.addVar(ident.name, b.TypeVal())
-                case a: ArrayTypeNode => SemanticChecker.symbolTable.addArray(ident.name, a.arrayType, a.arrayDim)
-                case p: PairTypeNode => SemanticChecker.symbolTable.addPair(ident.name, p.fstPET.TypeVal(), p.sndPET.TypeVal())
-                case _ =>
+                case b: BaseTypeNode => 
+                    SemanticChecker.symbolTable.addVar(ident.name, b.typeVal())
+                case a: ArrayTypeNode =>
+                    SemanticChecker.symbolTable.addArray(ident.name, a.arrayType, a.arrayDim)
+                case p: PairTypeNode =>
+                    SemanticChecker.symbolTable.addPair(ident.name, p.fstPET.typeVal(), p.sndPET.typeVal())
             }
+            SemanticChecker.debugMessage += "@@@@@@@@ SYMBOL TABLE:@@@@@@@@\n" + SemanticChecker.symbolTable.toString() + "\n"
         }
 
-        rvalue match{
-            case id: IdentNode => {
-                SemanticChecker.tableContainsIdentifier(id)
-                if (!SemanticChecker.TypeCheck(ty, id)) {
-                    SemanticChecker.errorMessage += s"assignment type mismatch: expected ${ty.TypeVal().toString}, gets ${id.TypeVal().toString()}"
-                }
-            }
-            case e => {
-                if (!SemanticChecker.TypeCheck(ty, e)) {
-                    SemanticChecker.errorMessage += s"assignment type mismatch: expected ${ty.TypeVal().toString}, gets ${e.TypeVal().toString()}"
-                }
-            }
+        if (!SemanticChecker.typeCheck(ty.typeVal(), rvalue.typeVal())) {
+            SemanticChecker.errorMessage += "definition: type mismatch: expected "+ ty.typeVal().toString() + " gets " + rvalue.typeVal().toString()
         }
-    }
-
+    }        
 }
+
 
 // Example: a=5
 case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode {
-    /**
-      * check for:
-        1. reassignment to itself (TODO pairs)
-        2. lhs type is not func (type check should catch)
-      */
-    override def semanticCheck(): Unit = {
+    override def semanticCheck(): Unit = { 
         lvalue.semanticCheck()
         rvalue.semanticCheck()
         lvalue match {
@@ -174,34 +167,30 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
             case IdentNode(id) => {
                 val func = SemanticChecker.symbolTable.lookUpFunc(id)
                 func match {
-                    case Some(funcIdent) => SemanticChecker.errorMessage += s"function ${id} cannot be assigned with any values\n"
-                    case _ => 
+                    case Some(funcIdent) =>  SemanticChecker.errorMessage += s"function ${id} cannot be assigned with any values\n"
+                    case _ =>
                 }
             }
             case _ => 
         }
         
-        if (!SemanticChecker.TypeCheck(lvalue, rvalue)) {
-                SemanticChecker.errorMessage += s"assignment: type mismatch: expected ${lvalue.TypeVal().toString}, gets ${rvalue.TypeVal().toString()}"
+        if (!SemanticChecker.typeCheck(lvalue.typeVal(), rvalue.typeVal())) {
+                SemanticChecker.errorMessage += s"assignment: type mismatch: expected ${lvalue.typeVal().toString}, gets ${rvalue.typeVal().toString()}"
         }
     }
+        if (rvalue.typeVal().typeEquals(new AnyIdentifier) && lvalue.typeVal().typeEquals(new AnyIdentifier)) {
+            SemanticChecker.errorMessage += "unidentified type for both LHS RHS type assignment\n"
+        }
 }
 
 case class ReadNode(lvalue: LValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
-        val ty = lvalue.TypeVal()
-        ty match {
-            case a: IntIdentifier =>
-            case p: CharIdentifier =>
-            case VarIdentifier(id) => {
-                id match {
-                    case a: IntIdentifier =>
-                    case p: CharIdentifier =>
-                    case _ => SemanticChecker.errorMessage += "Wrong type in read\n"
-                }
-            }
-            case _ => SemanticChecker.errorMessage += "Wrong type in read\n"
+        if ((!SemanticChecker.typeCheck(new IntIdentifier, lvalue.typeVal()) 
+            && !SemanticChecker.typeCheck(new CharIdentifier, lvalue.typeVal()))) {
+            SemanticChecker.errorMessage += s"sread type error: unexpected ${lvalue.typeVal()} (expected: " +
+                            "char and int)\n"
+
         }
     }
 }
@@ -209,20 +198,11 @@ case class ReadNode(lvalue: LValueNode) extends StatNode {
 case class FreeNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
         expr.semanticCheck()
-        val ty = expr.TypeVal()
+        val ty = expr.typeVal()
         // Check if type is array or pair
-        ty match {
-            case a: ArrayIdentifier =>
-            case p: PairIdentifier =>
-            case VarIdentifier(id) => {
-                id match {
-                    case a: ArrayIdentifier =>
-                    case p: PairIdentifier =>
-                    case _ => SemanticChecker.errorMessage += "Wrong type in read\n"
-                }
-            }    
-            case _ => SemanticChecker.errorMessage += "Wrong type in free\n"
-        }
+        if ((!SemanticChecker.typeIsPair(ty) && !SemanticChecker.typeIsArray(ty))) {
+            SemanticChecker.errorMessage += "Wrong type in free\n"
+        } 
     }
 }
 
@@ -242,7 +222,7 @@ case class ReturnNode(expr: ExprNode) extends StatNode {
 case class ExitNode(expr: ExprNode) extends StatNode {
     override def semanticCheck(): Unit = {
         expr.semanticCheck()
-        if (!SemanticChecker.TypeCheck(new IntIdentifier, expr)) {
+        if (!SemanticChecker.typeCheck(new IntIdentifier, expr.typeVal())) {
             SemanticChecker.errorMessage += "Wrong type in exit\n"
         }
     }
@@ -282,7 +262,7 @@ case class IfNode(expr: ExprNode, fstStat: StatNode, sndStat: StatNode) extends 
         sndStat.semanticCheck()
         SemanticChecker.scopeStack.pop()
         
-        if (!SemanticChecker.TypeCheck(new BoolIdentifier, expr)) {
+        if (!SemanticChecker.typeCheck(new BoolIdentifier, expr.typeVal())) {
             SemanticChecker.errorMessage += "Semantic error in if statement: wrong type in condition\n"
         }
     }
@@ -296,7 +276,7 @@ case class WhileNode(expr: ExprNode, stat: StatNode) extends StatNode  {
         stat.semanticCheck()
         SemanticChecker.scopeStack.pop()
 
-        if (!SemanticChecker.TypeCheck(new BoolIdentifier, expr)) {
+        if (!SemanticChecker.typeCheck(new BoolIdentifier, expr.typeVal())) {
             SemanticChecker.errorMessage += "Semantic error in while statement: wrong type in condition\n"
         }
     }
@@ -321,20 +301,25 @@ case class StatJoinNode(statList: List[StatNode]) extends StatNode  {
 
 // LValueNode
 sealed trait LValueNode extends ASTNode {
-    def TypeVal(): Identifier
+    def typeVal(): Identifier
 }
 
 case class IdentNode(name: String) extends LValueNode with ExprNode { 
-    override def TypeVal() = {
+    override def typeVal() = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
         identifier match {
+            case Some(VarIdentifier(tyVal)) => tyVal
             case Some(ty) => ty
-            case _ => new AnyIdentifier
+            case None => new AnyIdentifier
         }
     }
     
     override def semanticCheck(): Unit = {
-        TypeVal()
+        val identifier = SemanticChecker.symbolTable.lookUpVar(name)
+        identifier match {
+            case None => SemanticChecker.errorMessage += s"${identifier} variable \"${name}\" at scope ${SemanticChecker.currScope()} not in scope or not defined\n" + SemanticChecker.symbolTable.toString + "\n"
+            case _ =>
+        }
     }
 }
 
@@ -342,7 +327,7 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
     var arrayType: Identifier = new AnyIdentifier
     var arrayDim = 0
-    override def TypeVal() = {
+    override def typeVal() = {
          val identifier = SemanticChecker.symbolTable.lookUpVar(ident.name)
         identifier match {
             case Some(ArrayIdentifier(baseTy: Identifier, dim: Int)) => {
@@ -354,23 +339,30 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
                     new AnyIdentifier
                 }
             }
-            case _ => new AnyIdentifier
+            case _ => {
+                SemanticChecker.errorMessage += s"non array type cannot be indexed\n"
+                new AnyIdentifier
+            }
         }
      }
 
     override def semanticCheck(): Unit = {
         if (SemanticChecker.tableContainsIdentifier(ident)) {
             val identifier = SemanticChecker.symbolTable.lookUpVar(ident.name)
+            SemanticChecker.debugMessage += s"${ident.name}: ${identifier.toString()} + \n"
             identifier match {
                 case (a@Some(ArrayIdentifier(baseTy: Identifier, dim: Int))) => {
                     arrayType = baseTy
                     arrayDim = dim
 
                     for (e <- exprList) {
+                        SemanticChecker.debugMessage += s"{type and dim: ${baseTy} ${dim}} {rxpType: ${e.typeVal()}}\n"
                         arrayDim -= 1
                         e.semanticCheck()
-                        if (!SemanticChecker.TypeCheck(new IntIdentifier, e)) {
-                            SemanticChecker.errorMessage += s"array elem index: unexpected type ${e.TypeVal().toString()}, expected int\n"
+                        if (!e.typeVal().typeEquals(new IntIdentifier)) {
+                            SemanticChecker.errorMessage += s"array elem index: unexpected type ${e.typeVal().toString()}, expected int\n"
+                        } else {
+
                         }
                     }
                     if (arrayDim < 0) {
@@ -378,10 +370,11 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
                             s"array type error: unexpected type ${(new ArrayIdentifier(baseTy, exprList.length)).toString()}, expected ${a.value.toString()}\n"
                     }
                 }
-                case _ => SemanticChecker.errorMessage += s"variable ${ident.name} is not in scope\n"
+                case Some(s) => SemanticChecker.debugMessage += s"var ${ident.name} array type, type is ${s.toString()}"
+                case None => SemanticChecker.errorMessage += s"variable ${ident.name} \"is not in scope\"\n"
             }
         }
-        TypeVal()
+        typeVal()
     }
 }
 
@@ -389,33 +382,84 @@ sealed trait PairElemNode extends LValueNode with RValueNode {
 }
 
 case class FstNode(lvalue: LValueNode) extends PairElemNode {
-    override def TypeVal() = lvalue.TypeVal()
+    override def typeVal() = {
+        lvalue match {
+            case IdentNode(name) => {
+                val id = SemanticChecker.symbolTable.lookUpVar(name)
+                id match {
+                    case Some(ty) => {
+                        ty match {
+                            case p: PairIdentifier => {
+                                SemanticChecker.debugMessage += s"type of ty1 is ${p.ty1.toString()}\n"
+                                p.ty1
+                            }
+                            case VarIdentifier(PairIdentifier(ty1, ty2)) => {
+                                SemanticChecker.debugMessage += s"type of ty1 is ${ty1.toString()}\n"
+                                ty1
+                            }
+                            case _ => new AnyIdentifier
+                        }
+                    }
+                    case _ => new AnyIdentifier
+                }
+                new AnyIdentifier
+            }
+            case _ => new AnyIdentifier
+        } 
+    }
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
-        TypeVal()
+        typeVal()
     }
 }
 
 case class SndNode(lvalue: LValueNode) extends PairElemNode {
-    override def TypeVal() = lvalue.TypeVal()
+    override def typeVal() = {
+        lvalue match {
+            case IdentNode(name) => {
+                val id = SemanticChecker.symbolTable.lookUpVar(name)
+                id match {
+                    case Some(ty) => {
+                        ty match {
+                            case p: PairIdentifier => {
+                                SemanticChecker.debugMessage += s"type of ty2 is ${p.ty2.toString()}\n"
+                                p.ty2
+                            }
+                            case VarIdentifier(PairIdentifier(ty1, ty2)) => {
+                                SemanticChecker.debugMessage += s"type of ty2 is ${ty1.toString()}\n"
+                                ty2
+                            }
+                            case _ => {
+                                SemanticChecker.errorMessage += s"Wrong type assigned for snd, gets ${ty.toString()}\n"
+                                new AnyIdentifier
+                            }
+                        }
+                    }
+                    case _ => new AnyIdentifier
+                }
+                new AnyIdentifier
+            }
+            case _ => new AnyIdentifier
+        } 
+    }
+
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
-        TypeVal()
+        typeVal()
     }
 }
 
 // RValueNode
 sealed trait RValueNode extends ASTNode {
-    def TypeVal(): Identifier
+    def typeVal(): Identifier
 }
 
 sealed trait ExprNode extends RValueNode
-
 // Example: [1,a] (a=2) / [a,b] (a=[1,2],b=[3,4])
 case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
-    override def TypeVal(): Identifier = {
+    override def typeVal(): Identifier = {
         if (!exprList.isEmpty) {
-            val elemType = exprList(0).TypeVal()
+            val elemType = exprList(0).typeVal()
             elemType match {
                 case ArrayIdentifier(base, dim) => new ArrayIdentifier(base, dim + 1)
                 case t => new ArrayIdentifier(t, 1)
@@ -427,7 +471,7 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
 
     override def semanticCheck(): Unit = {
         if (!exprList.isEmpty) {
-            val exprTypes:List[Identifier] = exprList.map(expr => expr.TypeVal())
+            val exprTypes:List[Identifier] = exprList.map(expr => expr.typeVal())
             // check whether array literal expr all have same types
             exprTypes
             .zip(exprTypes.map(ty => ty.typeEquals(exprTypes(0))))
@@ -440,64 +484,73 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
 
 // Example: newpair(1,a)
 case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode {
-    override def TypeVal() = {
-        new PairIdentifier(fstExpr.TypeVal(), sndExpr.TypeVal())
+    override def typeVal() = {
+        new PairIdentifier(fstExpr.typeVal(), sndExpr.typeVal())
     }
     override def semanticCheck(): Unit = {
         fstExpr.semanticCheck()
         sndExpr.semanticCheck()
-        TypeVal()
+        typeVal()
     }
 }
 
 
 case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
-    override def TypeVal() = {
-        val lookUp = SemanticChecker.symbolTable.lookUpFunc(ident.name)
-        if (lookUp == None) {
-            new AnyIdentifier
-        }
-        else {
-            val identifier = lookUp.get
-            identifier match {
-                case f: FuncIdentifier => f.returntype
-                case _ =>  new AnyIdentifier
-            }
+    override def typeVal() = {
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            case Some(FuncIdentifier(_,returntype)) => returntype
+            case _ => new AnyIdentifier
         }
     }
-    override def semanticCheck(): Unit = {
-        ident.semanticCheck()
-        argList.semanticCheck()
-        TypeVal()
 
-        // Check if function is declared
-        val lookUp = SemanticChecker.symbolTable.lookUpFunc(ident.name)
-        if (lookUp == None) {
-            SemanticChecker.errorMessage += "Function name \"" + ident.name + "\" is not defined in this scope\n"
-        }
-        // Check if arg list is of correct type and number
-        else {
-            val identifier = lookUp.get
-            identifier match {
-                case f: FuncIdentifier => {
-                    if (argList.exprList.length != f.paramtype.length) {
-                        SemanticChecker.errorMessage += "Function argument number is different from function parameter number\n"
+    override def semanticCheck(): Unit = {
+        argList.semanticCheck()
+
+        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
+            // Check if arg list is of correct type and number
+            case Some(FuncIdentifier(paramtype,_)) => {
+                if (argList.exprList.length != paramtype.length) {
+                        SemanticChecker.errorMessage +=
+                            "function argument number is different from function parameter number"
                     }
-                    else {
-                        var index = 0
-                        for (arg <- argList.exprList) {
-                            if (!arg.TypeVal().typeEquals(f.paramtype.apply(index))) {
-                                SemanticChecker.errorMessage += "Function argument type is incorrect\n"
-                            }
-                            index += 1
-                        }
+                else {
+                    // Check for tyoe mismatch in function call 
+                    val argBuilder = new StringBuilder()
+                    val provBuilder = new StringBuilder()
+                    val typeCompList = argList.exprList
+                                        .map(x => {
+                                            val ty = x.typeVal()
+                                            // argBuilder builds paramList for error message
+                                            if (argBuilder.isEmpty) {argBuilder.++=(s"${ty}")}
+                                            else {argBuilder.++=(s", ${ty}")}
+                                            // type string gets returned to the list
+                                            ty                                           
+                                    }).zip(
+                                        paramtype
+                                        .map(x => {
+                                        // provBuilder builds paramList for error message
+                                        if (provBuilder.isEmpty) {provBuilder.++=(s"${x}")}
+                                        else {provBuilder.++=(s", ${x}")}
+                                        // type string gets returned to the list
+                                        x 
+                                    }))
+                    val typeValid = typeCompList
+                            .map{case(func: Identifier, prov: Identifier) => func.typeEquals(prov)}
+                            .fold(true)((x, y) => x && y)
+                            
+                    if (!typeValid) {
+                        SemanticChecker.errorMessage +=
+                            s"function arguement type error: expected: (${argBuilder.toString()})" +
+                            s"provided: (${provBuilder.toString()})"
                     }
                 }
-                case _ => SemanticChecker.errorMessage += "[Not possible!]"
             }
+            case _ =>  SemanticChecker.errorMessage +=
+                        "Function name \"" + ident.name + "\" is not defined"
         }
     }
 }
+
 
 case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
     override def semanticCheck(): Unit = {
@@ -508,12 +561,12 @@ case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
 }
 
 sealed trait TypeNode extends ASTNode {
-    def TypeVal(): Identifier = new AnyIdentifier
+    def typeVal(): Identifier = new AnyIdentifier
 }
 
 case class BaseTypeNode(ty: String) extends TypeNode with PairElemTypeNode {
     // includes: int, char, string, bool
-    override def TypeVal() = {
+    override def typeVal() = {
         ty match {
             case "int" => new IntIdentifier
             case "bool" => new BoolIdentifier
@@ -529,15 +582,15 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
     var arrayType: Identifier = new AnyIdentifier
     var arrayDim = 1
 
-    override def TypeVal(): Identifier = {
-        return new ArrayIdentifier(getType(ty).TypeVal(), countDimension(ty))
+    override def typeVal(): Identifier = {
+        return new ArrayIdentifier(getType(ty).typeVal(), countDimension(ty))
     }
 
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
-        arrayType = getType(ty).TypeVal()
+        arrayType = getType(ty).typeVal()
         arrayDim = countDimension(ty)
-        TypeVal()
+        typeVal()
     }
 
     def countDimension(ty: TypeNode): Int = {
@@ -558,79 +611,79 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
 
 // Example: Pair(bool, int[])
 case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) extends TypeNode {
-    override def TypeVal(): Identifier = {
-        new PairIdentifier(fstPET.TypeVal(), sndPET.TypeVal())
+    override def typeVal(): Identifier = {
+        new PairIdentifier(fstPET.typeVal(), sndPET.typeVal())
     }
 
     override def semanticCheck(): Unit = {
         fstPET.semanticCheck()
         sndPET.semanticCheck()
-        TypeVal()
+        typeVal()
     }
 }
 
 // PairElemTypeNode
 sealed trait PairElemTypeNode extends ASTNode {
-    def TypeVal(): Identifier = new AnyIdentifier
+    def typeVal(): Identifier = new AnyIdentifier
 }
 // <pair>
 case class PETPairNode() extends PairElemTypeNode {
-    override def TypeVal(): Identifier = super[PairElemTypeNode].TypeVal()
+    override def typeVal(): Identifier = super[PairElemTypeNode].typeVal()
 }
 
 case class IntLiterNode(n: Int) extends ExprNode {
-    override def TypeVal() = new IntIdentifier
+    override def typeVal() = new IntIdentifier
 }
 
 case class BoolLiterNode(b: Boolean) extends ExprNode {
-    override def TypeVal() = new BoolIdentifier
+    override def typeVal() = new BoolIdentifier
 }
 
 case class CharLiterNode(c: Char) extends ExprNode {
-    override def TypeVal() = new CharIdentifier
+    override def typeVal() = new CharIdentifier
 }
 
 case class StrLiterNode(s: String) extends ExprNode {
-    override def TypeVal() = new StrIdentifier
-    override def semanticCheck(): Unit = {
-        if (s.contains("\n")) {
-            SemanticChecker.errorMessage += "String cannot contain newline\n"
-        }
-    }
+    override def typeVal() = new StrIdentifier
+    // override def semanticCheck(): Unit = {
+    //     if (s.contains("\n")) {
+    //         SemanticChecker.errorMessage += "String cannot contain newline\n"
+    //     }
+    // }
 }
 
 case class PairLiterNode() extends ExprNode {
     // val: null
-    override def TypeVal() = new AnyIdentifier
+    override def typeVal() = new NullIdentifier
 }
 
 sealed trait UnOpExprNode extends ExprNode
 
 // bool -> bool
 case class NotNode(expr: ExprNode) extends UnOpExprNode {
-    override def TypeVal() = new BoolIdentifier
+    override def typeVal() = new BoolIdentifier
     override def semanticCheck(): Unit = {
-        if(!SemanticChecker.TypeCheck(new BoolIdentifier, expr)) {
-            SemanticChecker.errorMessage += s"Unary op: expression unexpected type ${expr.TypeVal().toString()}, expected type bool\n"
+        if(!SemanticChecker.typeCheck(new BoolIdentifier, expr.typeVal())) {
+            SemanticChecker.errorMessage += s"Unary op: expression unexpected type ${expr.typeVal().toString()}, expected type bool\n"
         }
     }
 }
 
 // int -> int
 case class NegNode(expr: ExprNode) extends UnOpExprNode {
-     override def TypeVal() = new IntIdentifier
+     override def typeVal() = new IntIdentifier
     override def semanticCheck(): Unit = {
-        if(!SemanticChecker.TypeCheck(new IntIdentifier, expr)) {
-            SemanticChecker.errorMessage += s"Unary op: expression unexpected type ${expr.TypeVal().toString()}, expected type int\n"
+        if(!SemanticChecker.typeCheck(new IntIdentifier, expr.typeVal())) {
+            SemanticChecker.errorMessage += s"Unary op: expression unexpected type ${expr.typeVal().toString()}, expected type int\n"
         }
     }
 }
 
 // array -> int
 case class LenNode(expr: ExprNode) extends UnOpExprNode {
-    override def TypeVal() = new IntIdentifier
+    override def typeVal() = new IntIdentifier
     override def semanticCheck(): Unit = {
-        expr.TypeVal() match {
+        expr.typeVal() match {
             case a: ArrayIdentifier => 
             case _ => SemanticChecker.errorMessage += "Type error: expected at least 1-dimensional array.\n"
         }
@@ -639,155 +692,156 @@ case class LenNode(expr: ExprNode) extends UnOpExprNode {
 
 // char -> int
 case class OrdNode(expr: ExprNode) extends UnOpExprNode {
-    override def TypeVal() = new IntIdentifier
+    override def typeVal() = new IntIdentifier
     override def semanticCheck(): Unit = {
-        if(!SemanticChecker.TypeCheck(new CharIdentifier, expr)) {
-            SemanticChecker.errorMessage += s"Unary op: expression unexpected type ${expr.TypeVal().toString()}, expected type char\n"
+        if(!SemanticChecker.typeCheck(new CharIdentifier, expr.typeVal())) {
+            SemanticChecker.errorMessage += s"Unary op: expression unexpected type ${expr.typeVal().toString()}, expected type char\n"
         }
     }
 }
 
 // int -> char
 case class ChrNode(expr: ExprNode) extends UnOpExprNode {
-    override def TypeVal() = new CharIdentifier
+    override def typeVal() = new CharIdentifier
     override def semanticCheck(): Unit = {
-        if(!SemanticChecker.TypeCheck(new IntIdentifier, expr)) {
-            SemanticChecker.errorMessage += s"Unary op: expression unexpected type ${expr.TypeVal().toString()}, expected type int\n"
+        if(!SemanticChecker.typeCheck(new IntIdentifier, expr.typeVal())) {
+            SemanticChecker.errorMessage += s"Unary op: expression unexpected type ${expr.typeVal().toString()}, expected type int\n"
         }
     }
 }
 
 sealed trait BinOpExprNode extends ExprNode {
-    override def TypeVal(): Identifier = {
+    override def typeVal(): Identifier = {
         this match {
             case MulNode(_,_) | DivNode(_,_) | ModNode(_,_) | AddNode(_,_) | SubNode(_,_) => new IntIdentifier
             case _ => new BoolIdentifier
             }
     }
     override def semanticCheck(): Unit = {
+        typeVal()
         this match {
             case MulNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int\n"
                     }
             }
             case DivNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int\n"
                     }
             }
             case ModNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int\n"
                     }
             }
             case AddNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int\n"
                     }
             }
             case SubNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int\n"
                     }
             }
             case GTNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (!SemanticChecker.TypeCheck(new IntIdentifier, fstExpr) && !SemanticChecker.TypeCheck(new CharIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int/char\n"
+                    if (!SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal()) && !SemanticChecker.typeCheck(new CharIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int/char\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr) && !SemanticChecker.TypeCheck(new CharIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int/char\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal()) && !SemanticChecker.typeCheck(new CharIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int/char\n"
                     }
             }
             case GTENode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (!SemanticChecker.TypeCheck(new IntIdentifier, fstExpr) && !SemanticChecker.TypeCheck(new CharIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int/char\n"
+                    if (!SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal()) && !SemanticChecker.typeCheck(new CharIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int/char\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr) && !SemanticChecker.TypeCheck(new CharIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int/char\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal()) && !SemanticChecker.typeCheck(new CharIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int/char\n"
                     }
             }
             case LTNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (!SemanticChecker.TypeCheck(new IntIdentifier, fstExpr) && !SemanticChecker.TypeCheck(new CharIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int/char\n"
+                    if (!SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal()) && !SemanticChecker.typeCheck(new CharIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int/char\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr) && !SemanticChecker.TypeCheck(new CharIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int/char\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal()) && !SemanticChecker.typeCheck(new CharIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int/char\n"
                     }
             }
             case LTENode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (!SemanticChecker.TypeCheck(new IntIdentifier, fstExpr) && !SemanticChecker.TypeCheck(new CharIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type int/char\n"
+                    if (!SemanticChecker.typeCheck(new IntIdentifier, fstExpr.typeVal()) && !SemanticChecker.typeCheck(new CharIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type int/char\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new IntIdentifier, sndExpr) && !SemanticChecker.TypeCheck(new CharIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type int/char\n"
+                    if (! SemanticChecker.typeCheck(new IntIdentifier, sndExpr.typeVal()) && !SemanticChecker.typeCheck(new CharIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: second expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type int/char\n"
                     }
             }
             case EqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (!SemanticChecker.TypeCheck(fstExpr.TypeVal(), sndExpr.TypeVal())) {
-                        SemanticChecker.errorMessage += s"Binary eq op: unexpected lhs type ${fstExpr.TypeVal().toString()}, expected rhs type ${sndExpr.TypeVal().toString()}\n"
+                    if (!SemanticChecker.typeCheck(fstExpr.typeVal(), sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary eq op: unexpected lhs type ${fstExpr.typeVal().toString()}, expected rhs type ${sndExpr.typeVal().toString()}\n"
                     }
             }
             case IEqNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (!SemanticChecker.TypeCheck(fstExpr.TypeVal(), sndExpr.TypeVal())) {
-                        SemanticChecker.errorMessage += s"Binary eq op: unexpected lhs type ${fstExpr.TypeVal().toString()}, expected rhs type ${sndExpr.TypeVal().toString()}\n"
+                    if (!SemanticChecker.typeCheck(fstExpr.typeVal(), sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary eq op: unexpected lhs type ${fstExpr.typeVal().toString()}, expected rhs type ${sndExpr.typeVal().toString()}\n"
                     }
             }
             case AndNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (!SemanticChecker.TypeCheck(new BoolIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type bool\n"
+                    if (!SemanticChecker.typeCheck(new BoolIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type bool\n"
                     }
-                    if (!SemanticChecker.TypeCheck(new BoolIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type bool\n"
+                    if (!SemanticChecker.typeCheck(new BoolIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type bool\n"
                     }
             }
             case OrNode(fstExpr, sndExpr) => {
                     fstExpr.semanticCheck()
                     sndExpr.semanticCheck()
-                    if (! SemanticChecker.TypeCheck(new BoolIdentifier, fstExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.TypeVal().toString()}, expected lhs type bool\n"
+                    if (! SemanticChecker.typeCheck(new BoolIdentifier, fstExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${fstExpr.typeVal().toString()}, expected lhs type bool\n"
                     }
-                    if (! SemanticChecker.TypeCheck(new BoolIdentifier, sndExpr)) {
-                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${sndExpr.TypeVal().toString()}, expected lhs type bool\n"
+                    if (! SemanticChecker.typeCheck(new BoolIdentifier, sndExpr.typeVal())) {
+                        SemanticChecker.errorMessage += s"Binary op: first expression unexpected type ${sndExpr.typeVal().toString()}, expected lhs type bool\n"
                     }
             }
         }
