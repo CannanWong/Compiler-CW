@@ -4,20 +4,20 @@ import scala.collection.mutable.ListBuffer
 
 object CodeGenerator {
     var controlFlowGraph = new InstBlock()
-    var currBlock = controlFlowGraph
+    var currInstBlock = controlFlowGraph
 
     def translate(f: FuncNode): Unit = {
         val funcBlock = new FuncBlock()
 
-        // Sample: To be corrected/checked
-        val regList: ListBuffer[Register] = ListBuffer.empty
-        for (p <- f.paramList.paramList) {
-            regList += new Register()
-        }
-        funcBlock.param.addInst(PushInst(regList.toList))
-        //
+        // // Sample: To be corrected/checked
+        // val varList: ListBuffer[Variable] = ListBuffer.empty
+        // for (p <- f.paramList.paramList) {
+        //     regList += new Variable()
+        // }
+        // funcBlock.param.addInst(PushInst(regList.toList))
+        // //
 
-        currBlock = funcBlock.body
+        currInstBlock = funcBlock.body
         translate(f.stat)
     }
 
@@ -35,19 +35,28 @@ object CodeGenerator {
     def translate(node: ReadNode): Unit = {}
     def translate(node: FreeNode): Unit = {}
     def translate(node: ReturnNode): Unit = {}
-    def translate(node: ExitNode): Unit = {}
+    def translate(node: ExitNode): Unit = {
+        // currInstBlock.addInst()
+    }
     def translate(node: PrintNode): Unit = {}
     def translate(node: PrintlnNode): Unit = {}
     def translate(node: IfNode): Unit = {
         val ifBlock = new IfBlock()
-        currBlock = ifBlock.cond
+        currInstBlock = ifBlock.cond
         // translate cond
-        currBlock = ifBlock.nextT
+        currInstBlock = ifBlock.nextT
         translate(node.fstStat)
-        currBlock = ifBlock.nextF
+        currInstBlock = ifBlock.nextF
         translate(node.sndStat)
+        currInstBlock = ifBlock.next
     }
-    def translate(node: WhileNode): Unit = {}
+    def translate(node: WhileNode): Unit = {
+        val whileBlock = new WhileBlock()
+        currInstBlock = whileBlock.cond
+        // translate cond
+        currInstBlock = whileBlock.loop
+        translate(node.stat)
+    }
     def translate(node: BeginEndNode): Unit = {
         translate(node.stat)
     }

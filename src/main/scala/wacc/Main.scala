@@ -22,7 +22,7 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
-                    translate(x)
+                    //translate(x)
                 }
                 else {
                     println("#semantic_error#\n")

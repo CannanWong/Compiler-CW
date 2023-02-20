@@ -29,6 +29,7 @@ case class IfBlock() extends ControlFlowBlock {
     var cond: InstBlock = new InstBlock()
     var nextT: InstBlock = new InstBlock()
     var nextF: InstBlock = new InstBlock()
+    var next: InstBlock = new InstBlock()
     ControlFlowGraph.nextIfNum += 1
 }
 
