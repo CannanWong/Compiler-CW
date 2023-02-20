@@ -50,11 +50,13 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
             else {
                 paramtypeList += param.ty.typeVal()
                 SemanticChecker.symbolTable.addVar(param.ident.name, param.ty.typeVal())
+                param.ident.newName = SemanticChecker.currScope().toString() + "!" + param.ident.name
             }
         }
         // Add to symbol table
         if (!funcNameUsed) {
             SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
+            ident.newName = "f!" + ident.name
         }
     }
     override def semanticCheck(): Unit = {
@@ -131,6 +133,7 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
                 case p: PairTypeNode =>
                     SemanticChecker.symbolTable.addPair(ident.name, p.fstType(), p.sndType())
             }
+            ident.newName = SemanticChecker.currScope().toString() + "!" + ident.name
         }
         SemanticChecker.typeCheck(ty, rvalue)
     }        
@@ -274,6 +277,7 @@ sealed trait LValueNode extends ASTNode {
 }
 
 case class IdentNode(name: String) extends LValueNode with ExprNode {
+    var newName: String = null
     override def typeVal() = {
         SemanticChecker.symbolTable.lookUpVar(name) match {
             case Some(VarIdentifier(ty)) => ty
