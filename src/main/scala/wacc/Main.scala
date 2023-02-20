@@ -7,6 +7,9 @@ import scala.io.Source
 import better.files._
 import File._
 import java.io.{File => JFile}
+import scala.collection.mutable.ListBuffer
+import java.io.BufferedWriter
+import java.io.FileWriter
 
 object Main {
     def main(args: Array[String]): Unit = {
@@ -55,6 +58,23 @@ object Main {
           "  pop {r8, r10, r12}\n" +
           "  pop {fp, pc}\n")
         f.overwrite(str)
+    }
+
+
+    object WriteToFile {
+        val generatedCode: ListBuffer[String] = ListBuffer[String]()
+
+        def fileName(filePath: String) : String = {
+            val f = new File(filePath)
+        }
+
+        def writeToFile(file : String) : Unit = {
+            val bw = new BufferedWriter(new FileWriter(file))
+            for (instr <- generatedCode) {
+                bw.write(instr)
+                bw.newLine()
+            }              
+        }
     }
 }
 
