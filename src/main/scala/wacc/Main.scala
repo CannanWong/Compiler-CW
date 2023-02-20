@@ -50,22 +50,23 @@ object Main {
 
         def write(filename: String): Unit = {
             val pw = new PrintWriter(new File(filename))
-            val default =
+            val begin =
                 ".data\n" +
                 ".text\n" +
                 ".global main\n" +
                 "main:\n" +
                 "  push {fp, lr}\n" +
                 "  push {r8, r10, r12}\n" +
-                "  mov fp, sp\n" +
+                "  mov fp, sp\n"
+            pw.print(begin)
+            for (instr <- generatedCode) {
+                pw.println(instr)
+            }
+            val end =
                 "  mov r0, #0\n" +
                 "  pop {r8, r10, r12}\n" +
                 "  pop {fp, pc}\n"
-            pw.write(default)
-            // for (instr <- generatedCode) {
-            //     bw.write(instr)
-            //     bw.newLine()
-            // }
+            pw.print(end)
             pw.close()              
         }
     }
