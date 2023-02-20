@@ -4,12 +4,7 @@ import parsley.{Parsley, Success, Failure}
 import Parser.topLevel
 
 import scala.io.Source
-import better.files._
-import File._
-import java.io.{File => JFile}
-import scala.collection.mutable.ListBuffer
-import java.io.BufferedWriter
-import java.io.FileWriter
+import java.io._ //{BufferedWriter, File, FileWriter}
 
 object Main {
     def main(args: Array[String]): Unit = {
@@ -25,7 +20,8 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
-                    translate(x)
+                    val filename = WriteToFile.fileName(args(0))
+                    WriteToFile.write(filename)
                 }
                 else {
                     println("#semantic_error#\n")
@@ -45,36 +41,32 @@ object Main {
         }
     }
 
-    def translate(ast: ProgramNode): Unit = {
-        val f = File("skip.s")
-        val str = (".data\n" +
-          ".text\n" +
-          ".global main\n" +
-          "main:\n" +
-          "  push {fp, lr}\n" +
-          "  push {r8, r10, r12}\n" +
-          "  mov fp, sp\n" +
-          "  mov r0, #0\n" +
-          "  pop {r8, r10, r12}\n" +
-          "  pop {fp, pc}\n")
-        f.overwrite(str)
-    }
-
-
     object WriteToFile {
-        val generatedCode: ListBuffer[String] = ListBuffer[String]()
+        val generatedCode: List[String] = List.empty
 
         def fileName(filePath: String) : String = {
-            val f = new File(filePath)
+            filePath.split("/").last.dropRight(5) + ".s"
         }
 
-        def writeToFile(file : String) : Unit = {
-            val bw = new BufferedWriter(new FileWriter(file))
-            for (instr <- generatedCode) {
-                bw.write(instr)
-                bw.newLine()
-            }              
+        def write(filename: String): Unit = {
+            val pw = new PrintWriter(new File(filename))
+            val default =
+                ".data\n" +
+                ".text\n" +
+                ".global main\n" +
+                "main:\n" +
+                "  push {fp, lr}\n" +
+                "  push {r8, r10, r12}\n" +
+                "  mov fp, sp\n" +
+                "  mov r0, #0\n" +
+                "  pop {r8, r10, r12}\n" +
+                "  pop {fp, pc}\n"
+            pw.write(default)
+            // for (instr <- generatedCode) {
+            //     bw.write(instr)
+            //     bw.newLine()
+            // }
+            pw.close()              
         }
     }
 }
-
