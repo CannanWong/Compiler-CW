@@ -22,6 +22,11 @@ case class InstBlock() extends ControlFlowBlock {
     def addInst(inst: Instruction) = {
         instList += inst
     }
+    def addInst(insts: List[Instruction]) = {
+        for (inst <- insts) {
+            instList += inst
+        }
+    }
 }
 
 case class IfBlock() extends ControlFlowBlock {

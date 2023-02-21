@@ -2,17 +2,23 @@ package wacc
 
 sealed trait Instruction
 
-case class AddInst(vd: Variable, vn: Variable, op: Operand) extends Instruction
-case class SubInst(vd: Variable, vn: Variable, op: Operand) extends Instruction
-case class MulInst(vd: Variable, vm: Variable, op: Operand) extends Instruction
-case class CmpInst(vn: Variable, op: Operand) extends Instruction
-case class MovInst(vd: Variable, op: Operand) extends Instruction
-case class AndInst(vd: Variable, op: Operand) extends Instruction
-case class OrInst(vd: Variable, op: Operand) extends Instruction
-case class LdrInst(vd: Variable, op: Operand) extends Instruction
-case class StrInst(vd: Variable, op: Operand) extends Instruction
-case class PushInst(varList: List[Variable]) extends Instruction
-case class PopInst(varList: List[Variable]) extends Instruction
+case class AddInst(rd: Register, rn: Register, op: Operand) extends Instruction
+case class SubInst(rd: Register, rn: Register, op: Operand) extends Instruction
+case class MulInst(rd: Register, rm: Register, op: Operand) extends Instruction
+
+case class CmpInst(rn: Register, op: Operand) extends Instruction
+case class MovInst(rd: Register, op: Operand) extends Instruction
+case class MovEqInst(rd: Register, op: Operand) extends Instruction
+case class MovNEqInst(rd: Register, op: Operand) extends Instruction
+case class AndInst(rd: Register, op: Operand) extends Instruction
+case class OrInst(rd: Register, op: Operand) extends Instruction
+
+case class LdrInst(rd: Register, op: Operand) extends Instruction
+case class StrInst(rd: Register, op: Operand) extends Instruction
+case class PushInst(regList: List[Register]) extends Instruction
+case class PopInst(regList: List[Register]) extends Instruction
+case class BranchInst(label: String) extends Instruction
+case class BranchLinkInst(label: String) extends Instruction
 
 // To be moved to assign register part
 // sealed trait Register
@@ -22,8 +28,12 @@ case class PopInst(varList: List[Variable]) extends Instruction
 //     ControlFlowGraph.nextRegNum += 1
 // }
 
-case class Variable() {
-    var name: String = null
-}
+
 sealed trait Operand
-case class ImmVal(num: Int) extends Operand
+sealed trait Register extends Operand
+case class TempRegister() extends Register
+case class FixedRegister(num: Int) extends Register
+case class Variable(name: String) extends Register
+// TODO: replace string with identifier for type
+case class ImmVal(num: Int, t: String) extends Operand
+

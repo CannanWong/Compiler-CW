@@ -34,9 +34,18 @@ object CodeGenerator {
     def translate(node: LValuesAssignNode): Unit = {}
     def translate(node: ReadNode): Unit = {}
     def translate(node: FreeNode): Unit = {}
-    def translate(node: ReturnNode): Unit = {}
+    def translate(node: ReturnNode): Unit = {
+        var op = translate(node.expr)
+        var inst = new MovInst(new FixedRegister(0), op)
+        currInstBlock.addInst(inst)
+    }
     def translate(node: ExitNode): Unit = {
         // currInstBlock.addInst()
+        var op = translate(node.expr)
+        var inst = new MovInst(new FixedRegister(0), op)
+        var inst2 = new BranchLinkInst("exit")
+        currInstBlock.addInst(inst)
+        currInstBlock.addInst(inst2)
     }
     def translate(node: PrintNode): Unit = {}
     def translate(node: PrintlnNode): Unit = {}
@@ -66,18 +75,53 @@ object CodeGenerator {
         }
     }
 
-    // To be deleted
-    /*
-    def translate(r: RValueNode): Unit = {
-        r match {
-            case AddNode(fstexpr, sndexpr) => {
-                val rd = new Register(1)
-                val rn = new Register(2)
-                val op = new ImmVal(1)
-                val inst = new AddInst(rd, rn, op)
-                currBlock.addInst(inst)
+    def translate(node: ExprNode): Operand = {
+        node match {
+            case IntLiterNode(n) => {
+                return new ImmVal(n, node.typeVal)
             }
+            case BoolLiterNode(true) => {
+                return new ImmVal(1, node.typeVal)
+            }
+            case BoolLiterNode(false) => {
+                return new ImmVal(0, node.typeVal)
+            }
+            case CharLiterNode(c) => {
+                var num = c.toInt
+                return new ImmVal(num, node.typeVal)
+            }
+            case StrLiterNode(s) => {
+                ???
+            }            
+            case PairLiterNode() => {
+                return new ImmVal(0, node.typeVal)
+            }
+            case NotNode(expr) => {
+                var op = translate(expr)
+                op match {
+                    case ImmVal(num, t) => {
+                        if (num == 0) op = new ImmVal(1, t)
+                        else op = new ImmVal(0, t)
+                        return op 
+                    }
+                    case _ => {
+                        var inst = new CmpInst(op.asInstanceOf[Register], new ImmVal(1, expr.typeVal))
+                        var reg = new TempRegister()
+                        var inst2 = new MovNEqInst(reg, new ImmVal(1, expr.typeVal))
+                        var inst3 = new MovEqInst(reg, new ImmVal(0, expr.typeVal))
+                        currInstBlock.addInst(List(inst, inst2, inst3))
+                        // var inst4 = new MovInst(op, reg)
+                        return reg 
+                    }
+                }            
+            }
+            // case AddNode(fstexpr, sndexpr) => {
+                // val rd = new Register(1)
+                // val rn = new Register(2)
+                // val op = new ImmVal(1)
+                // val inst = new AddInst(rd, rn, op)
+                // currBlock.addInst(inst)
+            //}
         }
     }
-    */
 }
