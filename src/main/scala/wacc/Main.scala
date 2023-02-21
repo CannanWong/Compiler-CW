@@ -4,9 +4,7 @@ import parsley.{Parsley, Success, Failure}
 import Parser.topLevel
 
 import scala.io.Source
-import better.files._
-import File._
-import java.io.{File => JFile}
+import java.io._ //{BufferedWriter, File, FileWriter}
 
 object Main {
     def main(args: Array[String]): Unit = {
@@ -22,7 +20,8 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
-                    //translate(x)
+                    val filename = WriteToFile.fileName(args(0))
+                    WriteToFile.write(filename)
                 }
                 else {
                     println("#semantic_error#\n")
@@ -42,19 +41,33 @@ object Main {
         }
     }
 
-    def translate(ast: ProgramNode): Unit = {
-        val f = File("skip.s")
-        val str = (".data\n" +
-          ".text\n" +
-          ".global main\n" +
-          "main:\n" +
-          "  push {fp, lr}\n" +
-          "  push {r8, r10, r12}\n" +
-          "  mov fp, sp\n" +
-          "  mov r0, #0\n" +
-          "  pop {r8, r10, r12}\n" +
-          "  pop {fp, pc}\n")
-        f.overwrite(str)
+    object WriteToFile {
+        val generatedCode: List[String] = List.empty
+
+        def fileName(filePath: String) : String = {
+            filePath.split("/").last.dropRight(5) + ".s"
+        }
+
+        def write(filename: String): Unit = {
+            val pw = new PrintWriter(new File(filename))
+            val begin =
+                ".data\n" +
+                ".text\n" +
+                ".global main\n" +
+                "main:\n" +
+                "  push {fp, lr}\n" +
+                "  push {r8, r10, r12}\n" +
+                "  mov fp, sp\n"
+            pw.print(begin)
+            for (instr <- generatedCode) {
+                pw.println(instr)
+            }
+            val end =
+                "  mov r0, #0\n" +
+                "  pop {r8, r10, r12}\n" +
+                "  pop {fp, pc}\n"
+            pw.print(end)
+            pw.close()              
+        }
     }
 }
-

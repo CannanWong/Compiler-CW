@@ -62,3 +62,6 @@ project/**/metals.sbt
 
 # jarfile
 wacc-45-compiler.jar
+
+# .s files
+*.s
