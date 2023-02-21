@@ -6,11 +6,19 @@ build:
     - source "$HOME/.sdkman/bin/sdkman-init.sh"
     - make
 
-front_end_test:
+front_end_test: 
   stage: test
   script:
     - source "$HOME/.sdkman/bin/sdkman-init.sh"
     - make fe_test
+  rules:
+      changes:
+        paths:
+        - "src/main/scala/wacc/ASTNode.scala"
+        - "src/main/scala/wacc/SemanticChecker.scala"
+        - "src/main/scala/wacc/SymbolTable.scala"
+        - "src/main/scala/wacc/TypeIdentifier.scala"
+        - "src/main/scala/wacc/Error.scala"
 
 back_end_test:
   stage: test
