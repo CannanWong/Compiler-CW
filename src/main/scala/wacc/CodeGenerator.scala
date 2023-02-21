@@ -78,23 +78,23 @@ object CodeGenerator {
     def translate(node: ExprNode): Operand = {
         node match {
             case IntLiterNode(n) => {
-                return new ImmVal(n, node.typeVal)
+                return new ImmVal(n, node.typeVal())
             }
             case BoolLiterNode(true) => {
-                return new ImmVal(1, node.typeVal)
+                return new ImmVal(1, node.typeVal())
             }
             case BoolLiterNode(false) => {
-                return new ImmVal(0, node.typeVal)
+                return new ImmVal(0, node.typeVal())
             }
             case CharLiterNode(c) => {
                 var num = c.toInt
-                return new ImmVal(num, node.typeVal)
+                return new ImmVal(num, node.typeVal())
             }
             case StrLiterNode(s) => {
                 ???
             }            
             case PairLiterNode() => {
-                return new ImmVal(0, node.typeVal)
+                return new ImmVal(0, node.typeVal())
             }
             case NotNode(expr) => {
                 var op = translate(expr)
@@ -105,10 +105,10 @@ object CodeGenerator {
                         return op 
                     }
                     case _ => {
-                        var inst = new CmpInst(op.asInstanceOf[Register], new ImmVal(1, expr.typeVal))
+                        var inst = new CmpInst(op.asInstanceOf[Register], new ImmVal(1, expr.typeVal()))
                         var reg = new TempRegister()
-                        var inst2 = new MovNEqInst(reg, new ImmVal(1, expr.typeVal))
-                        var inst3 = new MovEqInst(reg, new ImmVal(0, expr.typeVal))
+                        var inst2 = new MovNEqInst(reg, new ImmVal(1, expr.typeVal()))
+                        var inst3 = new MovEqInst(reg, new ImmVal(0, expr.typeVal()))
                         currInstBlock.addInst(List(inst, inst2, inst3))
                         // var inst4 = new MovInst(op, reg)
                         return reg 
