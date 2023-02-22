@@ -5,6 +5,8 @@ import scala.collection.mutable.ListBuffer
 object CodeGenerator {
     var controlFlowGraph = new InstBlock()
     var currInstBlock = controlFlowGraph
+    /* NEW: temporory design to accomodate print label jumps */
+    var controlFlowFuncs = ListBuffer[FuncBlock]()
 
     def translate(f: FuncNode): Unit = {
         val funcBlock = new FuncBlock()
@@ -47,8 +49,31 @@ object CodeGenerator {
         currInstBlock.addInst(inst)
         currInstBlock.addInst(inst2)
     }
-    def translate(node: PrintNode): Unit = {}
-    def translate(node: PrintlnNode): Unit = {}
+    def translate(node: PrintNode): Unit = {
+        /** 
+         * TODO: push and pop r0 - r3 before calling
+         * print may clobber any registers that are marked as caller-save under
+         * arm's calling convention: R0, R1, R2, R3
+        */
+        val retOp = translate(node.expr)
+        val exprTy = node.expr.typeVal()
+        val printInstr = new Print()
+        exprTy match {
+            case CharIdentifier() => printInstr.printInt(retOp)
+            case IntIdentifier() => ???
+            case StrIdentifier() => ???
+            case BoolIdentifier() => ???
+            case a: ArrayIdentifier => ???
+            case p: PairIdentifier => ???
+            case _ => throw new IllegalArgumentException("print: not an expression")
+        }
+    }
+
+    def translate(node: PrintlnNode): Unit = {
+        // TODO: add new line
+        translate(new PrintNode(node.expr))
+    }
+
     def translate(node: IfNode): Unit = {
         val ifBlock = new IfBlock()
         currInstBlock = ifBlock.cond
@@ -108,7 +133,7 @@ object CodeGenerator {
                         var inst = new CmpInst(op.asInstanceOf[Register], new ImmVal(1, expr.typeVal()))
                         var reg = new TempRegister()
                         var inst2 = new MovNEqInst(reg, new ImmVal(1, expr.typeVal()))
-                        var inst3 = new MovEqInst(reg, new ImmVal(0, expr.typeVal()))
+                        var inst3 = new MovEqInst(reg, new ImmVal(0, expr.typeVal))
                         currInstBlock.addInst(List(inst, inst2, inst3))
                         // var inst4 = new MovInst(op, reg)
                         return reg 

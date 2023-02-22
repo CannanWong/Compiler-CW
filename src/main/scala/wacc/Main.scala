@@ -50,6 +50,7 @@ object Main {
 
         def write(filename: String): Unit = {
             val pw = new PrintWriter(new File(filename))
+            /* global main */
             val begin =
                 ".data\n" +
                 ".text\n" +
@@ -67,6 +68,12 @@ object Main {
                 "  pop {r8, r10, r12}\n" +
                 "  pop {fp, pc}\n"
             pw.print(end)
+
+            /* funcs */
+            for (func <- CodeGenerator.controlFlowFuncs) {
+                pw.println(func)
+            }
+
             pw.close()              
         }
     }

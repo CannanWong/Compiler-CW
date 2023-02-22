@@ -36,4 +36,3 @@ case class FixedRegister(num: Int) extends Register
 case class Variable(name: String) extends Register
 // TODO: replace string with identifier for type
 case class ImmVal(num: Int, t: TypeIdentifier) extends Operand
-
