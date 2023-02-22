@@ -23,9 +23,9 @@ object Print {
             case inst: MovInst => 
                 output += "mov " + printOp(inst.rd, inst.op)
             case inst: MovEqInst => 
-                output += "" + printOp(inst.rd, inst.op)
+                output += "moveq" + printOp(inst.rd, inst.op)
             case inst: MovNEqInst => 
-                output += "" + printOp(inst.rd, inst.op)
+                output += "movneq" + printOp(inst.rd, inst.op)
             case inst: AndInst => 
                 output += "and " + printOp(inst.rd, inst.op)
             case inst: OrInst => 
@@ -49,8 +49,8 @@ object Print {
         op match {
             case im: ImmVal => "#" + {
                 im.t match {
-                    case i: IntIdentifier => im.num.toString()
-                    case _ => "" // ! To be completed
+                    case IntIdentifier() | BoolIdentifier() | CharIdentifier() => im.num.toString()
+                    case _ => "UDT!" // Undefined type
                 }
             }
             case r: FixedRegister => "r" + r.num.toString()

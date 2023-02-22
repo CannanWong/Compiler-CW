@@ -3,7 +3,6 @@ allpass=1
 passcount=0
 failcount=0
 validcount=221
-invalidcount=133
 
 shopt -s globstar
 for file in src/test/scala/wacc/back_end/**/*.wacc
@@ -57,8 +56,8 @@ do
 done
 
 echo -e -n "Current progress: "
-echo "scale=2;100*$passcount/($validcount+$invalidcount)" | bc | tr '\n' ' '
-echo -e "% of tests in wacc_example passed"
+echo "scale=2;100*$passcount/$validcount" | bc | tr '\n' ' '
+echo -e "% of tests in wacc_example/valid passed"
 
 if [ $allpass -eq 1 ]
     then 
