@@ -3,7 +3,7 @@ package wacc
 
 import scala.collection.mutable.ListBuffer
 
-import wacc.{ArrayIdentifier, BoolIdentifier, PairIdentifier, FuncIdentifier, NullIdentifier, AnyIdentifier, IntIdentifier, StrIdentifier, VarIdentifier, CharIdentifier}
+import wacc.{ArrayIdentifier, BoolIdentifier, PairIdentifier, FuncIdentifier, NullIdentifier, AnyIdentifier, IntIdentifier, StrIdentifier, CharIdentifier}
 sealed trait ASTNode {
     def semanticCheck(): Unit = {}
 }
@@ -330,7 +330,7 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
     override def typeVal() = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
         identifier match {
-            case Some(VarIdentifier(tyVal)) => tyVal
+            // case Some(VarIdentifier(tyVal)) => tyVal
             case Some(ty) => ty
             case None => new AnyIdentifier
         }
@@ -338,8 +338,8 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
     override def semanticCheck(): Unit = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
         identifier match {
-            case None => Error.addSemErr(s"${identifier} variable \"${name}\" at scope " +
-              s"${SemanticChecker.currScope()} not in scope or not defined\n" + SemanticChecker.symbolTable.toString)
+            case None => Error.addSemErr(s"${identifier} variable \"${name}\" is not in scope " +
+              s"or not defined\n")
             case _ =>
         }
     }
@@ -407,7 +407,7 @@ case class FstNode(lvalue: LValueNode) extends PairElemNode {
                     case Some(ty) => {
                         ty match {
                             case p: PairIdentifier => p.ty1
-                            case VarIdentifier(PairIdentifier(ty1, ty2)) => ty1
+                            // case VarIdentifier(PairIdentifier(ty1, ty2)) => ty1
                             case _ => {
                                 Error.addSemErr(s"Wrong type assigned for fst, gets ${ty.toString()}")
                                 new AnyIdentifier
@@ -434,7 +434,7 @@ case class SndNode(lvalue: LValueNode) extends PairElemNode {
                     case Some(ty) => {
                         ty match {
                             case p: PairIdentifier => p.ty2
-                            case VarIdentifier(PairIdentifier(ty1, ty2)) => ty2
+                            // case VarIdentifier(PairIdentifier(ty1, ty2)) => ty2
                             case _ => {
                                 Error.addSemErr(s"Wrong type assigned for snd, gets ${ty.toString()}")
                                 new AnyIdentifier

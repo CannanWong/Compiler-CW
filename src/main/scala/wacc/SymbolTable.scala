@@ -2,7 +2,7 @@ package wacc
 
 import scala.collection.mutable
 
-import wacc.{VarIdentifier, FuncIdentifier, ArrayIdentifier, PairIdentifier}
+import wacc.{FuncIdentifier, ArrayIdentifier, PairIdentifier}
 class SymbolTable {
 
     val map: mutable.Map[String, TypeIdentifier] = mutable.Map()
@@ -10,8 +10,7 @@ class SymbolTable {
     // Add variable to symbol table
     def addVar(name: String, ty: TypeIdentifier): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
-        val identifier = new VarIdentifier(ty)
-        map.addOne(varName, identifier)
+        map.addOne(varName, ty)
     }
 
     // Add array to symbol table

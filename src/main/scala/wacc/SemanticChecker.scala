@@ -2,7 +2,7 @@ package wacc
 
 import scala.collection.mutable.Stack
 
-import wacc.{ArrayIdentifier, PairIdentifier, VarIdentifier, NullIdentifier, AnyIdentifier}
+import wacc.{ArrayIdentifier, PairIdentifier, NullIdentifier, AnyIdentifier}
 object SemanticChecker {
     var symbolTable = new SymbolTable()
     var nextScope = 0
@@ -80,7 +80,7 @@ object SemanticChecker {
     def typeIsArray(id: TypeIdentifier): Boolean = {
         id match {
         case ar: ArrayIdentifier=> true
-        case VarIdentifier(varId) => typeIsArray(varId)
+        // case VarIdentifier(varId) => typeIsArray(varId)
         case a: AnyIdentifier => true
         case _ => false
         }
@@ -90,7 +90,7 @@ object SemanticChecker {
         id match {
         case p: PairIdentifier => true
         case n: NullIdentifier => true
-        case VarIdentifier(varId) => typeIsArray(varId)
+        // case VarIdentifier(varId) => typeIsArray(varId)
         case a: AnyIdentifier => true
         case _ => false
         }
