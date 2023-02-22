@@ -24,13 +24,3 @@ object Error {
     }
     
 }
-
-// sealed trait ErrorLines
-// case class VanillaError(unexpected: Option[ErrorItem], expected: Set[ErrorItem], reasons: Set[String], line: LineInfo)
-
-// sealed trait ErrorItem
-// case class Raw(item: String) extends ErrorItem
-// case class Named(item: String) extends ErrorItem
-// case object EndOfInput extends ErrorItem
-
-// case class LineInfo(line: String, linesBefore: Seq[String], linesAfter: Seq[String], errorPointsAt: Int)
