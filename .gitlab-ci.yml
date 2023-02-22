@@ -12,6 +12,7 @@ front_end_test:
     - source "$HOME/.sdkman/bin/sdkman-init.sh"
     - make fe_test
   rules:
+    - if: $CI_PIPELINE_SOURCE == "push"
       changes:
         paths:
         - "src/main/scala/wacc/ASTNode.scala"
