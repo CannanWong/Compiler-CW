@@ -1,7 +1,8 @@
 package wacc
 
 import scala.collection.mutable.ListBuffer
-import java.nio.ReadOnlyBufferException
+import wacc.Registers._
+import wacc.FreqCodeBlocks
 
 object CodeGenerator {
     var controlFlowGraph = new InstBlock()
@@ -56,16 +57,10 @@ object CodeGenerator {
                     case PairIdentifier(ty1, ty2) => ???
                     case _ =>
                 }
-                val r0 = FixedRegister(0)
-                val r8 = FixedRegister(8)
-                val r12 = FixedRegister(12)
+                
                 var offset = 0
-
                 // Calling malloc to get the address storing the array
-                currInstBlock.addInst(MovInst(r0, 
-                    ImmVal(4 + allocSize * exprList.length, IntIdentifier())))
-                currInstBlock.addInst(BranchLinkInst("malloc"))
-                currInstBlock.addInst(MovInst(r12, r0))
+                currInstBlock.addInst(FreqCodeBlocks.allocSpc(4 + allocSize * exprList.length))
 
                 // Storing the size of the array on the first 4 bytes / word
                 currInstBlock.addInst(MovInst(r8, ImmVal(exprList.length, IntIdentifier())))
@@ -82,10 +77,36 @@ object CodeGenerator {
                 currInstBlock.addInst(MovInst(Variable(node.ident.name), r8))
             }
             case NewPairNode(fstExpr, sndExpr) => {
-                
+                val saveVal = List(
+                    StrInst(r8, Offset(r12, 0)),
+                    PushInst(List(r12))
+                )
+                currInstBlock.addInst(
+                    // Alloc for first element
+                    FreqCodeBlocks.allocSpc(4) ++
+                    List(MovInst(r8, translate(fstExpr))) ++
+                    saveVal ++
+                    // Alloc for second element
+                    FreqCodeBlocks.allocSpc(4) ++
+                    List(MovInst(r8, translate(sndExpr))) ++
+                    saveVal ++
+                    // Alloc for pointers pointing to both elements
+                    FreqCodeBlocks.allocSpc(8) ++
+                    // Popping the addresses from the stack and storing them
+                    List(PopInst(List(r8)),
+                         StrInst(r8, Offset(r12, 4)),
+                         PopInst(List(r8)),
+                         StrInst(r8, Offset(r12, 0)),
+                         MovInst(Variable(node.ident.name), r12)))
             }
             case CallNode(ident, argList) => 
-            case FstNode(lvalue) =>
+            case FstNode(lvalue) => {
+                lvalue match {
+                    case IdentNode(name) => {
+                        
+                    }
+                }
+            }
             case SndNode(lvalue) => 
         }
     }

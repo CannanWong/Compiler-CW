@@ -50,3 +50,4 @@ case class LabelAddress(address: String) extends Operand
 case class ImmVal(num: Int, ty: TypeIdentifier) extends Operand
 case class ASR(r: Register, bits: Int) extends Operand
 case class Offset(rn: Register, value: Int) extends Operand
+
