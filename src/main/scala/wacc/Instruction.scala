@@ -47,4 +47,4 @@ case class Variable(name: String) extends Register
 // TODO: replace string with identifier for type
 case class ImmVal(num: Int, ty: TypeIdentifier) extends Operand
 case class ASR(r: Register, bits: Int) extends Operand
-
+case class Offset(rn: Register, value: Int) extends Operand
