@@ -13,8 +13,7 @@ case class SmullInst(rdlo: Register, rdhi: Register, rm: Register, rs: Register)
 
 case class CmpInst(rn: Register, op: Operand) extends Instruction
 case class MovInst(rd: Register, op: Operand) extends Instruction
-case class MovEqInst(rd: Register, op: Operand) extends Instruction
-case class MovNEqInst(rd: Register, op: Operand) extends Instruction
+case class MovCondInst(condition: String, rd: Register, op: Operand) extends Instruction
 case class AndInst(rd: Register, op: Operand) extends Instruction
 case class OrInst(rd: Register, op: Operand) extends Instruction
 
@@ -28,6 +27,8 @@ case class BranchLinkInst(label: String) extends Instruction
 case class BranchCondInst(condition: String, label: String) extends Instruction
 case class BLEqInst(label: String) extends Instruction
 case class BLNEInst(label: String) extends Instruction
+
+case class Label() extends Instruction
 
 // To be moved to assign register part
 // sealed trait Register
@@ -44,6 +45,6 @@ case class TempRegister() extends Register
 case class FixedRegister(num: Int) extends Register
 case class Variable(name: String) extends Register
 // TODO: replace string with identifier for type
-case class ImmVal(num: Int, t: TypeIdentifier) extends Operand
+case class ImmVal(num: Int, ty: TypeIdentifier) extends Operand
 case class ASR(r: Register, bits: Int) extends Operand
 

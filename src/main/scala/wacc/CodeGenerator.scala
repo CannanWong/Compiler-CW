@@ -83,6 +83,28 @@ object CodeGenerator {
     }
 
     def translate(node: ExprNode): Operand = {
+        val immTrue = ImmVal(1, BoolIdentifier())
+        val immFalse = ImmVal(0, BoolIdentifier())
+
+        def translateComparisonOperators(op1: Operand, op2: Operand, cond: String, notcond: String): Register = {
+            var reg =  TempRegister()
+            op1 match {
+                case ImmVal(num, ty) => {
+                    var reg1 = TempRegister()
+                    currInstBlock.addInst(MovInst(reg1, op1))
+                    currInstBlock.addInst(CmpInst(reg1, op2))
+                    currInstBlock.addInst(MovCondInst(cond, reg, immTrue))
+                    currInstBlock.addInst(MovCondInst(notcond, reg, immFalse))
+                }
+                case _ => {
+                    currInstBlock.addInst(CmpInst(op1.asInstanceOf[Register], op2))
+                    currInstBlock.addInst(MovCondInst(cond, reg, immTrue))
+                    currInstBlock.addInst(MovCondInst(notcond, reg, immFalse))
+                }
+            }
+            return reg
+        }
+        
         node match {
             case IntLiterNode(n) => {
                 if (n >= 0) {return ImmVal(n, node.typeVal())}
@@ -112,17 +134,17 @@ object CodeGenerator {
             case NotNode(expr) => {
                 var op = translate(expr)
                 op match {
-                    case ImmVal(num, t) => {
-                        if (num == 0) op = ImmVal(1, t)
-                        else op = ImmVal(0, t)
+                    case ImmVal(num, ty) => {
+                        if (num == 0) op = immTrue
+                        else op = immFalse
                         return op 
                     }
                     // TODO: asInstanceOf or put all remaining cases
                     case _ => {
                         var inst1 = CmpInst(op.asInstanceOf[Register], ImmVal(1, expr.typeVal()))
                         var reg = TempRegister()
-                        var inst2 = MovNEqInst(reg, ImmVal(1, expr.typeVal()))
-                        var inst3 = MovEqInst(reg, ImmVal(0, expr.typeVal()))
+                        var inst2 = MovCondInst("NE", reg, ImmVal(1, expr.typeVal()))
+                        var inst3 = MovCondInst("Eq", reg, ImmVal(0, expr.typeVal()))
                         currInstBlock.addInst(List(inst1, inst2, inst3))
                         // var inst4 = MovInst(op, reg)
                         return reg 
@@ -133,7 +155,7 @@ object CodeGenerator {
                 var op = translate(expr)
                 var reg = TempRegister()
                 op match {
-                    case ImmVal(num, t) => {
+                    case ImmVal(num, ty) => {
                         currInstBlock.addInst(MovInst(reg, op))
                         currInstBlock.addInst(NegInst(reg, reg))
                     }
@@ -150,7 +172,7 @@ object CodeGenerator {
             case OrdNode(expr) => {
                 var op = translate(expr)
                 op match {
-                    case ImmVal(num, t) => {
+                    case ImmVal(num, ty) => {
                         return ImmVal(num, IntIdentifier())
                     }
                     case _ => {
@@ -164,7 +186,7 @@ object CodeGenerator {
             case ChrNode(expr) => {
                 var op = translate(expr)
                 op match {
-                    case ImmVal(num, t) => {
+                    case ImmVal(num, ty) => {
                         return ImmVal(num, CharIdentifier())
                     }
                     case _ => {
@@ -197,7 +219,7 @@ object CodeGenerator {
                 var op2 = translate(sndexpr)
                 currInstBlock.addInst(MovInst(reg1, op2))
                 currInstBlock.addInst(CmpInst(reg1, ImmVal(0, IntIdentifier())))
-                currInstBlock.addInst(BranchCondInst("EQ", "_errDivZero"))
+                currInstBlock.addInst(BranchCondInst("Eq", "_errDivZero"))
                 currInstBlock.addInst(BranchLinkInst("__aeabi_idivmod"))
                 var reg2 = TempRegister()
                 currInstBlock.addInst(MovInst(reg2, reg0))
@@ -211,7 +233,7 @@ object CodeGenerator {
                 var op2 = translate(sndexpr)
                 currInstBlock.addInst(MovInst(reg1, op2))
                 currInstBlock.addInst(CmpInst(reg1, ImmVal(0, IntIdentifier())))
-                currInstBlock.addInst(BranchCondInst("EQ", "_errDivZero"))
+                currInstBlock.addInst(BranchCondInst("Eq", "_errDivZero"))
                 currInstBlock.addInst(BranchLinkInst("__aeabi_idivmod"))
                 var reg2 = TempRegister()
                 currInstBlock.addInst(MovInst(reg2, reg1))
@@ -221,7 +243,7 @@ object CodeGenerator {
                 var op1 = translate(fstexpr)
                 var op2 = translate(sndexpr)
                 op1 match {
-                    case ImmVal(num, t) => {
+                    case ImmVal(num, ty) => {
                         var reg1 = TempRegister()
                         currInstBlock.addInst(MovInst(reg1, op2))
                         var reg2 = TempRegister()
@@ -239,7 +261,7 @@ object CodeGenerator {
                 var op1 = translate(fstexpr)
                 var op2 = translate(sndexpr)
                 op1 match {
-                    case ImmVal(num, t) => {
+                    case ImmVal(num, ty) => {
                         var reg1 = TempRegister()
                         currInstBlock.addInst(MovInst(reg1, op1))
                         var reg2 = TempRegister()
@@ -253,13 +275,121 @@ object CodeGenerator {
                     }
                 }
             }
-            // case AddNode(fstexpr, sndexpr) => {
-                // val rd = Register(1)
-                // val rn = Register(2)
-                // val op = ImmVal(1)
-                // val inst = AddInst(rd, rn, op)
-                // currBlock.addInst(inst)
-            //}
+            case GTNode(fstexpr, sndexpr) => {
+                var op1 = translate(fstexpr)
+                var op2 = translate(sndexpr)
+                return translateComparisonOperators(op1, op2, "GT", "LE")
+            }
+            case GTENode(fstexpr, sndexpr) => {
+                var op1 = translate(fstexpr)
+                var op2 = translate(sndexpr)
+                return translateComparisonOperators(op1, op2, "GE", "LT")
+            }
+            case LTNode(fstexpr, sndexpr) => {
+                var op1 = translate(fstexpr)
+                var op2 = translate(sndexpr)
+                return translateComparisonOperators(op1, op2, "LT", "GE")
+            }
+            case LTENode(fstexpr, sndexpr) => {
+                var op1 = translate(fstexpr)
+                var op2 = translate(sndexpr)
+                return translateComparisonOperators(op1, op2, "LE", "GT")
+            }
+            case EqNode(fstexpr, sndexpr) => {
+                var op1 = translate(fstexpr)
+                var op2 = translate(sndexpr)
+                return translateComparisonOperators(op1, op2, "Eq", "NE")
+            }
+            case IEqNode(fstexpr, sndexpr) => {
+                var op1 = translate(fstexpr)
+                var op2 = translate(sndexpr)
+                return translateComparisonOperators(op1, op2, "NE", "Eq")
+            }
+            // TODO: fix label
+            case AndNode(fstexpr, sndexpr) => {
+                var op1 = translate(fstexpr)
+                var op2 = translate(sndexpr)
+                var reg = TempRegister()
+                var label = Label()
+                op1 match {
+                    case ImmVal(num, ty) => {
+                        var reg1 = TempRegister()
+                        currInstBlock.addInst(MovInst(reg1, op1))
+                        currInstBlock.addInst(CmpInst(reg1, immTrue))
+                        currInstBlock.addInst(BranchCondInst("NE", "label"))
+                        op2 match {
+                            case ImmVal(num, ty) => {
+                                var reg2 = TempRegister()
+                                currInstBlock.addInst(MovInst(reg2, op2))
+                                currInstBlock.addInst(CmpInst(reg2, immTrue))
+                            }
+                            case _ => {
+                                currInstBlock.addInst(CmpInst(op2.asInstanceOf[Register], immTrue))
+                            }
+                        }
+                    }
+                    case _ => {
+                       currInstBlock.addInst(CmpInst(op1.asInstanceOf[Register], immTrue)) 
+                       currInstBlock.addInst(BranchCondInst("NE", "label"))
+                       op2 match {
+                            case ImmVal(num, ty) => {
+                                var reg2 = TempRegister()
+                                currInstBlock.addInst(MovInst(reg2, op2))
+                                currInstBlock.addInst(CmpInst(reg2, immTrue))
+                            }
+                            case _ => {
+                                currInstBlock.addInst(CmpInst(op2.asInstanceOf[Register], immTrue))
+                            }
+                        }
+                    }
+                }
+                currInstBlock.addInst(label)
+                currInstBlock.addInst(MovCondInst("Eq", reg, immTrue))
+                currInstBlock.addInst(MovCondInst("NE", reg, immFalse))
+                return reg
+            }
+            case OrNode(fstexpr, sndexpr) => {
+                var op1 = translate(fstexpr)
+                var op2 = translate(sndexpr)
+                var reg = TempRegister()
+                var label = Label()
+                op1 match {
+                    case ImmVal(num, ty) => {
+                        var reg1 = TempRegister()
+                        currInstBlock.addInst(MovInst(reg1, op1))
+                        currInstBlock.addInst(CmpInst(reg1, immTrue))
+                        currInstBlock.addInst(BranchCondInst("Eq", "label"))
+                        op2 match {
+                            case ImmVal(num, ty) => {
+                                var reg2 = TempRegister()
+                                currInstBlock.addInst(MovInst(reg2, op2))
+                                currInstBlock.addInst(CmpInst(reg2, immTrue))
+                            }
+                            case _ => {
+                                currInstBlock.addInst(CmpInst(op2.asInstanceOf[Register], immTrue))
+                            }
+                        }
+                    }
+                    case _ => {
+                       currInstBlock.addInst(CmpInst(op1.asInstanceOf[Register], immTrue)) 
+                       currInstBlock.addInst(BranchCondInst("Eq", "label"))
+                       op2 match {
+                            case ImmVal(num, ty) => {
+                                var reg2 = TempRegister()
+                                currInstBlock.addInst(MovInst(reg2, op2))
+                                currInstBlock.addInst(CmpInst(reg2, immTrue))
+                            }
+                            case _ => {
+                                currInstBlock.addInst(CmpInst(op2.asInstanceOf[Register], immTrue))
+                            }
+                        }
+                    }
+                }
+                currInstBlock.addInst(label)
+                currInstBlock.addInst(MovCondInst("Eq", reg, immTrue))
+                currInstBlock.addInst(MovCondInst("NE", reg, immFalse))
+                return reg
+            }
         }
     }
 }
