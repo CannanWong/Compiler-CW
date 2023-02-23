@@ -22,10 +22,10 @@ object Print {
                 output += "cmp " + printOp(inst.rn, inst.op)
             case inst: MovInst => 
                 output += "mov " + printOp(inst.rd, inst.op)
-            case inst: MovEqInst => 
-                output += "moveq" + printOp(inst.rd, inst.op)
-            case inst: MovNEqInst => 
-                output += "movneq" + printOp(inst.rd, inst.op)
+            // case inst: MovEqInst => 
+            //     output += "moveq" + printOp(inst.rd, inst.op)
+            // case inst: MovNEqInst => 
+            //     output += "movneq" + printOp(inst.rd, inst.op)
             case inst: AndInst => 
                 output += "and " + printOp(inst.rd, inst.op)
             case inst: OrInst => 
@@ -48,7 +48,7 @@ object Print {
     def printOp(op: Operand): String = {
         op match {
             case im: ImmVal => "#" + {
-                im.t match {
+                im.ty match {
                     case IntIdentifier() | BoolIdentifier() | CharIdentifier() => im.num.toString()
                     case _ => "UDT!" // Undefined type
                 }
