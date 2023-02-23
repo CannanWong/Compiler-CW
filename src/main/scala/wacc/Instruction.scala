@@ -44,6 +44,8 @@ sealed trait Register extends Operand
 case class TempRegister() extends Register
 case class FixedRegister(num: Int) extends Register
 case class Variable(name: String) extends Register
+//NEW: address of the label
+case class LabelAddress(address: String) extends Operand
 // TODO: replace string with identifier for type
 case class ImmVal(num: Int, ty: TypeIdentifier) extends Operand
 case class ASR(r: Register, bits: Int) extends Operand

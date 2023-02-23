@@ -2,19 +2,27 @@ package wacc
 
 import scala.collection.mutable.ListBuffer
 
-trait Labels {
-  val labelContents: ListBuffer[String]
+abstract class Labels() {
+  var name = ""
   var labelCount = 0
+  val labelContents = ListBuffer[String]()
+
+  def addToPrintDataSubsection(msg: String) : Unit
+}
+
+case class dataDirectiveStat() extends Labels {
   def addToPrintDataSubsection(msg: String) : Unit = {
       labelCount += 1
       labelContents.addOne(msg)
     }
-}
 
-case class dataDirectiveStat() extends Labels {
-  val labelContents = ListBuffer[String](".data")
   def build(): String = {
-    //labelContents.forall()
-    ""
+    val sb = new StringBuilder()
+    sb.++=(".data")
+    for (stat <- labelContents) {
+      sb.++=(stat)
+    } 
+    sb.++=(".text")
+    sb.toString()
   }
 }

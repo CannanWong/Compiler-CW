@@ -14,10 +14,16 @@ class PrintFunc() {
     val PRINT_BOOL_LABEL = "_printb"
     val PRINTLN_LABEL = "_println"
 
+    val printEnd = List (
+      new BranchLinkInst("printf"),
+      new MovInst(null, null),
+      new BranchLinkInst("fflush"),
+      new PopInst(null))
+
     def addPrintLabelToData(text: String, printType: String, funckBlock: FuncBlock) : String = {
       val content = new StringBuilder()
       content ++= s"  .word ${text.length()}\n" +
-                  s".L.${printType}_str${funckBlock.labels.labelCount}\n" +
+                  s".L.${printType}_str${funckBlock.labels.labelCount}:\n" +
                   s"  .asciz \"${text}\"\n" +
                   ".text\n"
       funckBlock.labels.addToPrintDataSubsection(content.toString())
@@ -26,12 +32,13 @@ class PrintFunc() {
     }
 
     def printInt(op: Operand): Unit = {
+      val calleeReg = null
+      val callerReg = null
       /* caller instruction */
-
-      val instr1 = new MovInst(null, null)
-      val instr3 = new MovInst(null, null)
-      val instr2 = new BranchLinkInst(PRINT_INT_LABEL)
-      CodeGenerator.currInstBlock.addInst(List(instr1, instr2, instr3))
+      val intToPrint = new MovInst(calleeReg, op)
+      val instr2 = new MovInst(callerReg, calleeReg)
+      val instr3 = new BranchLinkInst(PRINT_INT_LABEL)
+      CodeGenerator.currInstBlock.addInst(List(intToPrint, instr2, instr3))
 
       /* callee instruction */
       val printIntFunc = new FuncBlock()
@@ -39,26 +46,85 @@ class PrintFunc() {
 
       val pinstr1 = new PushInst(List())
       val pinstr2 = new MovInst(null, null)
-      val pinstr3 = new LdrInst(null, null)
-      val pinstr4 = new BranchLinkInst("printf")
-      val pinstr5 = new MovInst(null, null)
-      val pinstr6 = new BranchLinkInst("fflush")
-      val pinstr7 = new PopInst(null)
-      CodeGenerator.currInstBlock.addInst(
-        List(pinstr1, pinstr2, pinstr3, pinstr4, pinstr5, pinstr6, pinstr7))      
+      val pinstr3 = new LdrInst(null, LabelAddress(s"=${PRINT_INT_LABEL}"))
+
+      CodeGenerator.currInstBlock.addInst(List(pinstr1, pinstr2, pinstr3)) 
+      CodeGenerator.currInstBlock.addInst(printEnd)
       CodeGenerator.controlFlowFuncs.addOne(printIntFunc)
     }
 
-    def printString(): Unit = {
+    def printString(op: Operand): Unit = {
+      val calleeReg = null
+      val callerReg = null
+      /* caller instruction */
+      val loadTextToFunc = new LdrInst(null, null)
+      val push = new PushInst(null)
+      val pop = new PopInst(null)
+      val strToPrint = new MovInst(calleeReg, op)
+      val instr2 = new MovInst(callerReg, calleeReg)
+      val instr3 = new BranchLinkInst(PRINT_STR_LABEL)
+      CodeGenerator.currInstBlock.addInst(List(loadTextToFunc, push, pop, strToPrint, instr2, instr3))
 
+      /* callee instruction */
+      val printIntFunc = new FuncBlock()
+      addPrintLabelToData("%s", PRINT_STR_LABEL, printIntFunc)
+
+      val pinstr1 = new PushInst(List())
+      val pinstr2 = new MovInst(null, null)
+      val loadTextContent = new LdrInst(null, null)
+      val pinstr3 = new LdrInst(null, LabelAddress(s"=${PRINT_STR_LABEL}"))
+      CodeGenerator.currInstBlock.addInst(
+        List(pinstr1, pinstr2, loadTextContent, pinstr3))
+      CodeGenerator.currInstBlock.addInst(printEnd)     
+      CodeGenerator.controlFlowFuncs.addOne(printIntFunc)
     }
 
-    def printChar(): Unit = {
+    def printChar(op: Operand): Unit = {
+      val calleeReg = null
+      val callerReg = null
+      /* caller instruction */
+      val charToPrint = new MovInst(calleeReg, op)
+      val instr2 = new MovInst(callerReg, calleeReg)
+      val instr3 = new BranchLinkInst(PRINT_CHAR_LABEL)
+      CodeGenerator.currInstBlock.addInst(List(charToPrint, instr2, instr3))
 
+      /* callee instruction */
+      val printIntFunc = new FuncBlock()
+      addPrintLabelToData("%c", PRINT_CHAR_LABEL, printIntFunc)
+
+      val pinstr1 = new PushInst(List())
+      val pinstr2 = new MovInst(null, null)
+      val pinstr3 = new LdrInst(null, LabelAddress(s"=${PRINT_CHAR_LABEL}"))
+
+      CodeGenerator.currInstBlock.addInst(
+        List(pinstr1, pinstr2, pinstr3)) 
+      CodeGenerator.currInstBlock.addInst(printEnd)     
+      CodeGenerator.controlFlowFuncs.addOne(printIntFunc)
     }
 
-    def printBool(): Unit = {
+    def printBool(op: Operand): Unit = {
+      val calleeReg = null
+      val callerReg = null
+      /* caller instruction */
+      val boolToPrint = new MovInst(calleeReg, op)
+      val instr2 = new MovInst(callerReg, calleeReg)
+      val instr3 = new BranchLinkInst(PRINT_INT_LABEL)
+      CodeGenerator.currInstBlock.addInst(List(boolToPrint, instr2, instr3))
+
+      /* callee instruction */
+      val printIntFunc = new FuncBlock()
+      addPrintLabelToData("%false", PRINT_CHAR_LABEL, printIntFunc)
+      addPrintLabelToData("%true", PRINT_CHAR_LABEL, printIntFunc)
+      addPrintLabelToData("%s", PRINT_CHAR_LABEL, printIntFunc)
+
+      val pinstr1 = new PushInst(List())
+      val pinstr2 = new CmpInst(null, ImmVal(0, new BoolIdentifier))
+
+      //val trueOrFalse = new IfBlock() ????? add it tp control flow graph??????
+      CodeGenerator.currInstBlock.addInst(
+        List(pinstr1, pinstr2))
+      CodeGenerator.currInstBlock.addInst(printEnd)    
+      CodeGenerator.controlFlowFuncs.addOne(printIntFunc)
 
     }
-  
 }
