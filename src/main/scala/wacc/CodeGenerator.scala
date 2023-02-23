@@ -6,6 +6,13 @@ object CodeGenerator {
     var controlFlowGraph = InstBlock()
     var currInstBlock = controlFlowGraph
 
+    def translateAST(p: ProgramNode): Unit = {
+        for (func <- p.funcList) {
+            translate(func)
+        }
+        translate(p.stat)
+    }
+
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
 

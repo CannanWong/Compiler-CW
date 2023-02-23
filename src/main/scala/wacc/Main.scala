@@ -20,6 +20,7 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
+                    // CodeGenerator.translateAST(x)
                     val filename = WriteToFile.fileName(args(0))
                     WriteToFile.write(filename)
                 }
@@ -42,7 +43,6 @@ object Main {
     }
 
     object WriteToFile {
-        val generatedCode: List[String] = List.empty
 
         def fileName(filePath: String) : String = {
             filePath.split("/").last.dropRight(5) + ".s"
@@ -59,8 +59,9 @@ object Main {
                 "  push {r8, r10, r12}\n" +
                 "  mov fp, sp\n"
             pw.print(begin)
-            for (instr <- generatedCode) {
-                pw.println(instr)
+            Print.printBlock(CodeGenerator.controlFlowGraph)
+            for (line <- Print.output) {
+                pw.println(line)
             }
             val end =
                 "  mov r0, #0\n" +
