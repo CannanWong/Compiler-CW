@@ -57,7 +57,7 @@ object CodeGenerator {
         */
         val retOp = translate(node.expr)
         val exprTy = node.expr.typeVal()
-        val printInstr = new Print()
+        val printInstr = new PrintFunc()
         exprTy match {
             case CharIdentifier() => printInstr.printInt(retOp)
             case IntIdentifier() => ???
