@@ -5,6 +5,8 @@ import scala.collection.mutable.ListBuffer
 object CodeGenerator {
     var controlFlowGraph = InstBlock()
     var currInstBlock = controlFlowGraph
+    /* NEW: temporory design to accomodate label jumps */
+    var controlFlowFuncs = ListBuffer[FuncBlock]()
 
     def translateAST(p: ProgramNode): Unit = {
         for (func <- p.funcList) {
@@ -54,8 +56,31 @@ object CodeGenerator {
         currInstBlock.addInst(inst1)
         currInstBlock.addInst(inst2)
     }
-    def translate(node: PrintNode): Unit = {}
-    def translate(node: PrintlnNode): Unit = {}
+    def translate(node: PrintNode): Unit = {
+        /** 
+         * TODO: push and pop r0 - r3 before calling
+         * print may clobber any registers that are marked as caller-save under
+         * arm's calling convention: R0, R1, R2, R3
+        */
+        val retOp = translate(node.expr)
+        val exprTy = node.expr.typeVal()
+        val printInstr = new PrintFunc()
+        exprTy match {
+            case CharIdentifier() => printInstr.printInt(retOp)
+            case IntIdentifier() => ???
+            case StrIdentifier() => ???
+            case BoolIdentifier() => ???
+            case a: ArrayIdentifier => ???
+            case p: PairIdentifier => ???
+            case _ => throw new IllegalArgumentException("print: not an expression")
+        }
+    }
+
+    def translate(node: PrintlnNode): Unit = {
+        // TODO: add new line
+        translate(new PrintNode(node.expr))
+    }
+
     def translate(node: IfNode): Unit = {
         val ifBlock = IfBlock()
         currInstBlock = ifBlock.cond
