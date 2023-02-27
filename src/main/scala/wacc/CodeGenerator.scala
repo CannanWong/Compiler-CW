@@ -81,13 +81,15 @@ object CodeGenerator {
                     StrInst(r8, Offset(r12, 0)),
                     PushInst(List(r12))
                 )
+                val fstOffset = getOffset(fstExpr)
+                val sndOffset = getOffset(sndExpr)
                 currInstBlock.addInst(
                     // Alloc for first element
-                    FreqCodeBlocks.allocSpc(4) ++
+                    FreqCodeBlocks.allocSpc(fstOffset) ++
                     List(MovInst(r8, translate(fstExpr))) ++
                     saveVal ++
                     // Alloc for second element
-                    FreqCodeBlocks.allocSpc(4) ++
+                    FreqCodeBlocks.allocSpc(sndOffset) ++
                     List(MovInst(r8, translate(sndExpr))) ++
                     saveVal ++
                     // Alloc for pointers pointing to both elements
@@ -107,14 +109,42 @@ object CodeGenerator {
                 currInstBlock.addInst(BranchLinkInst(ident.name))
             }
             case FstNode(lvalue) => {
-                lvalue match {
-                    case IdentNode(name) => {
-                        
-                    }
+                currInstBlock.addInst(accessPairElem(0, lvalue).toList)
+                currInstBlock.addInst(MovInst(Variable(node.ident.name), r8))
+            }
+            case SndNode(lvalue) => {
+                currInstBlock.addInst(accessPairElem(4, lvalue).toList)
+                currInstBlock.addInst(MovInst(Variable(node.ident.name), r8))
+            }
+        }
+    }
+
+    def getOffset(expr: ExprNode): Int = {
+        expr.typeVal() match {
+            case CharIdentifier() => 1
+            case _ => 4
+        }
+    }
+
+    def accessPairElem(pairOffset: Int, lvalue: LValueNode): ListBuffer[Instruction] = {
+        val insts = ListBuffer[Instruction]()
+
+        lvalue match {
+            case IdentNode(name) => {
+                insts ++= List(
+                    CmpInst(Variable(name), ImmVal(0, IntIdentifier())),
+                    BLEqInst("_errNull"),
+                    LdrInst(r8, Offset(Variable(name), pairOffset)),
+                )
+                lvalue.typeVal() match {
+                    case CharIdentifier() => insts += LdrsbInst(r8, Offset(r8, 0))
+                    case _ => insts += LdrInst(r8, Offset(r8, 0))
                 }
             }
-            case SndNode(lvalue) => 
+            case p: PairElemNode => ???
+            case _ => {println("what")} 
         }
+        insts
     }
 
     def pushArgs(regCount: Int, args: List[ExprNode],
@@ -133,8 +163,9 @@ object CodeGenerator {
         if (args.isEmpty) {
             return insts
         }
+        val argOffset = getOffset(args(0))
         insts += MovInst(r8, translate(args(0)))
-        insts += StrInst(r8, Offset(sp, -4))
+        insts += StrInst(r8, Offset(sp, -argOffset))
         pushStack(args.drop(1), insts)
     }
 

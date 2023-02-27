@@ -18,6 +18,7 @@ case class AndInst(rd: Register, op: Operand) extends Instruction
 case class OrInst(rd: Register, op: Operand) extends Instruction
 
 case class LdrInst(rd: Register, op: Operand) extends Instruction
+case class LdrsbInst(rd: Register, op: Operand) extends Instruction
 case class LdrPseudoInst(rd: Register, num: Int) extends Instruction
 case class StrInst(rd: Register, op: Operand) extends Instruction
 case class PushInst(regList: List[Register]) extends Instruction
