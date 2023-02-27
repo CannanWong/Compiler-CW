@@ -14,4 +14,7 @@ object Registers {
   val r8 = FixedRegister(8)
   val r10 = FixedRegister(10)
   val r12 = FixedRegister(12)
+  val sp = FixedRegister(13)
+  val lr = FixedRegister(14)
+  val pc = FixedRegister(15)
 }

@@ -98,8 +98,14 @@ object CodeGenerator {
                          PopInst(List(r8)),
                          StrInst(r8, Offset(r12, 0)),
                          MovInst(Variable(node.ident.name), r12)))
+                
             }
-            case CallNode(ident, argList) => 
+            case CallNode(ident, argList) => {
+                currInstBlock.addInst(
+                    pushArgs(0, argList.exprList, ListBuffer[Instruction]())
+                    .toList)
+                currInstBlock.addInst(BranchLinkInst(ident.name))
+            }
             case FstNode(lvalue) => {
                 lvalue match {
                     case IdentNode(name) => {
@@ -110,6 +116,28 @@ object CodeGenerator {
             case SndNode(lvalue) => 
         }
     }
+
+    def pushArgs(regCount: Int, args: List[ExprNode],
+        insts: ListBuffer[Instruction]): ListBuffer[Instruction] = {
+        if (args.isEmpty) {
+            return insts
+        } else if (regCount >= 4) {
+            return pushStack(args, insts)
+        }
+        insts += MovInst(FixedRegister(regCount), translate(args(0)))
+        pushArgs(regCount + 1, args.drop(1), insts)
+        insts
+    }
+
+    def pushStack(args: List[ExprNode], insts: ListBuffer[Instruction]): ListBuffer[Instruction] = {
+        if (args.isEmpty) {
+            return insts
+        }
+        insts += MovInst(r8, translate(args(0)))
+        insts += StrInst(r8, Offset(sp, -4))
+        pushStack(args.drop(1), insts)
+    }
+
     def translate(node: LValuesAssignNode): Unit = {}
     def translate(node: ReadNode): Unit = {}
     def translate(node: FreeNode): Unit = {}
