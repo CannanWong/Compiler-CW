@@ -3,10 +3,14 @@ package wacc
 import scala.collection.mutable.ListBuffer
 
 abstract class Directive() {
-  val GLOBAL_MAIN = false
+  var GLOBAL_MAIN = false
   var name = ""
   var dirCount = 0
   val dirContents = ListBuffer[String]()
+
+  def setGlobalMain(): Unit = {
+    GLOBAL_MAIN = true
+  }
 
   def build(): String = {
     if (GLOBAL_MAIN) {
@@ -26,16 +30,20 @@ case class DataDirectiveStat() extends Directive {
     dirContents.addOne(msg)
   }
 
+  def addTextLabelToData(text: String) : String = {
+    addTextLabelToData(text, "")
+  }
+
   def addTextLabelToData(text: String, printType: String) : String = {
     val content = new StringBuilder()
     val textLabel = if (printType.isEmpty()) "" else s"${printType}_"
+    val retLabel = s".L.${textLabel}str${dirCount}"
     content ++= s"  .word ${text.length()}\n" +
-                s".L.${textLabel}str${dirCount}:\n" +
+                s"${retLabel}:\n" +
                 s"  .asciz \"${text}\"\n"
     addToPrintDataSubsection(content.toString())
-
     // returns label string for text added to .data directive
-    s".L.${textLabel}str${dirCount}"
+    retLabel    
   }
 
   override def build(): String = {
