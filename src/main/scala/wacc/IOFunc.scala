@@ -22,6 +22,20 @@ object IOFunc {
       )
     }
 
+    def readFunc(label: String, printType: String, funcBlock: FuncBlock): List[Instruction] = {
+      val labelStr = funcBlock.labels.addTextLabelToData(printType, label)
+      List(
+        new PushInst(List(lr)),
+        new StrInst(r0, new Offset(sp, arrLenOffset)),
+        new MovInst(r1, sp),
+        new LdrInst(r0, new LabelAddress(labelStr)),
+        new BranchLinkInst("scanf"),
+        new LdrInst(r0, new Offset(sp, 0)),
+        new AddInst(sp, sp, new ImmVal(arrLenOffset, new IntIdentifier)),
+        new PopInst(List(pc))
+      )
+    }
+
     def printInt(op: Operand): Unit = {
       /* caller instruction */
       CodeGenerator.currInstBlock.addInst(
@@ -188,19 +202,8 @@ object IOFunc {
         case _ => throw new IllegalArgumentException("read op is not register")
       }
       /* callee instruction */
-      val readCharFunc = new FuncBlock()
-      val labelStr = readCharFunc.labels.addTextLabelToData("%c", READ_CHAR_LABEL)
-      val list = List(
-        new PushInst(List(lr)),
-        new StrInst(r0, new Offset(sp, arrLenOffset)),
-        new MovInst(r1, sp),
-        new LdrInst(r0, new LabelAddress(labelStr)),
-        new BranchLinkInst("scanf"),
-        new LdrInst(r0, new Offset(sp, 0)),
-        new AddInst(sp, sp, new ImmVal(arrLenOffset, new IntIdentifier)),
-        new PopInst(List(pc))
-      )
-      readCharFunc.body.addInst(list)
+      val readCharFunc = new FuncBlock()     
+      readCharFunc.body.addInst(readFunc(READ_CHAR_LABEL, "%c", readCharFunc))
       CodeGenerator.controlFlowFuncs.addOne(READ_CHAR_LABEL, readCharFunc)    
     }
 
@@ -218,18 +221,7 @@ object IOFunc {
       }
       /* callee instruction */
       val readIntFunc = new FuncBlock()
-      val labelStr = readIntFunc.labels.addTextLabelToData("%d", READ_INT_LABEL)
-      val list = List(
-        new PushInst(List(lr)),
-        new StrInst(r0, new Offset(sp, arrLenOffset)),
-        new MovInst(r1, sp),
-        new LdrInst(r0, new LabelAddress(labelStr)),
-        new BranchLinkInst("scanf"),
-        new LdrInst(r0, new Offset(sp, 0)),
-        new AddInst(sp, sp, new ImmVal(arrLenOffset, new IntIdentifier)),
-        new PopInst(List(pc))
-      )
-      readIntFunc.body.addInst(list)
+      readIntFunc.body.addInst(readFunc(READ_CHAR_LABEL, "%d", readIntFunc))
       CodeGenerator.controlFlowFuncs.addOne(READ_INT_LABEL, readIntFunc)    
     }
 }
