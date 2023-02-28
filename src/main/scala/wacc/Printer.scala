@@ -11,21 +11,33 @@ object Printer {
         for (inst <- instBlock.instList) {
             print(inst)
         }
-        // printBlock(instBlock.next)
+        instBlock.next match {
+            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => 
+                // printBlock(instBlock.next)
+            case null => 
+        }
     }
 
-    // def printBlock(ifBlock: IfBlock): Unit = {
-    //     printBlock(ifBlock.cond)
-    //     printBlock(ifBlock.nextT)
-    //     printBlock(ifBlock.nextF)
-    //     printBlock(ifBlock.next)
-    // }
+    def printBlock(ifBlock: IfBlock): Unit = {
+        printBlock(ifBlock.cond)
+        printBlock(ifBlock.nextT)
+        printBlock(ifBlock.nextF)
+        printBlock(ifBlock.next)
+    }
 
-    // def printBlock(whileBlock: WhileBlock): Unit = {
-    //     printBlock(whileBlock.cond)
-    //     printBlock(whileBlock.loop)
-    //     printBlock(whileBlock.next)
-    // }
+    def printBlock(whileBlock: WhileBlock): Unit = {
+        printBlock(whileBlock.cond)
+        printBlock(whileBlock.loop)
+        printBlock(whileBlock.next)
+    }
+
+    def printBlock(callBlock: CallBlock): Unit = {
+        printBlock(callBlock.next)
+    }
+
+    def printBlock(funcBlock: FuncBlock): Unit = {
+        printBlock(funcBlock.body)
+    }
 
     def print(inst: Instruction): Unit = {
         inst match {
