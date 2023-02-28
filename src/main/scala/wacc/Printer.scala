@@ -5,6 +5,13 @@ import scala.collection.mutable.ListBuffer
 object Printer {
     var output: ListBuffer[String] = ListBuffer.empty
 
+    def printBlock(cfBlock: ControlFlowBlock): Unit = {
+        cfBlock match {
+            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() =>
+                printBlock(cfBlock)
+        }
+    }
+
     def printBlock(instBlock: InstBlock): Unit = {
         // Print label
         output += "I" + instBlock.num + ":"
@@ -13,7 +20,7 @@ object Printer {
         }
         instBlock.next match {
             case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => 
-                //printBlock(instBlock.next)
+                printBlock(instBlock.next)
             case null => 
         }
     }
