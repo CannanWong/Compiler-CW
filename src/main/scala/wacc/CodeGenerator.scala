@@ -44,13 +44,13 @@ object CodeGenerator {
 
     def transRVal(rvalue: RValueNode): Operand = {
         rvalue match {
-            case ArrayLiterNode(exprList) => return transArray(exprList)
-            case NewPairNode(fstExpr, sndExpr) => return transNewPair(fstExpr, sndExpr)
-            case CallNode(ident, argList) => return transCall(ident, argList)
-            case FstNode(lvalue) => return accessPairElem(0, lvalue)
-            case SndNode(lvalue) => return accessPairElem(4, lvalue)
+            case ArrayLiterNode(exprList) => transArray(exprList)
+            case NewPairNode(fstExpr, sndExpr) => transNewPair(fstExpr, sndExpr)
+            case CallNode(ident, argList) => transCall(ident, argList)
+            case FstNode(lvalue) => accessPairElem(0, lvalue)
+            case SndNode(lvalue) => accessPairElem(4, lvalue)
             case e: ExprNode => translate(e)
-            case _ => {println("what"); return r0}
+            case _ => {println("what"); r0}
         }
     }
 
@@ -73,7 +73,7 @@ object CodeGenerator {
             currInstBlock.addInst(StrInst(r8, Offset(r10, stackOffset)))
         }
         currInstBlock.addInst(MovInst(r8, r10))
-        return r8
+        r8
     }
 
     def transNewPair(fstExpr: ExprNode, sndExpr: ExprNode): Operand = {
@@ -100,7 +100,7 @@ object CodeGenerator {
                  PopInst(List(r8)),
                  StrInst(r8, Offset(r10, 0)),
                  MovInst(r8, r10)))
-            return r8
+            r8
     }
 
     def transCall(ident: IdentNode, argList: ArgListNode): Operand = {
@@ -112,7 +112,7 @@ object CodeGenerator {
             .toList)
         // Branch link to the function
         currInstBlock.addInst(BranchLinkInst(ident.name))
-        return r0
+        r0
     }
 
     def accessPairElem(pairOffset: Int, lvalue: LValueNode): Operand = {
@@ -148,7 +148,7 @@ object CodeGenerator {
             case _ => {println("what")} 
         }
         currInstBlock.addInst(insts.toList)
-        return r8
+        r8
     }
 
     def getOffset(expr: ExprNode): Int = {
@@ -166,18 +166,16 @@ object CodeGenerator {
             return pushStack(args, insts)
         }
         insts += MovInst(FixedRegister(regCount), translate(args(0)))
-        pushArgs(regCount + 1, args.drop(1), insts)
-        insts
+        if (args.drop(1).isEmpty) insts
+        else if (regCount >= 4) pushStack(args, insts)
+        else pushArgs(regCount + 1, args, insts)
     }
 
     def pushStack(args: List[ExprNode], insts: ListBuffer[Instruction]): ListBuffer[Instruction] = {
-        if (args.isEmpty) {
-            return insts
-        }
         val argOffset = getOffset(args(0))
         insts += MovInst(r8, translate(args(0)))
         insts += StrInst(r8, Offset(sp, -argOffset))
-        pushStack(args.drop(1), insts)
+        if (args.drop(1).isEmpty) insts else pushStack(args, insts)
     }
 
     def translate(node: AssignIdentNode): Unit = {
@@ -200,10 +198,10 @@ object CodeGenerator {
                 val op = transRVal(node.rvalue)
                 val insts = List(
                     // Ready for special convention for _arrStore,
-                    // r10 for index, r8 for the value to be stored, r3 for array addr
+                    // r10 for index, r8 for the value to be stored, r9 for array addr
                     MovInst(r10, translate(exprList(0))),
                     MovInst(r8, op),
-                    MovInst(r3, Variable(ident.name)),
+                    MovInst(r9, Variable(ident.name)),
                     BranchLinkInst("_arrStore")
                     //arrstore to be defined
                 )
