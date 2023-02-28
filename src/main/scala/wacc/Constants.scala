@@ -15,6 +15,7 @@ object  Constants {
   val r8 = FixedRegister(8)
   val r9 = FixedRegister(9)
   val r10 = FixedRegister(10)
+  val fp = FixedRegister(11)
   val r12 = FixedRegister(12)
   val sp = FixedRegister(13)
   val lr = FixedRegister(14)

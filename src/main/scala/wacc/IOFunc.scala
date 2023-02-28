@@ -1,17 +1,8 @@
 package wacc
 
 import wacc.Constants._
-import parsley.internal.deepembedding.singletons.Offset
-import parsley.internal.deepembedding.frontend.Branch
 
 object IOFunc {
-  /**
-    *  _printi: print integer
-    *  _prints: print string
-    *  _printc: print char
-    *  _printb: print boolean
-    *  _println: bl _print<type> ,then  tprints new line character
-    */
     val PRINT_INT_LABEL = "_printi"
     val PRINT_STR_LABEL = "_prints"
     val PRINT_CHAR_LABEL = "_printc"
@@ -42,7 +33,7 @@ object IOFunc {
 
       /* callee instruction */
       val printIntFunc = new FuncBlock()
-      val text = printIntFunc.labels.addPrintLabelToData("%d", PRINT_INT_LABEL)
+      val text = printIntFunc.labels.addTextLabelToData("%d", PRINT_INT_LABEL)
       printIntFunc.body.addInst(
         List(
           new PushInst(List(lr))
@@ -64,7 +55,7 @@ object IOFunc {
 
       /* callee instruction */
       val printPtrFunc = new FuncBlock()
-      val text = printPtrFunc.labels.addPrintLabelToData("%p", PRINT_PTR_LABEL)
+      val text = printPtrFunc.labels.addTextLabelToData("%p", PRINT_PTR_LABEL)
       printPtrFunc.body.addInst(
         List(
           new PushInst(List(lr))
@@ -84,7 +75,7 @@ object IOFunc {
 
       /* callee instruction */
       val printStringFunc = new FuncBlock()
-      val text = printStringFunc.labels.addPrintLabelToData("%s", PRINT_STR_LABEL)
+      val text = printStringFunc.labels.addTextLabelToData("%s", PRINT_STR_LABEL)
 
       printStringFunc.body.addInst(
         List(
@@ -109,7 +100,7 @@ object IOFunc {
 
       /* callee instruction */
       val printCharFunc = new FuncBlock()
-      val text = printCharFunc.labels.addPrintLabelToData("%c", PRINT_CHAR_LABEL)
+      val text = printCharFunc.labels.addTextLabelToData("%c", PRINT_CHAR_LABEL)
       printCharFunc.body.addInst(
         List(
           new PushInst(List(lr))
@@ -131,9 +122,9 @@ object IOFunc {
 
       /* callee instruction */
       val printBoolFunc = new FuncBlock()
-      val falseTxt = printBoolFunc.labels.addPrintLabelToData("%false", PRINT_BOOL_LABEL)
-      val trueTxt = printBoolFunc.labels.addPrintLabelToData("%true", PRINT_BOOL_LABEL)
-      val text = printBoolFunc.labels.addPrintLabelToData("%s", PRINT_BOOL_LABEL)
+      val falseTxt = printBoolFunc.labels.addTextLabelToData("%false", PRINT_BOOL_LABEL)
+      val trueTxt = printBoolFunc.labels.addTextLabelToData("%true", PRINT_BOOL_LABEL)
+      val text = printBoolFunc.labels.addTextLabelToData("%s", PRINT_BOOL_LABEL)
 
       val ifBlock = IfBlock()
       val ifTrue = ifBlock.nextT
@@ -172,7 +163,7 @@ object IOFunc {
 
     def println(): Unit = {
       val printlnFunc = new FuncBlock()
-      val text = printlnFunc.labels.addPrintLabelToData("", PRINTLN_LABEL)
+      val text = printlnFunc.labels.addTextLabelToData("", PRINTLN_LABEL)
       printlnFunc.body.addInst(
         List(
           new PushInst(List(lr))
@@ -185,44 +176,58 @@ object IOFunc {
     }
 
     def readChar(op: Operand): Unit = {
-      val calleeReg = new TempRegister()
       /* caller instruction */
-      val charToRead = new MovInst(calleeReg, op)
-      val instr2 = new BranchLinkInst(READ_CHAR_LABEL)
-      CodeGenerator.currInstBlock.addInst(List(charToRead, instr2))
-
+      op match {
+        case op: Register => {
+            CodeGenerator.currInstBlock.addInst(List(
+            new MovInst(r0, op)
+          , new BranchLinkInst(READ_CHAR_LABEL)
+          , new MovInst(op, r0)
+          ))
+        }
+        case _ => throw new IllegalArgumentException("read op is not register")
+      }
       /* callee instruction */
       val readCharFunc = new FuncBlock()
-      val labelStr = readCharFunc.labels.addPrintLabelToData("%c", READ_CHAR_LABEL)
+      val labelStr = readCharFunc.labels.addTextLabelToData("%c", READ_CHAR_LABEL)
       val list = List(
-        new StrInst(new TempRegister(), null),
-        new MovInst(new TempRegister(), null),
-        new LdrInst(TempRegister(), new LabelAddress(labelStr)),
-        new BranchInst("scanf"),
-        new AddInst(null, null, null),
-        new PopInst(null)
+        new PushInst(List(lr)),
+        new StrInst(r0, new Offset(sp, arrLenOffset)),
+        new MovInst(r1, sp),
+        new LdrInst(r0, new LabelAddress(labelStr)),
+        new BranchLinkInst("scanf"),
+        new LdrInst(r0, new Offset(sp, 0)),
+        new AddInst(sp, sp, new ImmVal(arrLenOffset, new IntIdentifier)),
+        new PopInst(List(pc))
       )
       readCharFunc.body.addInst(list)
       CodeGenerator.controlFlowFuncs.addOne(READ_CHAR_LABEL, readCharFunc)    
     }
 
     def readInt(op: Operand): Unit = {
-      val calleeReg = new TempRegister()
       /* caller instruction */
-      val intToRead = new MovInst(calleeReg, op)
-      val instr2 = new BranchLinkInst(READ_INT_LABEL)
-      CodeGenerator.currInstBlock.addInst(List(intToRead, instr2))
-
+      op match {
+        case op: Register => {
+            CodeGenerator.currInstBlock.addInst(List(
+            new MovInst(r0, op)
+          , new BranchLinkInst(READ_INT_LABEL)
+          , new MovInst(op, r0)
+          ))
+        }
+        case _ => throw new IllegalArgumentException("read op is not register")
+      }
       /* callee instruction */
       val readIntFunc = new FuncBlock()
-      val labelStr = readIntFunc.labels.addPrintLabelToData("%d", READ_INT_LABEL)
+      val labelStr = readIntFunc.labels.addTextLabelToData("%d", READ_INT_LABEL)
       val list = List(
-        new StrInst(new TempRegister(), null),
-        new MovInst(new TempRegister(), null),
-        new LdrInst(TempRegister(), new LabelAddress(labelStr)),
-        new BranchInst("scanf"),
-        new AddInst(null, null, null),
-        new PopInst(null)
+        new PushInst(List(lr)),
+        new StrInst(r0, new Offset(sp, arrLenOffset)),
+        new MovInst(r1, sp),
+        new LdrInst(r0, new LabelAddress(labelStr)),
+        new BranchLinkInst("scanf"),
+        new LdrInst(r0, new Offset(sp, 0)),
+        new AddInst(sp, sp, new ImmVal(arrLenOffset, new IntIdentifier)),
+        new PopInst(List(pc))
       )
       readIntFunc.body.addInst(list)
       CodeGenerator.controlFlowFuncs.addOne(READ_INT_LABEL, readIntFunc)    

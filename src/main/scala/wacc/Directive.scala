@@ -14,15 +14,16 @@ case class DataDirectiveStat() extends Directive {
     dirContents.addOne(msg)
   }
 
-  def addPrintLabelToData(text: String, printType: String) : String = {
+  def addTextLabelToData(text: String, printType: String) : String = {
     val content = new StringBuilder()
+    val textLabel = if (printType.isBlank()) "" else s"${printType}_"
     content ++= s"  .word ${text.length()}\n" +
-                s".L.${printType}_str${dirCount}:\n" +
+                s".L.${textLabel}str${dirCount}:\n" +
                 s"  .asciz \"${text}\"\n"
     addToPrintDataSubsection(content.toString())
 
     // returns label string for text added to .data directive
-    s".L.${printType}_str${dirCount}"
+    s".L.${textLabel}str${dirCount}"
   }
 
   def build(): String = {

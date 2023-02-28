@@ -21,8 +21,7 @@ object RuntimeCheck {
     }
     /* call func */
     val func = new FuncBlock()
-    val text = func.labels.addPrintLabelToData(msg, label)
-    val r0 = new TempRegister()
+    val text = func.labels.addTextLabelToData(msg, label)
     IOFunc.printString(new LabelAddress(text))
     func.body.addInst(
       List(
