@@ -117,35 +117,28 @@ object CodeGenerator {
 
     def accessPairElem(pairOffset: Int, lvalue: LValueNode): Operand = {
         val insts = ListBuffer[Instruction]()
-
+        var pos: Register = r8
         lvalue match {
             case IdentNode(name) => {
-                insts ++= List(
-                    CmpInst(Variable(name), ImmVal(0, IntIdentifier())),
-                    BLEqInst("_errNull"),
-                    LdrInst(r8, Offset(Variable(name), pairOffset)),
-                )
-                lvalue.typeVal() match {
-                    case CharIdentifier() => insts += LdrsbInst(r8, Offset(r8, 0))
-                    case _ => insts += LdrInst(r8, Offset(r8, 0))
-                }
+                pos = Variable(name)
             }
             case p: PairElemNode => {
                 p match {
                     case FstNode(lvalue) => accessPairElem(0, lvalue)
                     case SndNode(lvalue) => accessPairElem(4, lvalue)
                 }
-                insts ++= List(
-                    CmpInst(r8, ImmVal(0, IntIdentifier())),
-                    BLEqInst("_errNull"),
-                    LdrInst(r8, Offset(r8, pairOffset)),
-                )
-                lvalue.typeVal() match {
-                    case CharIdentifier() => insts += LdrsbInst(r8, Offset(r8, 0))
-                    case _ => insts += LdrInst(r8, Offset(r8, 0))
-                }
             }
             case _ => {println("what")} 
+        }
+
+        insts ++= List(
+            CmpInst(pos, ImmVal(0, IntIdentifier())),
+            BLEqInst("_errNull"),
+            LdrInst(r8, Offset(pos, pairOffset))
+        )
+        lvalue.typeVal() match {
+            case CharIdentifier() => insts += LdrsbInst(r8, Offset(r8, 0))
+            case _ => insts += LdrInst(r8, Offset(r8, 0))
         }
         currInstBlock.addInst(insts.toList)
         r8
