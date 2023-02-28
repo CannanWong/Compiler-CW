@@ -49,6 +49,12 @@ object Main {
         }
 
         def write(filename: String): Unit = {
+            /* add main func to func list and set main as global main*/
+            val mainFunc = new FuncBlock()
+            mainFunc.directive.setGlobalMain()
+            CodeGenerator.controlFlowFuncs.addOne("main", mainFunc)
+            CodeGenerator.mainFunc = mainFunc
+
             val pw = new PrintWriter(new File(filename))
             /* global main */
             val begin =

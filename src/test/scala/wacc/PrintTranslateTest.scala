@@ -24,7 +24,7 @@ class PrintTranslateTest extends AnyFlatSpec {
     assert(dataDirective.dirCount == initialDirCount + 1)
     assert(dataDirective.build().contains(label1))
 
-    val label2 = dataDirective.addTextLabelToData("Hello, world!", "print")
+    val label2 = dataDirective.addTextLabelToData("Hello, world!")
     assert(dataDirective.dirCount == initialDirCount + 2)
     assert(dataDirective.build().contains(label2))
   }

@@ -4,10 +4,16 @@ import scala.collection.mutable.{ListBuffer, Map}
 import wacc.Constants._
 
 object CodeGenerator {
-    var controlFlowGraph = new FuncBlock()
+    var mainFunc = FuncBlock()
+    var controlFlowGraph = mainFunc
+    
     var currInstBlock = controlFlowGraph.body
     /* NEW: temporory design to accomodate label jumps */
     val controlFlowFuncs = Map[String, FuncBlock]()
+
+    def stringDef(string: String): String = {
+        mainFunc.directive.addTextLabelToData(string)
+    }
 
     def translateAST(p: ProgramNode): Unit = {
         for (func <- p.funcList) {
@@ -65,11 +71,11 @@ object CodeGenerator {
     def translate(node: AssignIdentNode): Unit = {}
     def translate(node: LValuesAssignNode): Unit = {}
     def translate(node: ReadNode): Unit = {
-        val retOp = node.lvalue
-        val exprTy = retOp.typeVal()
+        val retOp = new TempRegister()
+        val exprTy = node.lvalue.typeVal()
         exprTy match {
-            case CharIdentifier() => ??? //IOFunc.readChar(retOp)
-            case IntIdentifier() => ??? //IOFunc.readInt(retOp)
+            case CharIdentifier() => IOFunc.readChar(retOp)
+            case IntIdentifier() => IOFunc.readInt(retOp)
             case _ => throw new IllegalArgumentException("print: not an int or char")
         }
     }
@@ -189,7 +195,11 @@ object CodeGenerator {
                 return ImmVal(num, node.typeVal())
             }
             case StrLiterNode(s) => {
-                ???
+                val label = stringDef(s)
+                val loadlabelAddrInstr = LabelAddress(label)
+                val reg = TempRegister()
+                currInstBlock.addInst(LdrInst(reg, loadlabelAddrInstr))
+                reg
             }            
             case PairLiterNode() => {
                 return ImmVal(0, node.typeVal())
