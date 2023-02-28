@@ -2,14 +2,31 @@ package wacc
 
 import scala.collection.mutable.ListBuffer
 
-object Print {
+object Printer {
     var output: ListBuffer[String] = ListBuffer.empty
 
     def printBlock(instBlock: InstBlock): Unit = {
+        // Print label
+        output += "I" + instBlock.num + ":"
         for (inst <- instBlock.instList) {
             print(inst)
         }
+        // printBlock(instBlock.next)
     }
+
+    // def printBlock(ifBlock: IfBlock): Unit = {
+    //     printBlock(ifBlock.cond)
+    //     printBlock(ifBlock.nextT)
+    //     printBlock(ifBlock.nextF)
+    //     printBlock(ifBlock.next)
+    // }
+
+    // def printBlock(whileBlock: WhileBlock): Unit = {
+    //     printBlock(whileBlock.cond)
+    //     printBlock(whileBlock.loop)
+    //     printBlock(whileBlock.next)
+    // }
+
     def print(inst: Instruction): Unit = {
         inst match {
             case inst: AddInst => 
