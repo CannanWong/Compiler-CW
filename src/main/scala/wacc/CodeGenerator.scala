@@ -137,7 +137,21 @@ object CodeGenerator {
                     case _ => insts += LdrInst(r8, Offset(r8, 0))
                 }
             }
-            case p: PairElemNode => ???
+            case p: PairElemNode => {
+                p match {
+                    case FstNode(lvalue) => accessPairElem(0, lvalue)
+                    case SndNode(lvalue) => accessPairElem(4, lvalue)
+                }
+                insts ++= List(
+                    CmpInst(r8, ImmVal(0, IntIdentifier())),
+                    BLEqInst("_errNull"),
+                    LdrInst(r8, Offset(r8, pairOffset)),
+                )
+                lvalue.typeVal() match {
+                    case CharIdentifier() => insts += LdrsbInst(r8, Offset(r8, 0))
+                    case _ => insts += LdrInst(r8, Offset(r8, 0))
+                }
+            }
             case _ => {println("what")} 
         }
         insts
