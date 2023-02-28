@@ -8,6 +8,19 @@ case class StandardFuncs(name: String) {
 }
 
 object StandardFuncs {
+    def addFunc(name: String): Unit = {
+        name match {
+            case ZERO_DIVISION_LABEL | NULL_POINTER_LABEL | OVERFLOW_LABEL | BOUNDS_CHECK_LABEL |
+                 ARRAY_LOAD_LABEL | ARRAY_STORE_LABEL => {
+                    if (!CodeGenerator.controlFlowFuncs.contains(name)) {
+                        val funcBlock = StandardFuncs(name).getFunc
+                        CodeGenerator.controlFlowFuncs += ((name, funcBlock))
+                    }
+                 }
+            case _ => throw new IllegalArgumentException(s"${name} is not a pre-defined function.")
+        }
+    }
+
     private def getFunction(name: String): FuncBlock = {
         name match {
             case ARRAY_LOAD_LABEL => {
