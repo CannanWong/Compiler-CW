@@ -8,9 +8,7 @@ object AssignRegister {
     var currInstBlock = IR2.body
     var regQueue = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // R7-R0
     val varOpTable: Map[String, Operand] = Map()
-    var rdTemp: Register = TempRegister()
-    var rnTemp: Register = TempRegister()
-    var opTemp: Operand = TempRegister()
+    val tempRegTable: Map[Int, Operand] = Map()
 
     def assignBlock(cfBlock: ControlFlowBlock): Unit = {
         cfBlock match {
@@ -87,8 +85,19 @@ object AssignRegister {
                 }
                 PopInst(newRegList.toSeq:_*)
             }
-            case inst: BranchInst => inst
-            case inst: BranchLinkInst => inst
+            case inst: FreeRegister => {
+                inst.r match {
+                    case t: TempRegister => {
+                        tempRegTable.get(t.num) match {
+                            case Some(f: FixedRegister) => regQueue.enqueue(f.num)
+                            case _ =>
+                        }
+                        inst
+                    }
+                    case _ => inst
+                }
+            }
+            case _ => i
         }
     }
     
@@ -104,17 +113,6 @@ object AssignRegister {
     // Change register and assign register if needed
     def assignReg(reg: Register): Register = {
         reg match {
-            case t: TempRegister => {
-                if (!regQueue.isEmpty) {
-                    FixedRegister(regQueue.dequeue())
-                }
-                // No more available registers
-                else {
-                    // ! Stack
-                    // ! Replace instruction
-                    TempRegister()
-                }
-            }
             case v: Variable => {
                 val reg = varOpTable.get(v.name)
                 reg match {
@@ -133,7 +131,21 @@ object AssignRegister {
                     }
                 }
             }
+            case t: TempRegister => assignReg(t)
             case _ => reg
+        }
+    }
+    def assignReg(tReg: TempRegister): Operand = {
+        if (!regQueue.isEmpty) {
+            val fReg = FixedRegister(regQueue.dequeue())
+            tempRegTable.addOne(tReg.num, fReg)
+            fReg
+        }
+        // No more available registers
+        else {
+            // ! Stack
+            // ! Replace instruction
+            TempRegister()
         }
     }
 }

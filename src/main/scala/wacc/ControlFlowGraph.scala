@@ -8,7 +8,7 @@ object ControlFlowGraph {
     var nextWhileNum = 0
     var nextCallNum = 0
     var nextFuncNum = 0
-    var nextRegNum = 1
+    var nextTempRegNum = 1
 }
 
 sealed trait ControlFlowBlock

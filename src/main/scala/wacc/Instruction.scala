@@ -36,18 +36,12 @@ case class Label() extends Instruction
 // Useful for assigning registers, not actual arm instruction
 case class FreeRegister(r: Register) extends Instruction
 
-// To be moved to assign register part
-// sealed trait Register
-// E.g. R1: Register(1)
-// case class Register() {
-//     var num = ControlFlowGraph.nextRegNum
-//     ControlFlowGraph.nextRegNum += 1
-// }
-
-
 sealed trait Operand
 sealed trait Register extends Operand
-case class TempRegister() extends Register
+case class TempRegister() extends Register {
+    var num = ControlFlowGraph.nextTempRegNum
+    ControlFlowGraph.nextTempRegNum += 1
+}
 case class FixedRegister(num: Int) extends Register
 case class Variable(name: String) extends Register
 //NEW: address of the label
