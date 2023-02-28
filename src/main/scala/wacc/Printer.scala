@@ -13,7 +13,7 @@ object Printer {
         }
         instBlock.next match {
             case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => 
-                // printBlock(instBlock.next)
+                //printBlock(instBlock.next)
             case null => 
         }
     }

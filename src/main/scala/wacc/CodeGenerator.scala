@@ -4,10 +4,18 @@ import scala.collection.mutable.{ListBuffer, LinkedHashMap}
 import wacc.Constants._
 
 object CodeGenerator {
-    var controlFlowGraph = new FuncBlock()
+    /* .data directive stores all string declarations */
+    var mainFunc = FuncBlock()
+
+    var controlFlowGraph = mainFunc
+    
     var currInstBlock = controlFlowGraph.body
     /* NEW: temporory design to accomodate label jumps */
     val controlFlowFuncs = LinkedHashMap[String, ControlFlowBlock]()
+
+    def stringDef(string: String): String = {
+        mainFunc.directive.addTextLabelToData(string)
+    }
 
     def translateAST(p: ProgramNode): Unit = {
         for (func <- p.funcList) {
@@ -192,7 +200,11 @@ object CodeGenerator {
                 ImmVal(num)
             }
             case StrLiterNode(s) => {
-                ???
+                val label = stringDef(s)
+                val loadlabelAddrInstr = LabelAddress(label)
+                val reg = TempRegister()
+                currInstBlock.addInst(LdrInst(reg, loadlabelAddrInstr))
+                reg
             }            
             case PairLiterNode() => {
                 ImmVal(0)
