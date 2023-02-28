@@ -64,19 +64,19 @@ object CodeGenerator {
         val retOp = translate(node.expr)
         val exprTy = node.expr.typeVal()
         exprTy match {
-            case CharIdentifier() => IOFunc.printInt(retOp)
-            case IntIdentifier() => ???
-            case StrIdentifier() => ???
-            case BoolIdentifier() => ???
-            case a: ArrayIdentifier => ???
-            case p: PairIdentifier => ???
+            case CharIdentifier() => IOFunc.printChar(retOp)
+            case IntIdentifier() => IOFunc.printInt(retOp)
+            case StrIdentifier() => IOFunc.printString(retOp)
+            case BoolIdentifier() => IOFunc.printBool(retOp)
+            case a: ArrayIdentifier => IOFunc.printPtr(retOp)
+            case p: PairIdentifier => IOFunc.printPtr(retOp)
             case _ => throw new IllegalArgumentException("print: not an expression")
         }
     }
 
     def translate(node: PrintlnNode): Unit = {
-        // TODO: add new line
         translate(new PrintNode(node.expr))
+        IOFunc.println()
     }
 
     def translate(node: IfNode): Unit = {

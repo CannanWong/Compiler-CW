@@ -1,6 +1,7 @@
 package wacc
 
 import scala.collection.mutable.ListBuffer
+import javax.lang.model.element.ModuleElement.Directive
 
 object ControlFlowGraph {
     var nextInstNum = 0
@@ -58,6 +59,6 @@ case class FuncBlock() extends ControlFlowBlock {
     var param: InstBlock = new InstBlock()
     var body: InstBlock = new InstBlock()
     /* NEW: temporory design to accomodate print label jumps */
-    val labels: Labels = new dataDirectiveStat()
+    val labels: DataDirectiveStat = new DataDirectiveStat()
     ControlFlowGraph.nextFuncNum += 1
 }

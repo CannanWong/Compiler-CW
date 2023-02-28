@@ -1,5 +1,7 @@
 package wacc
 
+import wacc.Constants._
+
 object RuntimeCheck {
   /* Checks */
   val ZERO_DIVISION_LABEL = "_errDivZero"
