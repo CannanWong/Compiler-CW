@@ -125,7 +125,11 @@ object CodeGenerator {
             }
         }
         currInstBlock.addInst(BranchNumCondInst("NE", ifFalse.num))
+
+        // Add next block and change current block
+        currInstBlock.next = ifBlock
         currInstBlock = ifTrue
+
         translate(node.fstStat)
         currInstBlock.addInst(BranchNumInst(next.num))
         currInstBlock = ifFalse
@@ -137,7 +141,11 @@ object CodeGenerator {
         val cond = whileBlock.cond
         val loop = whileBlock.loop
         val next = whileBlock.next
+
+        // Add next block and change current block
+        currInstBlock.next = whileBlock
         currInstBlock = cond
+        
         translate(node.expr)
         currInstBlock.addInst(BranchNumCondInst("NE", next.num))
         currInstBlock = loop

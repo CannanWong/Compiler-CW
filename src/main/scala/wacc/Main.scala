@@ -60,8 +60,8 @@ object Main {
                 "  push {r8, r10, r12}\n" +
                 "  mov fp, sp\n"
             pw.print(begin)
-            Print.printBlock(CodeGenerator.controlFlowGraph.body)
-            for (line <- Print.output) {
+            Printer.printBlock(CodeGenerator.controlFlowGraph.body)
+            for (line <- Printer.output) {
                 pw.println(line)
             }
             val end =
