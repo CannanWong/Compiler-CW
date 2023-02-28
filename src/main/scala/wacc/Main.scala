@@ -68,7 +68,7 @@ object Main {
             pw.print(begin)
             Printer.printBlock(CodeGenerator.controlFlowGraph.body)
             for (line <- Printer.output) {
-                pw.println(line)
+                //pw.println(line)
             }
             val end =
                 "  mov r0, #0\n" +
@@ -78,7 +78,7 @@ object Main {
 
             /* funcs */
             for (func <- CodeGenerator.controlFlowFuncs) {
-                pw.println(func)
+                //pw.println(func)
             }
 
             pw.close()              

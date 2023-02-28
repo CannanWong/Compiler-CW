@@ -4,7 +4,9 @@ import scala.collection.mutable.{ListBuffer, Map}
 import wacc.Constants._
 
 object CodeGenerator {
+    /* .data directive stores all string declarations */
     var mainFunc = FuncBlock()
+
     var controlFlowGraph = mainFunc
     
     var currInstBlock = controlFlowGraph.body
