@@ -16,7 +16,7 @@ case class DataDirectiveStat() extends Directive {
 
   def addTextLabelToData(text: String, printType: String) : String = {
     val content = new StringBuilder()
-    val textLabel = if (printType.isBlank()) "" else s"${printType}_"
+    val textLabel = if (printType.isEmpty()) "" else s"${printType}_"
     content ++= s"  .word ${text.length()}\n" +
                 s".L.${textLabel}str${dirCount}:\n" +
                 s"  .asciz \"${text}\"\n"
