@@ -7,7 +7,7 @@ object CodeGenerator {
     var controlFlowGraph = new FuncBlock()
     var currInstBlock = controlFlowGraph.body
     /* NEW: temporory design to accomodate label jumps */
-    var controlFlowFuncs = ListBuffer[FuncBlock]()
+    val controlFlowFuncs = Map[String, FuncBlock]()
 
     def translateAST(p: ProgramNode): Unit = {
         for (func <- p.funcList) {
@@ -18,6 +18,27 @@ object CodeGenerator {
 
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
+        f match {
+            case FuncNode(ty, ident, param, stat) => {
+                /**
+                  * TODO:
+                    1. set up frame pointer and lr
+                    2. get arg from stack / callee saved reg
+                    2. 
+                  */
+                funcBlock.body.addInst(new PushInst(List(fp, lr)))
+                /* TODO: push caller saved registers that will be used */
+                funcBlock.body.addInst(new MovInst(fp, sp))
+                /* TODO: assign args to callee saved register and stack pos */
+                translate(stat)
+                funcBlock.body.addInst(new MovInst(sp, fp))
+                /* TODO: pop caller saved registers that are pushed */
+                funcBlock.body.addInst(new PopInst(List(fp, pc)))
+
+                controlFlowFuncs.addOne(s"wacc_${ident.name}", funcBlock)
+            }
+            case _ => throw new IllegalArgumentException("FuncNode translation receives non FuncNode")
+        }
 
         // // Sample: To be corrected/checked
         // val varList: ListBuffer[Variable] = ListBuffer.empty
@@ -29,6 +50,7 @@ object CodeGenerator {
 
         currInstBlock = funcBlock.body
         translate(f.stat)
+
     }
 
     def translate(node: StatNode): Unit = {
@@ -42,7 +64,15 @@ object CodeGenerator {
     def translate(node: SkipNode): Unit = {}
     def translate(node: AssignIdentNode): Unit = {}
     def translate(node: LValuesAssignNode): Unit = {}
-    def translate(node: ReadNode): Unit = {}
+    def translate(node: ReadNode): Unit = {
+        val retOp = node.lvalue
+        val exprTy = retOp.typeVal()
+        exprTy match {
+            case CharIdentifier() => ??? //IOFunc.readChar(retOp)
+            case IntIdentifier() => ??? //IOFunc.readInt(retOp)
+            case _ => throw new IllegalArgumentException("print: not an int or char")
+        }
+    }
     def translate(node: FreeNode): Unit = {}
     def translate(node: ReturnNode): Unit = {
         val op = translate(node.expr)
@@ -56,27 +86,27 @@ object CodeGenerator {
     }
     def translate(node: PrintNode): Unit = {
         /** 
-         * TODO: push and pop r0 - r3 before calling
+         * TODO: push r0 - r3 before calling print in  func call, where r0 -r3 may be storing args
+         * pop when return back to scope
          * print may clobber any registers that are marked as caller-save under
          * arm's calling convention: R0, R1, R2, R3
         */
         val retOp = translate(node.expr)
         val exprTy = node.expr.typeVal()
-        val printInstr = new IOFunc()
         exprTy match {
-            case CharIdentifier() => printInstr.printInt(retOp)
-            case IntIdentifier() => ???
-            case StrIdentifier() => ???
-            case BoolIdentifier() => ???
-            case a: ArrayIdentifier => ???
-            case p: PairIdentifier => ???
+            case CharIdentifier() => IOFunc.printChar(retOp)
+            case IntIdentifier() => IOFunc.printInt(retOp)
+            case StrIdentifier() => IOFunc.printString(retOp)
+            case BoolIdentifier() => IOFunc.printBool(retOp)
+            case a: ArrayIdentifier => IOFunc.printPtr(retOp)
+            case p: PairIdentifier => IOFunc.printPtr(retOp)
             case _ => throw new IllegalArgumentException("print: not an expression")
         }
     }
 
     def translate(node: PrintlnNode): Unit = {
-        // TODO: add new line
         translate(new PrintNode(node.expr))
+        IOFunc.println()
     }
 
     def translate(node: IfNode): Unit = {
@@ -398,6 +428,8 @@ object CodeGenerator {
                 currInstBlock.addInst(MovCondInst("NE", r8, immFalse))
                 return r8
             }
+
+             
         }
     }
 }
