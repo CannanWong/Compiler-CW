@@ -65,11 +65,11 @@ object CodeGenerator {
     def translate(node: AssignIdentNode): Unit = {}
     def translate(node: LValuesAssignNode): Unit = {}
     def translate(node: ReadNode): Unit = {
-        val retOp = node.lvalue
-        val exprTy = retOp.typeVal()
+        val retOp = new TempRegister()
+        val exprTy = node.lvalue.typeVal()
         exprTy match {
-            case CharIdentifier() => ??? //IOFunc.readChar(retOp)
-            case IntIdentifier() => ??? //IOFunc.readInt(retOp)
+            case CharIdentifier() => IOFunc.readChar(retOp)
+            case IntIdentifier() => IOFunc.readInt(retOp)
             case _ => throw new IllegalArgumentException("print: not an int or char")
         }
     }
