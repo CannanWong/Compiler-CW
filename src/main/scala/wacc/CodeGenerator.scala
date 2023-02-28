@@ -1,12 +1,12 @@
 package wacc
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable.{ListBuffer, Map}
 
 object CodeGenerator {
     var controlFlowGraph = InstBlock()
     var currInstBlock = controlFlowGraph
     /* NEW: temporory design to accomodate label jumps */
-    var controlFlowFuncs = ListBuffer[FuncBlock]()
+    var controlFlowFuncs = Map[String, FuncBlock]()
 
     def translateAST(p: ProgramNode): Unit = {
         for (func <- p.funcList) {
@@ -58,15 +58,15 @@ object CodeGenerator {
     }
     def translate(node: PrintNode): Unit = {
         /** 
-         * TODO: push and pop r0 - r3 before calling
+         * TODO: push r0 - r3 before calling print in  func call (not in curr scope basically)
+         * pop when return back to scope
          * print may clobber any registers that are marked as caller-save under
          * arm's calling convention: R0, R1, R2, R3
         */
         val retOp = translate(node.expr)
         val exprTy = node.expr.typeVal()
-        val printInstr = new IOFunc()
         exprTy match {
-            case CharIdentifier() => printInstr.printInt(retOp)
+            case CharIdentifier() => IOFunc.printInt(retOp)
             case IntIdentifier() => ???
             case StrIdentifier() => ???
             case BoolIdentifier() => ???
@@ -244,7 +244,7 @@ object CodeGenerator {
                 var op2 = translate(sndexpr)
                 currInstBlock.addInst(MovInst(reg1, op2))
                 currInstBlock.addInst(CmpInst(reg1, ImmVal(0, IntIdentifier())))
-                currInstBlock.addInst(BranchCondInst("Eq", "_errDivZero"))
+                currInstBlock.addInst(BranchCondInst("Eq", "_errDivZero"))          
                 currInstBlock.addInst(BranchLinkInst("__aeabi_idivmod"))
                 var reg2 = TempRegister()
                 currInstBlock.addInst(MovInst(reg2, reg0))

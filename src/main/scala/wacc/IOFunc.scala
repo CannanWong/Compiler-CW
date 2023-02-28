@@ -1,6 +1,6 @@
 package wacc
 
-class IOFunc() {
+object IOFunc {
   /**
     *  _printi: print integer
     *  _prints: print string
@@ -17,43 +17,35 @@ class IOFunc() {
     val READ_INT_LABEL = "_readi"
     val READ_CHAR_LABEL = "_readc"
 
-    val printEnd = List (
-      new BranchLinkInst("printf"),
-      new MovInst(null, null),
-      new BranchLinkInst("fflush"),
-      new PopInst(null))
-
-    def addPrintLabelToData(text: String, printType: String, funckBlock: FuncBlock) : String = {
-      val content = new StringBuilder()
-      content ++= s"  .word ${text.length()}\n" +
-                  s".L.${printType}_str${funckBlock.labels.labelCount}:\n" +
-                  s"  .asciz \"${text}\"\n" +
-                  ".text\n"
-      funckBlock.labels.addToPrintDataSubsection(content.toString())
-      // returns label string for text added to .data directive
-      s".L.${printType}_str${funckBlock.labels.labelCount}"
+    def printEnd(): List[Instruction] = {
+      val reg0 = new TempRegister()
+      val pc = new FixedRegister(15)
+      List (
+        new BranchLinkInst("printf"),
+        new MovInst(reg0, new ImmVal(0, new IntIdentifier())),
+        new BranchLinkInst("fflush"),
+        new PopInst(List(pc))
+      )
     }
 
     def printInt(op: Operand): Unit = {
-      val calleeReg = new TempRegister()
-      val callerReg = new TempRegister()
+      val reg0 = new TempRegister()
       /* caller instruction */
-      val intToPrint = new MovInst(calleeReg, op)
-      val instr2 = new MovInst(callerReg, calleeReg)
+      val intToPrint = new MovInst(reg0, op)
       val instr3 = new BranchLinkInst(PRINT_INT_LABEL)
-      CodeGenerator.currInstBlock.addInst(List(intToPrint, instr2, instr3))
+      CodeGenerator.currInstBlock.addInst(List(intToPrint, instr3))
 
       /* callee instruction */
       val printIntFunc = new FuncBlock()
-      addPrintLabelToData("%d", PRINT_INT_LABEL, printIntFunc)
+      printIntFunc.labels.addPrintLabelToData("%d", PRINT_INT_LABEL)
 
       val pinstr1 = new PushInst(List())
       val pinstr2 = new MovInst(null, null)
-      val pinstr3 = new LdrInst(null, LabelAddress(s"=${PRINT_INT_LABEL}"))
+      val pinstr3 = new LdrInst(null, LabelAddress(PRINT_INT_LABEL))
 
       printIntFunc.body.addInst(List(pinstr1, pinstr2, pinstr3)) 
-      CodeGenerator.currInstBlock.addInst(printEnd)
-      CodeGenerator.controlFlowFuncs.addOne(printIntFunc)
+      CodeGenerator.currInstBlock.addInst(printEnd())
+      CodeGenerator.controlFlowFuncs.addOne(PRINT_INT_LABEL, printIntFunc)
     }
 
     def printString(op: Operand): Unit = {
@@ -70,16 +62,16 @@ class IOFunc() {
 
       /* callee instruction */
       val printStringFunc = new FuncBlock()
-      addPrintLabelToData("%s", PRINT_STR_LABEL, printStringFunc)
+      printStringFunc.labels.addPrintLabelToData("%s", PRINT_STR_LABEL)
 
       val pinstr1 = new PushInst(List())
       val pinstr2 = new MovInst(null, null)
       val loadTextContent = new LdrInst(null, null)
-      val pinstr3 = new LdrInst(null, LabelAddress(s"=${PRINT_STR_LABEL}"))
+      val pinstr3 = new LdrInst(null, new LabelAddress(PRINT_STR_LABEL))
       printStringFunc.body.addInst(
         List(pinstr1, pinstr2, loadTextContent, pinstr3))
-      CodeGenerator.currInstBlock.addInst(printEnd)     
-      CodeGenerator.controlFlowFuncs.addOne(printStringFunc)
+      CodeGenerator.currInstBlock.addInst(printEnd())     
+      CodeGenerator.controlFlowFuncs.addOne(PRINT_STR_LABEL, printStringFunc)
     }
 
     def printChar(op: Operand): Unit = {
@@ -93,16 +85,16 @@ class IOFunc() {
 
       /* callee instruction */
       val printCharFunc = new FuncBlock()
-      addPrintLabelToData("%c", PRINT_CHAR_LABEL, printCharFunc)
+      printCharFunc.labels.addPrintLabelToData("%c", PRINT_CHAR_LABEL)
 
       val pinstr1 = new PushInst(List())
       val pinstr2 = new MovInst(null, null)
-      val pinstr3 = new LdrInst(null, LabelAddress(s"=${PRINT_CHAR_LABEL}"))
+      val pinstr3 = new LdrInst(null, LabelAddress(PRINT_CHAR_LABEL))
 
       printCharFunc.body.addInst(
         List(pinstr1, pinstr2, pinstr3)) 
-      CodeGenerator.currInstBlock.addInst(printEnd)     
-      CodeGenerator.controlFlowFuncs.addOne(printCharFunc)
+      CodeGenerator.currInstBlock.addInst(printEnd())     
+      CodeGenerator.controlFlowFuncs.addOne(PRINT_CHAR_LABEL, printCharFunc)
     }
 
     def printBool(op: Operand): Unit = {
@@ -116,9 +108,9 @@ class IOFunc() {
 
       /* callee instruction */
       val printBoolFunc = new FuncBlock()
-      addPrintLabelToData("%false", PRINT_CHAR_LABEL, printBoolFunc)
-      addPrintLabelToData("%true", PRINT_CHAR_LABEL, printBoolFunc)
-      addPrintLabelToData("%s", PRINT_CHAR_LABEL, printBoolFunc)
+      printBoolFunc.labels.addPrintLabelToData("%false", PRINT_BOOL_LABEL)
+      printBoolFunc.labels.addPrintLabelToData("%true", PRINT_BOOL_LABEL)
+      printBoolFunc.labels.addPrintLabelToData("%s", PRINT_BOOL_LABEL)
 
       val pinstr1 = new PushInst(List())
       val pinstr2 = new CmpInst(null, ImmVal(0, new BoolIdentifier))
@@ -126,8 +118,8 @@ class IOFunc() {
       //val trueOrFalse = new IfBlock() ????? add it tp control flow graph??????
       printBoolFunc.body.addInst(
         List(pinstr1, pinstr2))
-      CodeGenerator.currInstBlock.addInst(printEnd)    
-      CodeGenerator.controlFlowFuncs.addOne(printBoolFunc)
+      CodeGenerator.currInstBlock.addInst(printEnd())    
+      CodeGenerator.controlFlowFuncs.addOne(PRINT_BOOL_LABEL, printBoolFunc)
     }
 
     def readChar(op: Operand): Unit = {
@@ -139,17 +131,17 @@ class IOFunc() {
 
       /* callee instruction */
       val readCharFunc = new FuncBlock()
-      addPrintLabelToData("%c", READ_CHAR_LABEL, readCharFunc)
+      val labelStr = readCharFunc.labels.addPrintLabelToData("%c", READ_CHAR_LABEL)
       val list = List(
         new StrInst(new TempRegister(), null),
         new MovInst(new TempRegister(), null),
-        new LdrInst(TempRegister(), new LabelAddress("=.L._readc_str0")),
+        new LdrInst(TempRegister(), new LabelAddress(labelStr)),
         new BranchInst("scanf"),
         new AddInst(null, null, null),
         new PopInst(null)
       )
       readCharFunc.body.addInst(list)
-      CodeGenerator.controlFlowFuncs.addOne(readCharFunc)    
+      CodeGenerator.controlFlowFuncs.addOne(READ_CHAR_LABEL, readCharFunc)    
     }
 
     def readInt(op: Operand): Unit = {
@@ -161,16 +153,16 @@ class IOFunc() {
 
       /* callee instruction */
       val readIntFunc = new FuncBlock()
-      addPrintLabelToData("%d", READ_INT_LABEL, readIntFunc)
+      val labelStr = readIntFunc.labels.addPrintLabelToData("%d", READ_INT_LABEL)
       val list = List(
         new StrInst(new TempRegister(), null),
         new MovInst(new TempRegister(), null),
-        new LdrInst(TempRegister(), new LabelAddress("=.L._readi_str0")),
+        new LdrInst(TempRegister(), new LabelAddress(labelStr)),
         new BranchInst("scanf"),
         new AddInst(null, null, null),
         new PopInst(null)
       )
       readIntFunc.body.addInst(list)
-      CodeGenerator.controlFlowFuncs.addOne(readIntFunc)    
+      CodeGenerator.controlFlowFuncs.addOne(READ_INT_LABEL, readIntFunc)    
     }
 }
