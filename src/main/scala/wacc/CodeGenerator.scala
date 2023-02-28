@@ -4,8 +4,8 @@ import scala.collection.mutable.{ListBuffer, Map}
 import wacc.Constants._
 
 object CodeGenerator {
-    var controlFlowGraph = InstBlock()
-    var currInstBlock = controlFlowGraph
+    var controlFlowGraph = new FuncBlock()
+    var currInstBlock = controlFlowGraph.body
     /* NEW: temporory design to accomodate label jumps */
     var controlFlowFuncs = ListBuffer[FuncBlock]()
 
