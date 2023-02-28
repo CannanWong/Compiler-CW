@@ -6,7 +6,7 @@ object FreqCodeBlocks {
   def allocSpc(spc: Int): List[Instruction] = { List(
     MovInst(r0, ImmVal(spc, IntIdentifier())),
     BranchLinkInst("malloc"),
-    MovInst(r12, r0))
+    MovInst(r10, r0))
   }
 
 

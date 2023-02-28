@@ -41,88 +41,81 @@ object CodeGenerator {
         }
     }
     def translate(node: SkipNode): Unit = {}
-    def translate(node: AssignIdentNode): Unit = {
-        node.rvalue match {
-            case e: ExprNode => {
-                val op = translate(e)
-                currInstBlock.addInst(new MovInst(new Variable(node.ident.name), op))
-                // This does not account for negative integers, whc shd use ldr
-            }
-            case ArrayLiterNode(exprList) => {
-                // Detect type to determine allocation size for each element
-                val allocSize = getOffset(exprList(0))
-                var stackOffset = 0
-                // Calling malloc to get the address storing the array
-                currInstBlock.addInst(FreqCodeBlocks.allocSpc(4 + allocSize * exprList.length))
 
-                // Storing the size of the array on the first 4 bytes / word
-                currInstBlock.addInst(MovInst(r8, ImmVal(exprList.length, IntIdentifier())))
-                currInstBlock.addInst(StrInst(r8, Offset(r10, stackOffset)))
-
-                // Iterate through the array to insert the elements
-                for (expr <- exprList) {
-                    stackOffset += allocSize
-                    currInstBlock.addInst(MovInst(r8, translate(expr)))
-                    currInstBlock.addInst(StrInst(r8, Offset(r10, stackOffset)))
-                }
-
-                // Storing the address into register or memory assigned for array
-                currInstBlock.addInst(MovInst(Variable(node.ident.name), r8))
-            }
-            case NewPairNode(fstExpr, sndExpr) => {
-                val saveVal = List(
-                    StrInst(r8, Offset(r10, 0)),
-                    PushInst(List(r10))
-                )
-                val fstOffset = getOffset(fstExpr)
-                val sndOffset = getOffset(sndExpr)
-                currInstBlock.addInst(
-                    // Alloc for first element
-                    FreqCodeBlocks.allocSpc(fstOffset) ++
-                    List(MovInst(r8, translate(fstExpr))) ++
-                    saveVal ++
-                    // Alloc for second element
-                    FreqCodeBlocks.allocSpc(sndOffset) ++
-                    List(MovInst(r8, translate(sndExpr))) ++
-                    saveVal ++
-                    // Alloc for pointers pointing to both elements
-                    FreqCodeBlocks.allocSpc(8) ++
-                    // Popping the addresses from the stack and storing them
-                    List(PopInst(List(r8)),
-                         StrInst(r8, Offset(r10, 4)),
-                         PopInst(List(r8)),
-                         StrInst(r8, Offset(r10, 0)),
-                         MovInst(Variable(node.ident.name), r10)))
-                
-            }
-            case CallNode(ident, argList) => {
-                // Caller-save push r0 - r3 ?????
-                currInstBlock.addInst(
-                    pushArgs(0, argList.exprList, ListBuffer[Instruction]())
-                    .toList)
-                currInstBlock.addInst(BranchLinkInst(ident.name))
-                currInstBlock.addInst(MovInst(Variable(node.ident.name), r0))
-                // Caller-save pop r0 - r3 ?????
-            }
-            case FstNode(lvalue) => {
-                currInstBlock.addInst(accessPairElem(0, lvalue).toList)
-                currInstBlock.addInst(MovInst(Variable(node.ident.name), r8))
-            }
-            case SndNode(lvalue) => {
-                currInstBlock.addInst(accessPairElem(4, lvalue).toList)
-                currInstBlock.addInst(MovInst(Variable(node.ident.name), r8))
-            }
+    def transRVal(rvalue: RValueNode): Operand = {
+        rvalue match {
+            case ArrayLiterNode(exprList) => return transArray(exprList)
+            case NewPairNode(fstExpr, sndExpr) => return transNewPair(fstExpr, sndExpr)
+            case CallNode(ident, argList) => return transCall(ident, argList)
+            case FstNode(lvalue) => return accessPairElem(0, lvalue)
+            case SndNode(lvalue) => return accessPairElem(4, lvalue)
+            case e: ExprNode => translate(e)
+            case _ => {println("what"); return r0}
         }
     }
 
-    def getOffset(expr: ExprNode): Int = {
-        expr.typeVal() match {
-            case CharIdentifier() => 1
-            case _ => 4
+    def transArray(exprList: List[ExprNode]): Operand = {
+        val exprs = exprList
+        // Detect type to determine allocation size for each element
+        val allocSize = getOffset(exprs(0))
+        var stackOffset = 0
+        // Calling malloc to get the address storing the array
+        currInstBlock.addInst(FreqCodeBlocks.allocSpc(4 + allocSize * exprs.length))
+
+        // Storing the size of the array on the first 4 bytes / word
+        currInstBlock.addInst(MovInst(r8, ImmVal(exprs.length, IntIdentifier())))
+        currInstBlock.addInst(StrInst(r8, Offset(r10, stackOffset)))
+
+        // Iterate through the array to insert the elements
+        for (expr <- exprs) {
+            stackOffset += allocSize
+            currInstBlock.addInst(MovInst(r8, translate(expr)))
+            currInstBlock.addInst(StrInst(r8, Offset(r10, stackOffset)))
         }
+        currInstBlock.addInst(MovInst(r8, r10))
+        return r8
     }
 
-    def accessPairElem(pairOffset: Int, lvalue: LValueNode): ListBuffer[Instruction] = {
+    def transNewPair(fstExpr: ExprNode, sndExpr: ExprNode): Operand = {
+        val saveVal = List(
+            StrInst(r8, Offset(r10, 0)),
+            PushInst(List(r10))
+        )
+        val fstOffset = getOffset(fstExpr)
+        val sndOffset = getOffset(sndExpr)
+        currInstBlock.addInst(
+            // Alloc for first element
+            FreqCodeBlocks.allocSpc(fstOffset) ++
+            List(MovInst(r8, translate(fstExpr))) ++
+            saveVal ++
+            // Alloc for second element
+            FreqCodeBlocks.allocSpc(sndOffset) ++
+            List(MovInst(r8, translate(sndExpr))) ++
+            saveVal ++
+            // Alloc for pointers pointing to both elements
+            FreqCodeBlocks.allocSpc(8) ++
+            // Popping the addresses from the stack and storing them
+            List(PopInst(List(r8)),
+                 StrInst(r8, Offset(r10, 4)),
+                 PopInst(List(r8)),
+                 StrInst(r8, Offset(r10, 0)),
+                 MovInst(r8, r10)))
+            return r8
+    }
+
+    def transCall(ident: IdentNode, argList: ArgListNode): Operand = {
+        // Push Caller Regs
+        currInstBlock.addInst(PushInst(List(r0, r1, r2, r3)))
+        // Push Args onto r0, 1, 2, 3, and stack afterwards
+        currInstBlock.addInst(
+            pushArgs(0, argList.exprList, ListBuffer[Instruction]())
+            .toList)
+        // Branch link to the function
+        currInstBlock.addInst(BranchLinkInst(ident.name))
+        return r0
+    }
+
+    def accessPairElem(pairOffset: Int, lvalue: LValueNode): Operand = {
         val insts = ListBuffer[Instruction]()
 
         lvalue match {
@@ -154,7 +147,15 @@ object CodeGenerator {
             }
             case _ => {println("what")} 
         }
-        insts
+        currInstBlock.addInst(insts.toList)
+        return r8
+    }
+
+    def getOffset(expr: ExprNode): Int = {
+        expr.typeVal() match {
+            case CharIdentifier() => 1
+            case _ => 4
+        }
     }
 
     def pushArgs(regCount: Int, args: List[ExprNode],
@@ -179,6 +180,14 @@ object CodeGenerator {
         pushStack(args.drop(1), insts)
     }
 
+    def translate(node: AssignIdentNode): Unit = {
+        val op = transRVal(node.rvalue)
+        currInstBlock.addInst(MovInst(Variable(node.ident.name), op))
+
+        // Pop back Caller Regs
+        currInstBlock.addInst(PopInst(List(r0, r1, r2, r3)))
+    }
+
     def translate(node: LValuesAssignNode): Unit = {
         node.lvalue match {
             case IdentNode(name) => {
@@ -188,10 +197,12 @@ object CodeGenerator {
             }
             case ArrayElemNode(ident, exprList) => {
                 // Assuming 1d array
+                val op = transRVal(node.rvalue)
                 val insts = List(
+                    // Ready for special convention for _arrStore,
+                    // r10 for index, r8 for the value to be stored, r3 for array addr
                     MovInst(r10, translate(exprList(0))),
-                    // Need to abstract assignident code blocks for this bit to call
-                    //currInstBlock.addInst(MovInst(r8, node.rvalue))
+                    MovInst(r8, op),
                     MovInst(r3, Variable(ident.name)),
                     BranchLinkInst("_arrStore")
                     //arrstore to be defined
