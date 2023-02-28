@@ -22,9 +22,12 @@ case class LdrPseudoInst(rd: Register, num: Int) extends Instruction
 case class StrInst(rd: Register, op: Operand) extends Instruction
 case class PushInst(regList: List[Register]) extends Instruction
 case class PopInst(regList: List[Register]) extends Instruction
+
 case class BranchInst(label: String) extends Instruction
-case class BranchLinkInst(label: String) extends Instruction
 case class BranchCondInst(condition: String, label: String) extends Instruction
+case class BranchNumInst(num: Int) extends Instruction
+case class BranchNumCondInst(condition: String, num: Int) extends Instruction
+case class BranchLinkInst(label: String) extends Instruction
 case class BLEqInst(label: String) extends Instruction
 case class BLNEInst(label: String) extends Instruction
 
@@ -46,7 +49,7 @@ case class FixedRegister(num: Int) extends Register
 case class Variable(name: String) extends Register
 //NEW: address of the label
 case class LabelAddress(address: String) extends Operand
-// TODO: replace string with identifier for type
 case class ImmVal(num: Int, ty: TypeIdentifier) extends Operand
 case class ASR(r: Register, bits: Int) extends Operand
+case class Offset(r: Register, offset: Int) extends Operand
 
