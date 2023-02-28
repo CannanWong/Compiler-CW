@@ -64,9 +64,9 @@ object Printer {
             case inst: StrInst => 
                 output += "str " + printOp(inst.rd, inst.op)
             case inst: PushInst => 
-                output += "push " + printOp(inst.regList)
+                output += "push " + printOp(inst.regs)
             case inst: PopInst => 
-                output += "pop " + printOp(inst.regList)
+                output += "pop " + printOp(inst.regs)
             case inst: BranchInst => 
                 output += "B " + inst.label
             case inst: BranchLinkInst => 
@@ -76,12 +76,7 @@ object Printer {
 
     def printOp(op: Operand): String = {
         op match {
-            case im: ImmVal => "#" + {
-                im.ty match {
-                    case IntIdentifier() | BoolIdentifier() | CharIdentifier() => im.num.toString()
-                    case _ => "UDT!" // Undefined type
-                }
-            }
+            case im: ImmVal => "#" + im.num.toString
             case r: FixedRegister => "r" + r.num.toString()
             case _ => "UAR!" // Unassigned register
         }
@@ -95,7 +90,7 @@ object Printer {
         printOp(reg1) + ", " + printOp(reg2) + ", " + printOp(op)
     }
 
-    def printOp(regList: List[Register]): String = {
+    def printOp(regList: Seq[Register]): String = {
         var output = "{"
         for (reg <- regList) {
             output += printOp(reg) + ", "

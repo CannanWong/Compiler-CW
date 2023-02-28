@@ -21,8 +21,16 @@ object  Constants {
   val lr = FixedRegister(14)
   val pc = FixedRegister(15)
 
-  val immTrue = ImmVal(1, BoolIdentifier())
-  val immFalse = ImmVal(0, BoolIdentifier())
+  val immTrue = ImmVal(1)
+  val immFalse = ImmVal(0)
 
-  val arrLenOffset: Int = -4
+  val ARRAY_LENGTH_OFFSET: Int = -4
+  val INT_SIZE = -4
+
+  val ZERO_DIVISION_LABEL = "_errDivZero"
+  val NULL_POINTER_LABEL = "_errNull"
+  val OVERFLOW_LABEL = "_errOverflow"
+  val BOUNDS_CHECK_LABEL = "_boundsCheck"
+  val ARRAY_STORE_LABEL = "_arrStore"
+  val ARRAY_LOAD_LABEL = "_arrLoad"
 }

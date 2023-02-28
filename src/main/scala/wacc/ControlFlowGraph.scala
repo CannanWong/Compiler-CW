@@ -19,8 +19,10 @@ case class InstBlock() extends ControlFlowBlock {
     var next: ControlFlowBlock = null
     ControlFlowGraph.nextInstNum += 1
 
-    def addInst(inst: Instruction) = {
-        instList += inst
+    def addInst(insts: Instruction*) = {
+        for (inst <- insts) {
+            instList += inst
+        }
     }
     def addInst(insts: List[Instruction]) = {
         for (inst <- insts) {
@@ -54,7 +56,6 @@ case class CallBlock() extends ControlFlowBlock {
 }
 
 case class FuncBlock() extends ControlFlowBlock {
-    var num: Int = ControlFlowGraph.nextFuncNum
     var param: InstBlock = new InstBlock()
     var body: InstBlock = new InstBlock()
     /* NEW: temporory design to accomodate print label jumps */
