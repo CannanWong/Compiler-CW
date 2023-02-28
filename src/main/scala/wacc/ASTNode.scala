@@ -1,6 +1,5 @@
 package wacc
 
-
 import scala.collection.mutable.ListBuffer
 
 import wacc.{ArrayIdentifier, BoolIdentifier, PairIdentifier, FuncIdentifier, NullIdentifier, AnyIdentifier, IntIdentifier, StrIdentifier, CharIdentifier}
