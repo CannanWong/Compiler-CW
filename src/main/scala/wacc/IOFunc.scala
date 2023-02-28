@@ -23,7 +23,7 @@ object IOFunc {
     }
 
     def readFunc(label: String, printType: String, funcBlock: FuncBlock): List[Instruction] = {
-      val labelStr = funcBlock.labels.addTextLabelToData(printType, label)
+      val labelStr = funcBlock.directive.addTextLabelToData(printType, label)
       List(
         new PushInst(List(lr)),
         new StrInst(r0, new Offset(sp, arrLenOffset)),
@@ -47,7 +47,7 @@ object IOFunc {
 
       /* callee instruction */
       val printIntFunc = new FuncBlock()
-      val text = printIntFunc.labels.addTextLabelToData("%d", PRINT_INT_LABEL)
+      val text = printIntFunc.directive.addTextLabelToData("%d", PRINT_INT_LABEL)
       printIntFunc.body.addInst(
         List(
           new PushInst(List(lr))
@@ -69,7 +69,7 @@ object IOFunc {
 
       /* callee instruction */
       val printPtrFunc = new FuncBlock()
-      val text = printPtrFunc.labels.addTextLabelToData("%p", PRINT_PTR_LABEL)
+      val text = printPtrFunc.directive.addTextLabelToData("%p", PRINT_PTR_LABEL)
       printPtrFunc.body.addInst(
         List(
           new PushInst(List(lr))
@@ -89,7 +89,7 @@ object IOFunc {
 
       /* callee instruction */
       val printStringFunc = new FuncBlock()
-      val text = printStringFunc.labels.addTextLabelToData("%s", PRINT_STR_LABEL)
+      val text = printStringFunc.directive.addTextLabelToData("%s", PRINT_STR_LABEL)
 
       printStringFunc.body.addInst(
         List(
@@ -114,7 +114,7 @@ object IOFunc {
 
       /* callee instruction */
       val printCharFunc = new FuncBlock()
-      val text = printCharFunc.labels.addTextLabelToData("%c", PRINT_CHAR_LABEL)
+      val text = printCharFunc.directive.addTextLabelToData("%c", PRINT_CHAR_LABEL)
       printCharFunc.body.addInst(
         List(
           new PushInst(List(lr))
@@ -136,9 +136,9 @@ object IOFunc {
 
       /* callee instruction */
       val printBoolFunc = new FuncBlock()
-      val falseTxt = printBoolFunc.labels.addTextLabelToData("%false", PRINT_BOOL_LABEL)
-      val trueTxt = printBoolFunc.labels.addTextLabelToData("%true", PRINT_BOOL_LABEL)
-      val text = printBoolFunc.labels.addTextLabelToData("%s", PRINT_BOOL_LABEL)
+      val falseTxt = printBoolFunc.directive.addTextLabelToData("%false", PRINT_BOOL_LABEL)
+      val trueTxt = printBoolFunc.directive.addTextLabelToData("%true", PRINT_BOOL_LABEL)
+      val text = printBoolFunc.directive.addTextLabelToData("%s", PRINT_BOOL_LABEL)
 
       val ifBlock = IfBlock()
       val ifTrue = ifBlock.nextT
@@ -177,7 +177,7 @@ object IOFunc {
 
     def println(): Unit = {
       val printlnFunc = new FuncBlock()
-      val text = printlnFunc.labels.addTextLabelToData("", PRINTLN_LABEL)
+      val text = printlnFunc.directive.addTextLabelToData("", PRINTLN_LABEL)
       printlnFunc.body.addInst(
         List(
           new PushInst(List(lr))

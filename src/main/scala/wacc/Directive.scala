@@ -3,9 +3,21 @@ package wacc
 import scala.collection.mutable.ListBuffer
 
 abstract class Directive() {
+  val GLOBAL_MAIN = false
   var name = ""
   var dirCount = 0
   val dirContents = ListBuffer[String]()
+
+  def build(): String = {
+    if (GLOBAL_MAIN) {
+      dirContents.addOne(".global main")
+    }
+    val ret = new StringBuilder()
+    for (c <- dirContents) {
+      ret ++= c
+    }
+    ret.toString()
+  }
 }
 
 case class DataDirectiveStat() extends Directive {
@@ -26,7 +38,7 @@ case class DataDirectiveStat() extends Directive {
     s".L.${textLabel}str${dirCount}"
   }
 
-  def build(): String = {
+  override def build(): String = {
     val sb = new StringBuilder()
     sb.++=(".data\n")
     for (stat <- dirContents) {
