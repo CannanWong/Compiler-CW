@@ -71,17 +71,17 @@ object AssignRegister {
             case inst: StrInst => StrInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: PushInst => {
                 val newRegList: ListBuffer[Register] = ListBuffer.empty
-                for (reg <- inst.regList) {
+                for (reg <- inst.regs) {
                     newRegList += assignReg(reg)
                 }
-                PushInst(newRegList.toList)
+                PushInst(newRegList.toSeq:_*)
             }
             case inst: PopInst => {
                 val newRegList: ListBuffer[Register] = ListBuffer.empty
-                for (reg <- inst.regList) {
+                for (reg <- inst.regs) {
                     newRegList += assignReg(reg)
                 }
-                PopInst(newRegList.toList)
+                PopInst(newRegList.toSeq:_*)
             }
             case inst: BranchInst => inst
             case inst: BranchLinkInst => inst

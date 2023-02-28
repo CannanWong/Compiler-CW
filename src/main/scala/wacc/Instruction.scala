@@ -33,6 +33,8 @@ case class BranchLinkInst(label: String) extends Instruction
 case class BranchLinkCondInst(condtion: String, label: String) extends Instruction
 
 case class Label() extends Instruction
+// Useful for assigning registers, not actual arm instruction
+case class FreeRegister(r: Register) extends Instruction
 
 // To be moved to assign register part
 // sealed trait Register

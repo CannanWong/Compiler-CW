@@ -176,7 +176,8 @@ object CodeGenerator {
             currInstBlock.addInst(
                 CmpInst(op1, op2),
                 MovCondInst(cond, r8, immTrue),
-                MovCondInst(notcond, r8, immFalse)
+                MovCondInst(notcond, r8, immFalse),
+                FreeRegister(op1)
             )
             r8
         }
@@ -305,7 +306,8 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     SmullInst(r8, r9, reg1, reg2),
                     CmpInst(r9, ASR(r8, 31)),
-                    BranchCondInst("NE", "_errOverflow")
+                    BranchCondInst("NE", "_errOverflow"),
+                    FreeRegister(reg1)
                 )
                 r8
             }
@@ -346,7 +348,10 @@ object CodeGenerator {
                         val reg = TempRegister()
                         currInstBlock.addInst(MovInst(reg, op1))
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(AddsInst(r8, reg, op2))
+                        currInstBlock.addInst(
+                            AddsInst(r8, reg, op2),
+                            FreeRegister(reg)
+                        )
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
@@ -362,7 +367,10 @@ object CodeGenerator {
                         val reg = TempRegister()
                         currInstBlock.addInst(MovInst(reg, op1))
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(SubsInst(r8, reg, op2))
+                        currInstBlock.addInst(
+                            SubsInst(r8, reg, op2),
+                            FreeRegister(reg)
+                        )
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
@@ -419,26 +427,20 @@ object CodeGenerator {
                 val reg1 = TempRegister()
                 currInstBlock.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
-                var reg2: Register = reg1
-                op2 match {
-                    case ImmVal(num) => {
-                        reg2 = TempRegister()
-                        currInstBlock.addInst(MovInst(reg2, op2))
-                    }
-                    case r: Register => {
-                        reg2 = r
-                    }
-                }
+                val reg2 = TempRegister()
                 val newBlock = InstBlock()
                 currInstBlock.addInst(
-                    CmpInst(reg1, immTrue),
+                    MovInst(reg2, op2),
+                    CmpInst(reg1, immTrue), 
                     BranchNumCondInst("NE", newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock = newBlock
                 currInstBlock.addInst(
                     MovCondInst("Eq", r8, immTrue),
-                    MovCondInst("NE", r8, immFalse)
+                    MovCondInst("NE", r8, immFalse),
+                    FreeRegister(reg1),
+                    FreeRegister(reg2)
                 )
                 controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
@@ -448,18 +450,10 @@ object CodeGenerator {
                 val reg1 = TempRegister()
                 currInstBlock.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
-                var reg2: Register = reg1
-                op2 match {
-                    case ImmVal(num) => {
-                        reg2 = TempRegister()
-                        currInstBlock.addInst(MovInst(reg2, op2))
-                    }
-                    case r: Register => {
-                        reg2 = r
-                    }
-                }
+                val reg2 = TempRegister()
                 val newBlock = InstBlock()
                 currInstBlock.addInst(
+                    MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
                     BranchNumCondInst("Eq", newBlock.num),
                     CmpInst(reg2, immTrue)
@@ -467,7 +461,9 @@ object CodeGenerator {
                 currInstBlock = newBlock
                 currInstBlock.addInst(
                     MovCondInst("Eq", r8, immTrue),
-                    MovCondInst("NE", r8, immFalse)
+                    MovCondInst("NE", r8, immFalse),
+                    FreeRegister(reg1),
+                    FreeRegister(reg2)
                 )
                 controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
