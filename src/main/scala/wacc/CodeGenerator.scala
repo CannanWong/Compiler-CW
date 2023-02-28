@@ -50,27 +50,20 @@ object CodeGenerator {
             }
             case ArrayLiterNode(exprList) => {
                 // Detect type to determine allocation size for each element
-                var allocSize = 0
-                exprList(0).typeVal() match {
-                    case CharIdentifier() => allocSize = 1
-                    case ArrayIdentifier(baseTy, dim) => ???
-                    case PairIdentifier(ty1, ty2) => ???
-                    case _ =>
-                }
-                
-                var offset = 0
+                val allocSize = getOffset(exprList(0))
+                var stackOffset = 0
                 // Calling malloc to get the address storing the array
                 currInstBlock.addInst(FreqCodeBlocks.allocSpc(4 + allocSize * exprList.length))
 
                 // Storing the size of the array on the first 4 bytes / word
                 currInstBlock.addInst(MovInst(r8, ImmVal(exprList.length, IntIdentifier())))
-                currInstBlock.addInst(StrInst(r8, Offset(r12, offset)))
+                currInstBlock.addInst(StrInst(r8, Offset(r10, stackOffset)))
 
                 // Iterate through the array to insert the elements
                 for (expr <- exprList) {
-                    offset += allocSize
+                    stackOffset += allocSize
                     currInstBlock.addInst(MovInst(r8, translate(expr)))
-                    currInstBlock.addInst(StrInst(r8, Offset(r12, offset)))
+                    currInstBlock.addInst(StrInst(r8, Offset(r10, stackOffset)))
                 }
 
                 // Storing the address into register or memory assigned for array
@@ -78,8 +71,8 @@ object CodeGenerator {
             }
             case NewPairNode(fstExpr, sndExpr) => {
                 val saveVal = List(
-                    StrInst(r8, Offset(r12, 0)),
-                    PushInst(List(r12))
+                    StrInst(r8, Offset(r10, 0)),
+                    PushInst(List(r10))
                 )
                 val fstOffset = getOffset(fstExpr)
                 val sndOffset = getOffset(sndExpr)
@@ -96,17 +89,20 @@ object CodeGenerator {
                     FreqCodeBlocks.allocSpc(8) ++
                     // Popping the addresses from the stack and storing them
                     List(PopInst(List(r8)),
-                         StrInst(r8, Offset(r12, 4)),
+                         StrInst(r8, Offset(r10, 4)),
                          PopInst(List(r8)),
-                         StrInst(r8, Offset(r12, 0)),
-                         MovInst(Variable(node.ident.name), r12)))
+                         StrInst(r8, Offset(r10, 0)),
+                         MovInst(Variable(node.ident.name), r10)))
                 
             }
             case CallNode(ident, argList) => {
+                // Caller-save push r0 - r3 ?????
                 currInstBlock.addInst(
                     pushArgs(0, argList.exprList, ListBuffer[Instruction]())
                     .toList)
                 currInstBlock.addInst(BranchLinkInst(ident.name))
+                currInstBlock.addInst(MovInst(Variable(node.ident.name), r0))
+                // Caller-save pop r0 - r3 ?????
             }
             case FstNode(lvalue) => {
                 currInstBlock.addInst(accessPairElem(0, lvalue).toList)
@@ -169,7 +165,29 @@ object CodeGenerator {
         pushStack(args.drop(1), insts)
     }
 
-    def translate(node: LValuesAssignNode): Unit = {}
+    def translate(node: LValuesAssignNode): Unit = {
+        node.lvalue match {
+            case IdentNode(name) => {
+                val dummyNode = AssignIdentNode(BaseTypeNode("int"),
+                    IdentNode(name), node.rvalue)
+                translate(dummyNode)
+            }
+            case ArrayElemNode(ident, exprList) => {
+                // Assuming 1d array
+                val insts = List(
+                    MovInst(r10, translate(exprList(0))),
+                    // Need to abstract assignident code blocks for this bit to call
+                    //currInstBlock.addInst(MovInst(r8, node.rvalue))
+                    MovInst(r3, Variable(ident.name)),
+                    BranchLinkInst("_arrStore")
+                    //arrstore to be defined
+                )
+                currInstBlock.addInst(insts)
+            }
+            case FstNode(lvalue) => ???
+            case SndNode(lvalue) => ???
+        }
+    }
     def translate(node: ReadNode): Unit = {}
     def translate(node: FreeNode): Unit = {}
     def translate(node: ReturnNode): Unit = {
