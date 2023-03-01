@@ -21,7 +21,6 @@ object Main {
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
                     CodeGenerator.translateAST(x)
-                    ASTtoCode.setNode(x)
                     val filename = WriteToFile.fileName(args(0))
                     WriteToFile.write(filename)
                 }
@@ -43,15 +42,6 @@ object Main {
         }
     }
 
-    object ASTtoCode {
-        var astNode: Option[ProgramNode] = None
-        def setNode(node: ProgramNode):Unit = {
-            astNode = Some(node)
-        }
-        def getNode(): ProgramNode = {
-            astNode.get
-        }
-    }
 
     object WriteToFile {
 

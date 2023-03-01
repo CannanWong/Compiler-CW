@@ -121,32 +121,21 @@ object CodeGenerator {
         }
     }
     def translate(node: SkipNode): Unit = {}
+
     def translate(node: AssignIdentNode): Unit = {
-        // throw new NotImplementedError("AssignIdent not implemented yet")
-        if(controlFlowGraph.name != "main") {
-            throw new IllegalArgumentException("func block at main not added to main")
-        }
-        /* temporary here */
-        currInstBlock.addInst(CmpInst(r7, r6))
-        r8
     }
 
     def translate(node: LValuesAssignNode): Unit = {
-        // throw new NotImplementedError("lValAssign not implemented yet")
-        if(controlFlowGraph.name != "main") {
-            throw new IllegalArgumentException("func block at main not added to main")
-        }
-        /* temporary here */
-        currInstBlock.addInst(CmpInst(r5, r4))
-        r8
     }
+
     def translate(node: ReadNode): Unit = {
         val retOp = new TempRegister()
         val exprTy = node.lvalue.typeVal()
         exprTy match {
             case CharIdentifier() => IOFunc.readChar(retOp)
             case IntIdentifier() => IOFunc.readInt(retOp)
-            case _ => throw new IllegalArgumentException("print: not an int or char")
+            case _ =>
+            // case _ => throw new IllegalArgumentException("print: not an int or char")
         }
     }
     def translate(node: FreeNode): Unit = {}
@@ -179,7 +168,8 @@ object CodeGenerator {
             case BoolIdentifier() => IOFunc.printBool(retOp)
             case a: ArrayIdentifier => IOFunc.printPtr(retOp)
             case p: PairIdentifier => IOFunc.printPtr(retOp)
-            case _ => throw new IllegalArgumentException("print: not an expression")
+            // anyIdentifier or null
+            case  _ => IOFunc.printPtr(retOp)
         }
         // currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
