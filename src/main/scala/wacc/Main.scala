@@ -21,7 +21,6 @@ object Main {
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
                     CodeGenerator.translateAST(x)
-                    ASTtoCode.setNode(x)
                     val filename = WriteToFile.fileName(args(0))
                     WriteToFile.write(filename)
                 }
@@ -43,15 +42,6 @@ object Main {
         }
     }
 
-    object ASTtoCode {
-        var astNode: Option[ProgramNode] = None
-        def setNode(node: ProgramNode):Unit = {
-            astNode = Some(node)
-        }
-        def getNode(): ProgramNode = {
-            astNode.get
-        }
-    }
 
     object WriteToFile {
 
@@ -70,25 +60,6 @@ object Main {
                 pw.println(line)
                 i += 1
             }
-            // val begin =
-                // ".data\n" +
-                // ".text\n" +
-                // ".global main\n" +
-                // "main:\n" +
-            //     "  push {fp, lr}\n" +
-            //     "  push {r8, r10, r12}\n" +
-            //     "  mov fp, sp\n"
-            // pw.print(begin)
-            // val end =
-            //     "  mov r0, #0\n" +
-            //     "  pop {r8, r10, r12}\n" +
-            //     "  pop {fp, pc}\n"
-            // pw.print(end)
-
-            /* funcs */
-            // for (func <- CodeGenerator.controlFlowFuncs) {
-            //      pw.println(func)
-            // }
 
             pw.close()              
         }

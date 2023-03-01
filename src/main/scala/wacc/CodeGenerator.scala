@@ -9,19 +9,21 @@ object CodeGenerator {
     var controlFlowGraph = FuncBlock()
     
     var currInstBlock = controlFlowGraph.body
+    
     /* NEW: temporory design to accomodate label jumps */
     val controlFlowFuncs = LinkedHashMap[String, ControlFlowBlock]()
+
+    /* utility functions */
+    def switchCurrInstrBlock(newFunBlock: FuncBlock) {
+        CodeGenerator.controlFlowGraph = newFunBlock
+        CodeGenerator.currInstBlock = newFunBlock.body
+    }
 
     def stringDef(string: String): String = {
         mainFunc.directive.addTextLabelToData(string)
     }
 
-    // def translateAST(p: ProgramNode): Unit = {
-    //     for (func <- p.funcList) {
-    //         translate(func)
-    //     }
-    //     translate(p.stat)
-    // }
+    /* translate functions */
 
     def translateAST(p: ProgramNode): Unit = {
         translateMain(p.stat)
@@ -36,8 +38,8 @@ object CodeGenerator {
         mainFuncBlock.name = "main"
 
         mainFunc = mainFuncBlock
-        controlFlowGraph = mainFuncBlock
-        currInstBlock = controlFlowGraph.body
+        /* change current instruction block to func block */
+        switchCurrInstrBlock(mainFunc)
 
         currInstBlock.addInst(new PushInst(fp, lr))
         /* TODO: push caller saved registers that will be used */
@@ -59,8 +61,8 @@ object CodeGenerator {
 
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
-        controlFlowGraph = funcBlock
-        currInstBlock = funcBlock.body
+        /* change current instruction block to func block */
+        switchCurrInstrBlock(funcBlock)
         f match {
             case FuncNode(ty, ident, param, stat) => {
                 /**
@@ -119,32 +121,21 @@ object CodeGenerator {
         }
     }
     def translate(node: SkipNode): Unit = {}
+
     def translate(node: AssignIdentNode): Unit = {
-        // throw new NotImplementedError("AssignIdent not implemented yet")
-        if(controlFlowGraph.name != "main") {
-            throw new IllegalArgumentException("func block at main not added to main")
-        }
-        /* temporary here */
-        currInstBlock.addInst(CmpInst(r7, r6))
-        r8
     }
 
     def translate(node: LValuesAssignNode): Unit = {
-        // throw new NotImplementedError("lValAssign not implemented yet")
-        if(controlFlowGraph.name != "main") {
-            throw new IllegalArgumentException("func block at main not added to main")
-        }
-        /* temporary here */
-        currInstBlock.addInst(CmpInst(r5, r4))
-        r8
     }
+
     def translate(node: ReadNode): Unit = {
         val retOp = new TempRegister()
         val exprTy = node.lvalue.typeVal()
         exprTy match {
             case CharIdentifier() => IOFunc.readChar(retOp)
             case IntIdentifier() => IOFunc.readInt(retOp)
-            case _ => throw new IllegalArgumentException("print: not an int or char")
+            case _ =>
+            // case _ => throw new IllegalArgumentException("print: not an int or char")
         }
     }
     def translate(node: FreeNode): Unit = {}
@@ -166,6 +157,8 @@ object CodeGenerator {
          * print may clobber any registers that are marked as caller-save under
          * arm's calling convention: R0, R1, R2, R3
         */
+        // currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+
         val retOp = translate(node.expr)
         val exprTy = node.expr.typeVal()
         exprTy match {
@@ -175,17 +168,24 @@ object CodeGenerator {
             case BoolIdentifier() => IOFunc.printBool(retOp)
             case a: ArrayIdentifier => IOFunc.printPtr(retOp)
             case p: PairIdentifier => IOFunc.printPtr(retOp)
-            case _ => throw new IllegalArgumentException("print: not an expression")
+            // anyIdentifier or null
+            case  _ => IOFunc.printPtr(retOp)
         }
+        // currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
     def translate(node: PrintlnNode): Unit = {
         translate(new PrintNode(node.expr))
+
+        // currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         IOFunc.println()
+        // currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
     def translate(node: IfNode): Unit = {
         val ifBlock = IfBlock()
+        /* next block of current control flow graph block points to this ifBlock */
+        controlFlowGraph.body.next = ifBlock
         val ifTrue = ifBlock.nextT
         val ifFalse = ifBlock.nextF
         val next = ifBlock.next
@@ -213,6 +213,7 @@ object CodeGenerator {
         (ifFalse.num.toString, ifFalse),
         (next.num.toString, next))
     }
+
     def translate(node: WhileNode): Unit = {
         val whileBlock = WhileBlock()
         val cond = whileBlock.cond
