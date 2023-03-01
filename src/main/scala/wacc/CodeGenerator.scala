@@ -16,13 +16,6 @@ object CodeGenerator {
         mainFunc.directive.addTextLabelToData(string)
     }
 
-    // def translateAST(p: ProgramNode): Unit = {
-    //     for (func <- p.funcList) {
-    //         translate(func)
-    //     }
-    //     translate(p.stat)
-    // }
-
     def translateAST(p: ProgramNode): Unit = {
         translateMain(p.stat)
         for (func <- p.funcList) {

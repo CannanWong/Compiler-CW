@@ -70,25 +70,6 @@ object Main {
                 pw.println(line)
                 i += 1
             }
-            // val begin =
-                // ".data\n" +
-                // ".text\n" +
-                // ".global main\n" +
-                // "main:\n" +
-            //     "  push {fp, lr}\n" +
-            //     "  push {r8, r10, r12}\n" +
-            //     "  mov fp, sp\n"
-            // pw.print(begin)
-            // val end =
-            //     "  mov r0, #0\n" +
-            //     "  pop {r8, r10, r12}\n" +
-            //     "  pop {fp, pc}\n"
-            // pw.print(end)
-
-            /* funcs */
-            // for (func <- CodeGenerator.controlFlowFuncs) {
-            //      pw.println(func)
-            // }
 
             pw.close()              
         }
