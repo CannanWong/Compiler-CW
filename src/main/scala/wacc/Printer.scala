@@ -78,9 +78,9 @@ object Printer {
             case inst: PopInst => 
                 output += "pop " + printOp(inst.regs)
             case inst: BranchInst => 
-                output += "B " + inst.label
+                output += "b " + inst.label
             case inst: BranchLinkInst => 
-                output += "BL " + inst.label
+                output += "bl " + inst.label
             case _ => output += "@ Unmatched instr"
         }
     }

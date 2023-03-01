@@ -13,9 +13,17 @@ object CodeGenerator {
     /* NEW: temporory design to accomodate label jumps */
     val controlFlowFuncs = LinkedHashMap[String, ControlFlowBlock]()
 
+    /* utility functions */
+    def switchCurrInstrBlock(newFunBlock: FuncBlock) {
+        CodeGenerator.controlFlowGraph = newFunBlock
+        CodeGenerator.currInstBlock = newFunBlock.body
+    }
+
     def stringDef(string: String): String = {
         mainFunc.directive.addTextLabelToData(string)
     }
+
+    /* translate functions */
 
     def translateAST(p: ProgramNode): Unit = {
         translateMain(p.stat)
@@ -30,8 +38,8 @@ object CodeGenerator {
         mainFuncBlock.name = "main"
 
         mainFunc = mainFuncBlock
-        controlFlowGraph = mainFuncBlock
-        currInstBlock = controlFlowGraph.body
+        /* change current instruction block to func block */
+        switchCurrInstrBlock(mainFunc)
 
         currInstBlock.addInst(new PushInst(fp, lr))
         /* TODO: push caller saved registers that will be used */
@@ -53,8 +61,8 @@ object CodeGenerator {
 
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
-        controlFlowGraph = funcBlock
-        currInstBlock = funcBlock.body
+        /* change current instruction block to func block */
+        switchCurrInstrBlock(funcBlock)
         f match {
             case FuncNode(ty, ident, param, stat) => {
                 /**
@@ -179,7 +187,7 @@ object CodeGenerator {
             case p: PairIdentifier => IOFunc.printPtr(retOp)
             case _ => throw new IllegalArgumentException("print: not an expression")
         }
-        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
     def translate(node: PrintlnNode): Unit = {
@@ -187,7 +195,7 @@ object CodeGenerator {
 
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         IOFunc.println()
-        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
     def translate(node: IfNode): Unit = {
