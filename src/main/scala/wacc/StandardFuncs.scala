@@ -2,26 +2,8 @@ package wacc
 
 import wacc.Constants._
 
-case class StandardFuncs(name: String) {
-    import StandardFuncs._
-    def getFunc: FuncBlock = getFunction(name)
-}
-
 object StandardFuncs {
-    def addFunc(name: String): Unit = {
-        name match {
-            case ZERO_DIVISION_LABEL | NULL_POINTER_LABEL | OVERFLOW_LABEL | BOUNDS_CHECK_LABEL |
-                 ARRAY_LOAD_LABEL | ARRAY_LOAD_B_LABEL | ARRAY_STORE_LABEL | ARRAY_STORE_B_LABEL => {
-                    if (!CodeGenerator.controlFlowFuncs.contains(name)) {
-                        val funcBlock = StandardFuncs(name).getFunc
-                        CodeGenerator.controlFlowFuncs += ((name, funcBlock))
-                    }
-                 }
-            case _ => throw new IllegalArgumentException(s"${name} is not a pre-defined function.")
-        }
-    }
-
-    private def getFunction(name: String): FuncBlock = {
+    def getFunction(name: String): FuncBlock = {
         name match {
             case ARRAY_LOAD_LABEL | ARRAY_LOAD_B_LABEL => {
                 var funcBlock = new FuncBlock
@@ -66,5 +48,97 @@ object StandardFuncs {
             }
             case _ => throw new IllegalArgumentException(s"standard function ${name} does not exist")
         }
+    }
+}
+
+object ZeroDivision {
+    val name = ZERO_DIVISION_LABEL
+    private var used = false
+    def setUsed(): Unit = {
+        used = true
+    }
+    def getUsed(): Boolean = {
+        used
+    }
+}
+
+object NullPointer {
+    val name = NULL_POINTER_LABEL
+    private var used = false
+    def setUsed(): Unit = {
+        used = true
+    }
+    def getUsed(): Boolean = {
+        used
+    }
+}
+
+object Overflow {
+    val name = OVERFLOW_LABEL
+    private var used = false
+    def setUsed(): Unit = {
+        used = true
+    }
+    def getUsed(): Boolean = {
+        used
+    }
+}
+
+object BoundsCheck {
+    val name = BOUNDS_CHECK_LABEL
+    private var used = false
+    def setUsed(): Unit = {
+        used = true
+    }
+    def getUsed(): Boolean = {
+        used
+    }
+}
+
+object ArrayLoad {
+    val name = ARRAY_LOAD_LABEL
+    private var used = false
+    def setUsed(): Unit = {
+        used = true
+        BoundsCheck.setUsed()
+    }
+    def getUsed(): Boolean = {
+        used
+    }
+}
+
+object ArrayLoadB {
+    val name = ARRAY_LOAD_B_LABEL
+    private var used = false
+    def setUsed(): Unit = {
+        used = true
+        BoundsCheck.setUsed()
+    }
+    def getUsed(): Boolean = {
+        used
+    }
+}
+
+object ArrayStore {
+    val name = ARRAY_STORE_LABEL
+    private var used = false
+    def setUsed(): Unit = {
+        used = true
+        BoundsCheck.setUsed()
+    }
+    def getUsed(): Boolean = {
+        used
+    }
+}
+
+object ArrayStoreB {
+    val name = ARRAY_STORE_B_LABEL
+    private var used = false
+    def setUsed(): Unit = {
+        used = true
+        BoundsCheck.setUsed()
+    }
+    def getUsed(): Boolean = {
+        used
     }
 }
