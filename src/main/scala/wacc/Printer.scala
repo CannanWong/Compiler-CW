@@ -5,6 +5,13 @@ import scala.collection.mutable.ListBuffer
 object Printer {
     var output: ListBuffer[String] = ListBuffer.empty
 
+    def printBlock(cfBlock: ControlFlowBlock): Unit = {
+        cfBlock match {
+            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() =>
+                printBlock(cfBlock)
+        }
+    }
+
     def printBlock(instBlock: InstBlock): Unit = {
         // Print label
         //output += "@I" + instBlock.num + ":"
@@ -14,7 +21,7 @@ object Printer {
         }
         instBlock.next match {
             case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => 
-                //printBlock(instBlock.next)
+                printBlock(instBlock.next)
             case null => 
         }
     }
@@ -67,9 +74,9 @@ object Printer {
             case inst: StrInst => 
                 output += "str " + printOp(inst.rd, inst.op)
             case inst: PushInst => 
-                output += "push " + printOp(inst.regList)
+                output += "push " + printOp(inst.regs)
             case inst: PopInst => 
-                output += "pop " + printOp(inst.regList)
+                output += "pop " + printOp(inst.regs)
             case inst: BranchInst => 
                 output += "B " + inst.label
             case inst: BranchLinkInst => 
@@ -79,12 +86,7 @@ object Printer {
 
     def printOp(op: Operand): String = {
         op match {
-            case im: ImmVal => "#" + {
-                im.ty match {
-                    case IntIdentifier() | BoolIdentifier() | CharIdentifier() => im.num.toString()
-                    case _ => "UDT!" // Undefined type
-                }
-            }
+            case im: ImmVal => "#" + im.num.toString
             case r: FixedRegister => "r" + r.num.toString()
             case _ => "UAR!" // Unassigned register
         }
@@ -98,7 +100,7 @@ object Printer {
         printOp(reg1) + ", " + printOp(reg2) + ", " + printOp(op)
     }
 
-    def printOp(regList: List[Register]): String = {
+    def printOp(regList: Seq[Register]): String = {
         var output = "{"
         for (reg <- regList) {
             output += printOp(reg) + ", "

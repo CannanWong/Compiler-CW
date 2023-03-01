@@ -6,23 +6,25 @@ import scala.collection.mutable._
 object AssignRegister {
     var IR2 = new FuncBlock()
     var currInstBlock = IR2.body
-    var nextRegNum = 7  // R7-R0
+    var regQueue = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // R7-R0
     val varOpTable: Map[String, Operand] = Map()
-    var rdTemp: Register = TempRegister()
-    var rnTemp: Register = TempRegister()
-    var opTemp: Operand = TempRegister()
+    val tempRegTable: Map[Int, Operand] = Map()
+
+    def assignBlock(cfBlock: ControlFlowBlock): Unit = {
+        cfBlock match {
+            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() =>
+                assignBlock(cfBlock)
+        }
+    }
 
     def assignBlock(instBlock: InstBlock): Unit = {
         for (inst <- instBlock.instList) {
             currInstBlock.addInst(assignInst(inst))
         }
-        val nextBlock = instBlock.next
-        nextBlock match {
-            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => {
-                currInstBlock.next = nextBlock
-                // ! To be fixed
-                // assignBlock(nextBlock)
-            }
+        instBlock.next match {
+            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => 
+                assignBlock(instBlock.next)
+            case null => 
         }
     }
 
@@ -71,20 +73,31 @@ object AssignRegister {
             case inst: StrInst => StrInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: PushInst => {
                 val newRegList: ListBuffer[Register] = ListBuffer.empty
-                for (reg <- inst.regList) {
+                for (reg <- inst.regs) {
                     newRegList += assignReg(reg)
                 }
-                PushInst(newRegList.toList)
+                PushInst(newRegList.toSeq:_*)
             }
             case inst: PopInst => {
                 val newRegList: ListBuffer[Register] = ListBuffer.empty
-                for (reg <- inst.regList) {
+                for (reg <- inst.regs) {
                     newRegList += assignReg(reg)
                 }
-                PopInst(newRegList.toList)
+                PopInst(newRegList.toSeq:_*)
             }
-            case inst: BranchInst => inst
-            case inst: BranchLinkInst => inst
+            case inst: FreeRegister => {
+                inst.r match {
+                    case t: TempRegister => {
+                        tempRegTable.get(t.num) match {
+                            case Some(f: FixedRegister) => regQueue.enqueue(f.num)
+                            case _ =>
+                        }
+                        inst
+                    }
+                    case _ => inst
+                }
+            }
+            case _ => i
         }
     }
     
@@ -97,43 +110,42 @@ object AssignRegister {
         }
     }
 
-    def assignReg(reg: Register): Register = reg
-    /*
     // Change register and assign register if needed
     def assignReg(reg: Register): Register = {
-        case t: TempRegister => {
-            val fReg = TempRegister()
-            if (nextRegNum >= 0) {
-                fReg = FixedRegister(nextRegNum)
-                nextRegNum -= 1
-            }
-            else {
-                // ! Stack
-                // ! Replace instruction
-            }
-            fReg
-        }
-        case v: Variable => {
-            val reg = varOpTable.get(v.name)
-            reg match {
-                case Some(fReg: FixedRegister) => fReg
-                case _ => {
-                    if (nextRegNum >= 0) {
-                        val fReg = FixedRegister(nextRegNum)
-                        varOpTable.addOne(v.name, fReg)
-                        nextRegNum -= 1
-                        fReg
-                    }
-                    else {
-                        val fReg = TempRegister()
-                        // ! Stack
-                        // ! Replace instruction
-                        fReg
+        reg match {
+            case v: Variable => {
+                val reg = varOpTable.get(v.name)
+                reg match {
+                    case Some(fReg: FixedRegister) => fReg
+                    case _ => {
+                        if (!regQueue.isEmpty) {
+                            val fReg = FixedRegister(regQueue.dequeue())
+                            varOpTable.addOne(v.name, fReg)
+                            fReg
+                        }
+                        else {
+                            // ! Stack
+                            // ! Replace instruction
+                            TempRegister()
+                        }
                     }
                 }
             }
+            case t: TempRegister => assignReg(t)
+            case _ => reg
         }
-        case _ => reg
     }
-    */
+    def assignReg(tReg: TempRegister): Operand = {
+        if (!regQueue.isEmpty) {
+            val fReg = FixedRegister(regQueue.dequeue())
+            tempRegTable.addOne(tReg.num, fReg)
+            fReg
+        }
+        // No more available registers
+        else {
+            // ! Stack
+            // ! Replace instruction
+            TempRegister()
+        }
+    }
 }

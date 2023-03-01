@@ -1,6 +1,6 @@
 package wacc
 
-import scala.collection.mutable.{LinkedHashMap}
+import scala.collection.mutable.{ListBuffer, LinkedHashMap}
 import wacc.Constants._
 
 object CodeGenerator {
@@ -10,7 +10,7 @@ object CodeGenerator {
     
     var currInstBlock = controlFlowGraph.body
     /* NEW: temporory design to accomodate label jumps */
-    val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
+    val controlFlowFuncs = LinkedHashMap[String, ControlFlowBlock]()
 
     def stringDef(string: String): String = {
         mainFunc.directive.addTextLabelToData(string)
@@ -33,14 +33,14 @@ object CodeGenerator {
                     2. get arg from stack / callee saved reg
                     2. 
                   */
-                funcBlock.body.addInst(new PushInst(List(fp, lr)))
+                funcBlock.body.addInst(new PushInst(fp, lr))
                 /* TODO: push caller saved registers that will be used */
                 funcBlock.body.addInst(new MovInst(fp, sp))
                 /* TODO: assign args to callee saved register and stack pos */
                 translate(stat)
                 funcBlock.body.addInst(new MovInst(sp, fp))
                 /* TODO: pop caller saved registers that are pushed */
-                funcBlock.body.addInst(new PopInst(List(fp, pc)))
+                funcBlock.body.addInst(new PopInst(fp, pc))
 
                 funcBlock.name = s"wacc_${ident.name}"
                 controlFlowFuncs.addOne(funcBlock.name, funcBlock)
@@ -87,10 +87,11 @@ object CodeGenerator {
         currInstBlock.addInst(MovInst(Constants.r0, op))
     }
     def translate(node: ExitNode): Unit = {
-        // currInstBlock.addInst()
         val op = translate(node.expr)
-        currInstBlock.addInst(MovInst(r0, op))
-        currInstBlock.addInst(BranchLinkInst("exit"))
+        currInstBlock.addInst(
+            MovInst(r0, op),
+            BranchLinkInst("exit")
+        )
     }
     def translate(node: PrintNode): Unit = {
         /** 
@@ -124,42 +125,42 @@ object CodeGenerator {
         val next = ifBlock.next
         val op = translate(node.expr)
         op match {
-            case ImmVal(num, ty) => {
-                currInstBlock.addInst(MovInst(r8, op))
-                currInstBlock.addInst(CmpInst(r8, immTrue))
+            case ImmVal(num) => {
+                currInstBlock.addInst(
+                    MovInst(r8, op),
+                    CmpInst(r8, immTrue)
+                )
             }
             case r: Register => {
                 currInstBlock.addInst(CmpInst(r, immTrue))
             }
         }
         currInstBlock.addInst(BranchNumCondInst("NE", ifFalse.num))
-
-        // Add next block and change current block
-        currInstBlock.next = ifBlock
         currInstBlock = ifTrue
-
         translate(node.fstStat)
         currInstBlock.addInst(BranchNumInst(next.num))
         currInstBlock = ifFalse
         translate(node.sndStat)
         currInstBlock = next
+        controlFlowFuncs += ((ifTrue.num.toString, ifTrue),
+        (ifFalse.num.toString, ifFalse),
+        (next.num.toString, next))
     }
     def translate(node: WhileNode): Unit = {
         val whileBlock = WhileBlock()
         val cond = whileBlock.cond
         val loop = whileBlock.loop
         val next = whileBlock.next
-
-        // Add next block and change current block
-        currInstBlock.next = whileBlock
         currInstBlock = cond
-        
         translate(node.expr)
         currInstBlock.addInst(BranchNumCondInst("NE", next.num))
         currInstBlock = loop
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
         currInstBlock = next
+        controlFlowFuncs += ((cond.num.toString, cond),
+        (loop.num.toString, loop),
+        (next.num.toString, next))
     }
     def translate(node: BeginEndNode): Unit = {
         translate(node.stat)
@@ -172,29 +173,32 @@ object CodeGenerator {
 
     def translate(node: ExprNode): Operand = {
         def translateComparisonOperators(op1: Register, op2: Operand, cond: String, notcond: String): Register = {
-            currInstBlock.addInst(CmpInst(op1, op2))
-            currInstBlock.addInst(MovCondInst(cond, r8, immTrue))
-            currInstBlock.addInst(MovCondInst(notcond, r8, immFalse))
-            return r8
+            currInstBlock.addInst(
+                CmpInst(op1, op2),
+                MovCondInst(cond, r8, immTrue),
+                MovCondInst(notcond, r8, immFalse),
+                FreeRegister(op1)
+            )
+            r8
         }
         
         node match {
             case IntLiterNode(n) => {
-                if (n >= 0) {return ImmVal(n, node.typeVal())}
+                if (n >= 0) {ImmVal(n)}
                 else {
                     currInstBlock.addInst(LdrPseudoInst(r8, n))
-                    return r8
+                    r8
                 }
             }
             case BoolLiterNode(true) => {
-                return ImmVal(1, node.typeVal())
+                ImmVal(1)
             }
             case BoolLiterNode(false) => {
-                return ImmVal(0, node.typeVal())
+                ImmVal(0)
             }
             case CharLiterNode(c) => {
                 val num = c.toInt
-                return ImmVal(num, node.typeVal())
+                ImmVal(num)
             }
             case StrLiterNode(s) => {
                 val label = stringDef(s)
@@ -204,79 +208,84 @@ object CodeGenerator {
                 reg
             }            
             case PairLiterNode() => {
-                return ImmVal(0, node.typeVal())
+                ImmVal(0)
             }
             case n: IdentNode => {
-                return Variable(n.newName)
+                Variable(n.newName)
             }
             case ArrayElemNode(ident, exprList) => {
                 val op1 = translate(ident)
-                // currInstBlock.addInst(PushInst(List(r3)))
                 currInstBlock.addInst(MovInst(r8, op1))
                 for (expr <- exprList) {
-                    currInstBlock.addInst(PushInst(List(r8)))
+                    currInstBlock.addInst(PushInst(r8))
                     val op2 = translate(expr)
-                    currInstBlock.addInst(MovInst(r10, op2))
-                    currInstBlock.addInst(PopInst(List(r8)))
-                    currInstBlock.addInst(BranchLinkInst("_arrLoad"))
+                    currInstBlock.addInst(
+                        MovInst(r10, op2),
+                        PopInst(r8),
+                        BranchLinkInst("_arrLoad")
+                    )
                 }
-                return r8
+                r8
             }
             case NotNode(expr) => {
                 var op = translate(expr)
                 op match {
-                    case ImmVal(num, ty) => {
+                    case ImmVal(num) => {
                         if (num == 0) op = immTrue
                         else op = immFalse
-                        return op 
+                        op 
                     }
                     // TODO: asInstanceOf or put all remaining cases
                     case r: Register => {
-                        currInstBlock.addInst(CmpInst(r, ImmVal(1, expr.typeVal())))
-                        currInstBlock.addInst(MovCondInst("NE", r8, ImmVal(1, expr.typeVal())))
-                        currInstBlock.addInst(MovCondInst("Eq", r8, ImmVal(0, expr.typeVal())))
-                        return r8 
+                        currInstBlock.addInst(
+                            CmpInst(r, ImmVal(1)),
+                            MovCondInst("NE", r8, ImmVal(1)),
+                            MovCondInst("Eq", r8, ImmVal(0))
+                        )
+                        r8 
                     }
                 }            
             }
             case NegNode(expr) => {
                 val op = translate(expr)
                 op match {
-                    case ImmVal(num, ty) => {
-                        currInstBlock.addInst(MovInst(r8, op))
-                        currInstBlock.addInst(NegInst(r8, r8))
+                    case ImmVal(num) => {
+                        currInstBlock.addInst(
+                            MovInst(r8, op), 
+                            NegInst(r8, r8)
+                        )
                     }
                     case r: Register => {
                         currInstBlock.addInst(NegInst(r8, r))
                     }
                 }
-                return r8
+                r8
             }
             case LenNode(expr) => {
                 val op = translate(expr)
-                val offset = Offset(op.asInstanceOf[Register], arrLenOffset)
+                val offset = ImmOffset(op.asInstanceOf[Register], ARRAY_LENGTH_OFFSET)
                 currInstBlock.addInst(LdrInst(r8, offset))
-                return r8
+                r8
             }
             case OrdNode(expr) => {
                 val op = translate(expr)
                 op match {
-                    case ImmVal(num, ty) => {
-                        return ImmVal(num, IntIdentifier())
+                    case ImmVal(num) => {
+                        ImmVal(num)
                     }
                     case _: Register => {
-                        return op
+                        op
                     }
                 }
             }
             case ChrNode(expr) => {
                 val op = translate(expr)
                 op match {
-                    case ImmVal(num, ty) => {
-                        return ImmVal(num, CharIdentifier())
+                    case ImmVal(num) => {
+                        ImmVal(num)
                     }
                     case _: Register => {
-                        return op
+                        op
                     }
                 }
             }
@@ -287,117 +296,130 @@ object CodeGenerator {
                 val op2 = translate(sndexpr)
                 var reg2: Register = r9
                 op2 match {
-                    case ImmVal(num, ty) => {
+                    case ImmVal(num) => {
                     currInstBlock.addInst(MovInst(reg2, op2))
                     }
                     case r: Register => {
                         reg2 = r
                     }
                 }
-                currInstBlock.addInst(SmullInst(r8, r9, reg1, reg2))
-                currInstBlock.addInst(CmpInst(r9, ASR(r8, 31)))
-                currInstBlock.addInst(BranchCondInst("NE", "_errOverflow"))
-                return r8
+                currInstBlock.addInst(
+                    SmullInst(r8, r9, reg1, reg2),
+                    CmpInst(r9, ASR(r8, 31)),
+                    BranchCondInst("NE", "_errOverflow"),
+                    FreeRegister(reg1)
+                )
+                r8
             }
             case DivNode(fstexpr, sndexpr) => {
-                currInstBlock.addInst(PushInst(List(r0, r1)))
+                currInstBlock.addInst(PushInst(r0, r1))
                 val op1 = translate(fstexpr)
                 currInstBlock.addInst(MovInst(r0, op1))
                 val op2 = translate(sndexpr)
-                currInstBlock.addInst(MovInst(r1, op2))
-                currInstBlock.addInst(CmpInst(r1, ImmVal(0, IntIdentifier())))
-                currInstBlock.addInst(BranchCondInst("Eq", "_errDivZero"))
-                currInstBlock.addInst(BranchLinkInst("__aeabi_idivmod"))
-                currInstBlock.addInst(MovInst(r8, r0))
-                currInstBlock.addInst(PopInst(List(r0, r1)))
-                return r8
+                currInstBlock.addInst(
+                    MovInst(r1, op2),
+                    CmpInst(r1, ImmVal(0)),
+                    BranchCondInst("Eq", "_errDivZero"),
+                    BranchLinkInst("__aeabi_idivmod"),
+                    MovInst(r8, r0),
+                    PopInst(r0, r1)
+                )
+                r8
             }
             case ModNode(fstexpr, sndexpr) => {
-                currInstBlock.addInst(PushInst(List(r0, r1)))
+                currInstBlock.addInst(PushInst(r0, r1))
                 val op1 = translate(fstexpr)
                 currInstBlock.addInst(MovInst(r0, op1))
                 val op2 = translate(sndexpr)
-                currInstBlock.addInst(MovInst(r1, op2))
-                currInstBlock.addInst(CmpInst(r1, ImmVal(0, IntIdentifier())))
-                currInstBlock.addInst(BranchCondInst("Eq", "_errDivZero"))
-                currInstBlock.addInst(BranchLinkInst("__aeabi_idivmod"))
-                currInstBlock.addInst(MovInst(r8, r1))
-                currInstBlock.addInst(PopInst(List(r0, r1)))
-                return r8
+                currInstBlock.addInst(
+                    MovInst(r1, op2),
+                    CmpInst(r1, ImmVal(0)),
+                    BranchCondInst("Eq", "_errDivZero"),
+                    BranchLinkInst("__aeabi_idivmod"),
+                    MovInst(r8, r1),
+                    PopInst(r0, r1)
+                )
+                r8
             }
             case AddNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 op1 match {
-                    case ImmVal(num, ty) => {
+                    case ImmVal(num) => {
                         val reg = TempRegister()
                         currInstBlock.addInst(MovInst(reg, op1))
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(AddsInst(r8, reg, op2))
+                        currInstBlock.addInst(
+                            AddsInst(r8, reg, op2),
+                            FreeRegister(reg)
+                        )
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
                         currInstBlock.addInst(AddsInst(r8, r, op2))
                     }
                 }
-                return r8
+                r8
             }
             case SubNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 op1 match {
-                    case ImmVal(num, ty) => {
+                    case ImmVal(num) => {
                         val reg = TempRegister()
                         currInstBlock.addInst(MovInst(reg, op1))
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(SubsInst(r8, reg, op2))
+                        currInstBlock.addInst(
+                            SubsInst(r8, reg, op2),
+                            FreeRegister(reg)
+                        )
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
                         currInstBlock.addInst(SubsInst(r8, r, op2))
                     }
                 }
-                return r8
+                r8
             }
             case GTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                return translateComparisonOperators(reg, op2, "GT", "LE")
+                translateComparisonOperators(reg, op2, "GT", "LE")
             }
             case GTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                return translateComparisonOperators(reg, op2, "GE", "LT")
+                translateComparisonOperators(reg, op2, "GE", "LT")
             }
             case LTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                return translateComparisonOperators(reg, op2, "LT", "GE")
+                translateComparisonOperators(reg, op2, "LT", "GE")
             }
             case LTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                return translateComparisonOperators(reg, op2, "LE", "GT")
+                translateComparisonOperators(reg, op2, "LE", "GT")
             }
             case EqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                return translateComparisonOperators(reg, op2, "Eq", "NE")
+                translateComparisonOperators(reg, op2, "Eq", "NE")
             }
             case IEqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                return translateComparisonOperators(reg, op2, "NE", "Eq")
+                translateComparisonOperators(reg, op2, "NE", "Eq")
             }
             // TODO: fix label
             case AndNode(fstexpr, sndexpr) => {
@@ -405,51 +427,47 @@ object CodeGenerator {
                 val reg1 = TempRegister()
                 currInstBlock.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
-                var reg2: Register = reg1
-                op2 match {
-                    case ImmVal(num, ty) => {
-                        reg2 = TempRegister()
-                        currInstBlock.addInst(MovInst(reg2, op2))
-                    }
-                    case r: Register => {
-                        reg2 = r
-                    }
-                }
+                val reg2 = TempRegister()
                 val newBlock = InstBlock()
-                currInstBlock.addInst(CmpInst(reg1, immTrue)) 
-                currInstBlock.addInst(BranchNumCondInst("NE", newBlock.num))
-                currInstBlock.addInst(CmpInst(reg2, immTrue))
+                currInstBlock.addInst(
+                    MovInst(reg2, op2),
+                    CmpInst(reg1, immTrue), 
+                    BranchNumCondInst("NE", newBlock.num),
+                    CmpInst(reg2, immTrue)
+                )
                 currInstBlock = newBlock
-                currInstBlock.addInst(MovCondInst("Eq", r8, immTrue))
-                currInstBlock.addInst(MovCondInst("NE", r8, immFalse))
-                return r8
+                currInstBlock.addInst(
+                    MovCondInst("Eq", r8, immTrue),
+                    MovCondInst("NE", r8, immFalse),
+                    FreeRegister(reg1),
+                    FreeRegister(reg2)
+                )
+                controlFlowFuncs += ((newBlock.num.toString, newBlock))
+                r8
             }
             case OrNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg1 = TempRegister()
                 currInstBlock.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
-                var reg2: Register = reg1
-                op2 match {
-                    case ImmVal(num, ty) => {
-                        reg2 = TempRegister()
-                        currInstBlock.addInst(MovInst(reg2, op2))
-                    }
-                    case r: Register => {
-                        reg2 = r
-                    }
-                }
+                val reg2 = TempRegister()
                 val newBlock = InstBlock()
-                currInstBlock.addInst(CmpInst(reg1, immTrue)) 
-                currInstBlock.addInst(BranchNumCondInst("Eq", newBlock.num))
-                currInstBlock.addInst(CmpInst(reg2, immTrue))
+                currInstBlock.addInst(
+                    MovInst(reg2, op2),
+                    CmpInst(reg1, immTrue), 
+                    BranchNumCondInst("Eq", newBlock.num),
+                    CmpInst(reg2, immTrue)
+                )
                 currInstBlock = newBlock
-                currInstBlock.addInst(MovCondInst("Eq", r8, immTrue))
-                currInstBlock.addInst(MovCondInst("NE", r8, immFalse))
-                return r8
+                currInstBlock.addInst(
+                    MovCondInst("Eq", r8, immTrue),
+                    MovCondInst("NE", r8, immFalse),
+                    FreeRegister(reg1),
+                    FreeRegister(reg2)
+                )
+                controlFlowFuncs += ((newBlock.num.toString, newBlock))
+                r8
             }
-
-             
         }
     }
 }
