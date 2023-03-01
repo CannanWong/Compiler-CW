@@ -7,23 +7,24 @@ object Printer {
 
     def printBlock(cfBlock: ControlFlowBlock): Unit = {
         cfBlock match {
-            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() =>
-                printBlock(cfBlock)
+            case ins: InstBlock => printBlock(ins: InstBlock)
+            case con: IfBlock => printBlock(con: IfBlock)
+            case whi: WhileBlock => printBlock(whi: WhileBlock)
+            case call: CallBlock => printBlock(call: CallBlock)
+            case fun: FuncBlock => printBlock(fun: FuncBlock)
+            case _ => 
         }
     }
 
     def printBlock(instBlock: InstBlock): Unit = {
         // Print label
-        //output += "@I" + instBlock.num + ":"
+        output += "@I" + instBlock.num + ":"
 
         for (inst <- instBlock.instList) {
+            output += "@I" + instBlock.num + ":"
             print(inst)
         }
-        instBlock.next match {
-            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => 
-                printBlock(instBlock.next)
-            case null => 
-        }
+        printBlock(instBlock.next)
     }
 
     def printBlock(ifBlock: IfBlock): Unit = {
@@ -48,6 +49,8 @@ object Printer {
         output += s"${funcBlock.name}:"
         printBlock(funcBlock.body)
     }
+
+    /* ############### print instructions ############### */
 
     def print(inst: Instruction): Unit = {
         inst match {
@@ -81,6 +84,7 @@ object Printer {
                 output += "B " + inst.label
             case inst: BranchLinkInst => 
                 output += "BL " + inst.label
+            case _ => output += "@ Unmatched instr"
         }
     }
 

@@ -16,11 +16,19 @@ object CodeGenerator {
         mainFunc.directive.addTextLabelToData(string)
     }
 
+    // def translateAST(p: ProgramNode): Unit = {
+    //     for (func <- p.funcList) {
+    //         translate(func)
+    //     }
+    //     translate(p.stat)
+    // }
+
     def translateAST(p: ProgramNode): Unit = {
-        for (func <- p.funcList) {
-            translate(func)
-        }
         translate(p.stat)
+
+    //     for (func <- p.funcList) {
+    //         translate(func)
+    //     }
     }
 
     def translate(f: FuncNode): Unit = {
@@ -63,15 +71,41 @@ object CodeGenerator {
 
     def translate(node: StatNode): Unit = {
         node match {
-            case SkipNode() | AssignIdentNode(_,_,_) | LValuesAssignNode(_,_) | ReadNode(_) | 
-                 FreeNode(_) | ReturnNode(_) | ExitNode(_) | PrintNode(_) | PrintlnNode(_) | 
-                 IfNode(_,_,_) | WhileNode(_,_) | BeginEndNode(_) | StatJoinNode(_) => 
-                translate(node)
+            case n: SkipNode => translate(n: SkipNode)
+            case n:AssignIdentNode => translate(n: AssignIdentNode)
+            case n: LValuesAssignNode => translate(n: LValuesAssignNode)
+            case n: ReadNode => translate(n: ReadNode)
+            case n: FreeNode => translate(n: FreeNode)
+            case n: ReturnNode => translate(n: ReturnNode)
+            case n: ExitNode => translate(n: ExitNode)
+            case n: PrintNode => translate(n: PrintNode)
+            case n: PrintlnNode => translate(n: PrintlnNode)
+            case n: IfNode => translate(n: IfNode)
+            case n: WhileNode => translate(n: WhileNode)
+            case n: BeginEndNode => translate(n: BeginEndNode)
+            case n: StatJoinNode => translate(n: StatJoinNode)
         }
     }
     def translate(node: SkipNode): Unit = {}
-    def translate(node: AssignIdentNode): Unit = {}
-    def translate(node: LValuesAssignNode): Unit = {}
+    def translate(node: AssignIdentNode): Unit = {
+        // throw new NotImplementedError("AssignIdent not implemented yet")
+        if(controlFlowGraph.name != "main") {
+            throw new IllegalArgumentException("func block at main not added to main")
+        }
+        /* temporary here */
+        controlFlowGraph.body.addInst(CmpInst(r7, r6))
+        r8
+    }
+
+    def translate(node: LValuesAssignNode): Unit = {
+        // throw new NotImplementedError("lValAssign not implemented yet")
+        if(controlFlowGraph.name != "main") {
+            throw new IllegalArgumentException("func block at main not added to main")
+        }
+        /* temporary here */
+        controlFlowGraph.body.addInst(CmpInst(r5, r4))
+        r8
+    }
     def translate(node: ReadNode): Unit = {
         val retOp = new TempRegister()
         val exprTy = node.lvalue.typeVal()
@@ -84,11 +118,11 @@ object CodeGenerator {
     def translate(node: FreeNode): Unit = {}
     def translate(node: ReturnNode): Unit = {
         val op = translate(node.expr)
-        currInstBlock.addInst(MovInst(Constants.r0, op))
+        controlFlowGraph.body.addInst(MovInst(Constants.r0, op))
     }
     def translate(node: ExitNode): Unit = {
         val op = translate(node.expr)
-        currInstBlock.addInst(
+        controlFlowGraph.body.addInst(
             MovInst(r0, op),
             BranchLinkInst("exit")
         )
@@ -126,19 +160,19 @@ object CodeGenerator {
         val op = translate(node.expr)
         op match {
             case ImmVal(num) => {
-                currInstBlock.addInst(
+                controlFlowGraph.body.addInst(
                     MovInst(r8, op),
                     CmpInst(r8, immTrue)
                 )
             }
             case r: Register => {
-                currInstBlock.addInst(CmpInst(r, immTrue))
+                controlFlowGraph.body.addInst(CmpInst(r, immTrue))
             }
         }
-        currInstBlock.addInst(BranchNumCondInst("NE", ifFalse.num))
+        controlFlowGraph.body.addInst(BranchNumCondInst("NE", ifFalse.num))
         currInstBlock = ifTrue
         translate(node.fstStat)
-        currInstBlock.addInst(BranchNumInst(next.num))
+        controlFlowGraph.body.addInst(BranchNumInst(next.num))
         currInstBlock = ifFalse
         translate(node.sndStat)
         currInstBlock = next
@@ -153,10 +187,10 @@ object CodeGenerator {
         val next = whileBlock.next
         currInstBlock = cond
         translate(node.expr)
-        currInstBlock.addInst(BranchNumCondInst("NE", next.num))
+        controlFlowGraph.body.addInst(BranchNumCondInst("NE", next.num))
         currInstBlock = loop
         translate(node.stat)
-        currInstBlock.addInst(BranchNumInst(cond.num))
+        controlFlowGraph.body.addInst(BranchNumInst(cond.num))
         currInstBlock = next
         controlFlowFuncs += ((cond.num.toString, cond),
         (loop.num.toString, loop),
@@ -173,7 +207,7 @@ object CodeGenerator {
 
     def translate(node: ExprNode): Operand = {
         def translateComparisonOperators(op1: Register, op2: Operand, cond: String, notcond: String): Register = {
-            currInstBlock.addInst(
+            controlFlowGraph.body.addInst(
                 CmpInst(op1, op2),
                 MovCondInst(cond, r8, immTrue),
                 MovCondInst(notcond, r8, immFalse),
@@ -186,7 +220,7 @@ object CodeGenerator {
             case IntLiterNode(n) => {
                 if (n >= 0) {ImmVal(n)}
                 else {
-                    currInstBlock.addInst(LdrPseudoInst(r8, n))
+                    controlFlowGraph.body.addInst(LdrPseudoInst(r8, n))
                     r8
                 }
             }
@@ -204,7 +238,7 @@ object CodeGenerator {
                 val label = stringDef(s)
                 val loadlabelAddrInstr = LabelAddress(label)
                 val reg = TempRegister()
-                currInstBlock.addInst(LdrInst(reg, loadlabelAddrInstr))
+                controlFlowGraph.body.addInst(LdrInst(reg, loadlabelAddrInstr))
                 reg
             }            
             case PairLiterNode() => {
@@ -215,11 +249,11 @@ object CodeGenerator {
             }
             case ArrayElemNode(ident, exprList) => {
                 val op1 = translate(ident)
-                currInstBlock.addInst(MovInst(r8, op1))
+                controlFlowGraph.body.addInst(MovInst(r8, op1))
                 for (expr <- exprList) {
-                    currInstBlock.addInst(PushInst(r8))
+                    controlFlowGraph.body.addInst(PushInst(r8))
                     val op2 = translate(expr)
-                    currInstBlock.addInst(
+                    controlFlowGraph.body.addInst(
                         MovInst(r10, op2),
                         PopInst(r8),
                         BranchLinkInst("_arrLoad")
@@ -237,7 +271,7 @@ object CodeGenerator {
                     }
                     // TODO: asInstanceOf or put all remaining cases
                     case r: Register => {
-                        currInstBlock.addInst(
+                        controlFlowGraph.body.addInst(
                             CmpInst(r, ImmVal(1)),
                             MovCondInst("NE", r8, ImmVal(1)),
                             MovCondInst("Eq", r8, ImmVal(0))
@@ -250,13 +284,13 @@ object CodeGenerator {
                 val op = translate(expr)
                 op match {
                     case ImmVal(num) => {
-                        currInstBlock.addInst(
+                        controlFlowGraph.body.addInst(
                             MovInst(r8, op), 
                             NegInst(r8, r8)
                         )
                     }
                     case r: Register => {
-                        currInstBlock.addInst(NegInst(r8, r))
+                        controlFlowGraph.body.addInst(NegInst(r8, r))
                     }
                 }
                 r8
@@ -264,7 +298,7 @@ object CodeGenerator {
             case LenNode(expr) => {
                 val op = translate(expr)
                 val offset = ImmOffset(op.asInstanceOf[Register], ARRAY_LENGTH_OFFSET)
-                currInstBlock.addInst(LdrInst(r8, offset))
+                controlFlowGraph.body.addInst(LdrInst(r8, offset))
                 r8
             }
             case OrdNode(expr) => {
@@ -292,18 +326,18 @@ object CodeGenerator {
             case MulNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg1 = TempRegister()
-                currInstBlock.addInst(MovInst(reg1, op1))
+                controlFlowGraph.body.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
                 var reg2: Register = r9
                 op2 match {
                     case ImmVal(num) => {
-                    currInstBlock.addInst(MovInst(reg2, op2))
+                    controlFlowGraph.body.addInst(MovInst(reg2, op2))
                     }
                     case r: Register => {
                         reg2 = r
                     }
                 }
-                currInstBlock.addInst(
+                controlFlowGraph.body.addInst(
                     SmullInst(r8, r9, reg1, reg2),
                     CmpInst(r9, ASR(r8, 31)),
                     BranchCondInst("NE", "_errOverflow"),
@@ -312,11 +346,11 @@ object CodeGenerator {
                 r8
             }
             case DivNode(fstexpr, sndexpr) => {
-                currInstBlock.addInst(PushInst(r0, r1))
+                controlFlowGraph.body.addInst(PushInst(r0, r1))
                 val op1 = translate(fstexpr)
-                currInstBlock.addInst(MovInst(r0, op1))
+                controlFlowGraph.body.addInst(MovInst(r0, op1))
                 val op2 = translate(sndexpr)
-                currInstBlock.addInst(
+                controlFlowGraph.body.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
                     BranchCondInst("Eq", "_errDivZero"),
@@ -327,11 +361,11 @@ object CodeGenerator {
                 r8
             }
             case ModNode(fstexpr, sndexpr) => {
-                currInstBlock.addInst(PushInst(r0, r1))
+                controlFlowGraph.body.addInst(PushInst(r0, r1))
                 val op1 = translate(fstexpr)
-                currInstBlock.addInst(MovInst(r0, op1))
+                controlFlowGraph.body.addInst(MovInst(r0, op1))
                 val op2 = translate(sndexpr)
-                currInstBlock.addInst(
+                controlFlowGraph.body.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
                     BranchCondInst("Eq", "_errDivZero"),
@@ -346,16 +380,16 @@ object CodeGenerator {
                 op1 match {
                     case ImmVal(num) => {
                         val reg = TempRegister()
-                        currInstBlock.addInst(MovInst(reg, op1))
+                        controlFlowGraph.body.addInst(MovInst(reg, op1))
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(
+                        controlFlowGraph.body.addInst(
                             AddsInst(r8, reg, op2),
                             FreeRegister(reg)
                         )
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(AddsInst(r8, r, op2))
+                        controlFlowGraph.body.addInst(AddsInst(r8, r, op2))
                     }
                 }
                 r8
@@ -365,16 +399,16 @@ object CodeGenerator {
                 op1 match {
                     case ImmVal(num) => {
                         val reg = TempRegister()
-                        currInstBlock.addInst(MovInst(reg, op1))
+                        controlFlowGraph.body.addInst(MovInst(reg, op1))
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(
+                        controlFlowGraph.body.addInst(
                             SubsInst(r8, reg, op2),
                             FreeRegister(reg)
                         )
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(SubsInst(r8, r, op2))
+                        controlFlowGraph.body.addInst(SubsInst(r8, r, op2))
                     }
                 }
                 r8
@@ -382,42 +416,42 @@ object CodeGenerator {
             case GTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
-                currInstBlock.addInst(MovInst(reg, op1))
+                controlFlowGraph.body.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, "GT", "LE")
             }
             case GTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
-                currInstBlock.addInst(MovInst(reg, op1))
+                controlFlowGraph.body.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, "GE", "LT")
             }
             case LTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
-                currInstBlock.addInst(MovInst(reg, op1))
+                controlFlowGraph.body.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, "LT", "GE")
             }
             case LTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
-                currInstBlock.addInst(MovInst(reg, op1))
+                controlFlowGraph.body.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, "LE", "GT")
             }
             case EqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
-                currInstBlock.addInst(MovInst(reg, op1))
+                controlFlowGraph.body.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, "Eq", "NE")
             }
             case IEqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
-                currInstBlock.addInst(MovInst(reg, op1))
+                controlFlowGraph.body.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, "NE", "Eq")
             }
@@ -425,18 +459,18 @@ object CodeGenerator {
             case AndNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg1 = TempRegister()
-                currInstBlock.addInst(MovInst(reg1, op1))
+                controlFlowGraph.body.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
                 val reg2 = TempRegister()
                 val newBlock = InstBlock()
-                currInstBlock.addInst(
+                controlFlowGraph.body.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
                     BranchNumCondInst("NE", newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock = newBlock
-                currInstBlock.addInst(
+                controlFlowGraph.body.addInst(
                     MovCondInst("Eq", r8, immTrue),
                     MovCondInst("NE", r8, immFalse),
                     FreeRegister(reg1),
@@ -448,18 +482,18 @@ object CodeGenerator {
             case OrNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg1 = TempRegister()
-                currInstBlock.addInst(MovInst(reg1, op1))
+                controlFlowGraph.body.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
                 val reg2 = TempRegister()
                 val newBlock = InstBlock()
-                currInstBlock.addInst(
+                controlFlowGraph.body.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
                     BranchNumCondInst("Eq", newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock = newBlock
-                currInstBlock.addInst(
+                controlFlowGraph.body.addInst(
                     MovCondInst("Eq", r8, immTrue),
                     MovCondInst("NE", r8, immFalse),
                     FreeRegister(reg1),

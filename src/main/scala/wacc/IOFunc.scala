@@ -38,7 +38,7 @@ object IOFunc {
 
     def printInt(op: Operand): Unit = {
       /* caller instruction */
-      CodeGenerator.currInstBlock.addInst(
+      CodeGenerator.controlFlowGraph.body.addInst(
         MovInst(r0, op),
         BranchLinkInst(PRINT_INT_LABEL)
       )
@@ -51,13 +51,13 @@ object IOFunc {
         MovInst(r1, r0),
         LdrInst(r0, LabelAddress(text))
       )
-      CodeGenerator.currInstBlock.addInst(printEnd())
+      CodeGenerator.controlFlowGraph.body.addInst(printEnd())
       CodeGenerator.controlFlowFuncs.addOne(PRINT_INT_LABEL, printIntFunc)
     }
 
     def printPtr(op: Operand): Unit = {
       /* caller instruction */
-      CodeGenerator.currInstBlock.addInst(
+      CodeGenerator.controlFlowGraph.body.addInst(
         MovInst(r0, op),
         BranchLinkInst(PRINT_PTR_LABEL)
       )
@@ -70,12 +70,12 @@ object IOFunc {
         MovInst(r1, r0),
         LdrInst(r0, LabelAddress(text))
       )
-      CodeGenerator.currInstBlock.addInst(printEnd())
+      CodeGenerator.controlFlowGraph.body.addInst(printEnd())
       CodeGenerator.controlFlowFuncs.addOne(PRINT_PTR_LABEL, printPtrFunc)
     }
 
     def printString(op: Operand): Unit = {
-      CodeGenerator.currInstBlock.addInst(
+      CodeGenerator.controlFlowGraph.body.addInst(
         LdrInst(r0, op),
         BranchLinkInst(PRINT_STR_LABEL)
       )
@@ -90,13 +90,13 @@ object IOFunc {
         LdrInst(r1, ImmOffset(r0, INT_SIZE)),
         LdrInst(r0, LabelAddress(text))
       )
-      CodeGenerator.currInstBlock.addInst(printEnd())     
+      CodeGenerator.controlFlowGraph.body.addInst(printEnd())     
       CodeGenerator.controlFlowFuncs.addOne(PRINT_STR_LABEL, printStringFunc)
     }
 
     def printChar(op: Operand): Unit = {
       /* caller instruction */
-      CodeGenerator.currInstBlock.addInst(
+      CodeGenerator.controlFlowGraph.body.addInst(
         MovInst(r0, op),
         BranchLinkInst(PRINT_CHAR_LABEL)
       )
@@ -109,13 +109,13 @@ object IOFunc {
         MovInst(r1, r0),
         LdrInst(r0, LabelAddress(text))
       )
-      CodeGenerator.currInstBlock.addInst(printEnd())
+      CodeGenerator.controlFlowGraph.body.addInst(printEnd())
       CodeGenerator.controlFlowFuncs.addOne(PRINT_CHAR_LABEL, printCharFunc)
     }
 
     def printBool(op: Operand): Unit = {
       /* caller instruction */
-      CodeGenerator.currInstBlock.addInst(
+      CodeGenerator.controlFlowGraph.body.addInst(
         MovInst(r0, op),
         BranchLinkInst(PRINT_BOOL_LABEL)
       )
@@ -138,21 +138,21 @@ object IOFunc {
       )
       /* print true */
       CodeGenerator.currInstBlock = ifTrue
-      CodeGenerator.currInstBlock.addInst(
+      CodeGenerator.controlFlowGraph.body.addInst(
         LdrInst(r2, LabelAddress(trueTxt))
       )
       /* print false */
       CodeGenerator.currInstBlock = ifFalse
-      CodeGenerator.currInstBlock.addInst(
+      CodeGenerator.controlFlowGraph.body.addInst(
         LdrInst(r2, LabelAddress(falseTxt))
       )
       /* next block */
       CodeGenerator.currInstBlock = next
-      CodeGenerator.currInstBlock.addInst(
+      CodeGenerator.controlFlowGraph.body.addInst(
         LdrInst(r1, ImmOffset(r2, INT_SIZE)),
         LdrInst(r0, LabelAddress(text))
       )
-      CodeGenerator.currInstBlock.addInst(printEnd())
+      CodeGenerator.controlFlowGraph.body.addInst(printEnd())
 
       CodeGenerator.controlFlowFuncs.addOne(PRINT_BOOL_LABEL, printBoolFunc)
     }
@@ -165,7 +165,7 @@ object IOFunc {
         LdrInst(r0, LabelAddress(text)),
         BranchLinkInst("puts")
       )
-      CodeGenerator.currInstBlock.addInst(printEnd())
+      CodeGenerator.controlFlowGraph.body.addInst(printEnd())
       CodeGenerator.controlFlowFuncs.addOne(PRINTLN_LABEL, printlnFunc)
 
     }
@@ -174,7 +174,7 @@ object IOFunc {
       /* caller instruction */
       op match {
         case op: Register => {
-          CodeGenerator.currInstBlock.addInst(
+          CodeGenerator.controlFlowGraph.body.addInst(
             MovInst(r0, op),
             BranchLinkInst(READ_CHAR_LABEL),
             MovInst(op, r0)
@@ -192,7 +192,7 @@ object IOFunc {
       /* caller instruction */
       op match {
         case op: Register => {
-          CodeGenerator.currInstBlock.addInst(
+          CodeGenerator.controlFlowGraph.body.addInst(
             MovInst(r0, op),
             BranchLinkInst(READ_INT_LABEL),
             MovInst(op, r0)

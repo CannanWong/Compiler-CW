@@ -20,7 +20,8 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
-                    // CodeGenerator.translateAST(x)
+                    //CodeGenerator.translateAST(x)
+                    ASTtoCode.setNode(x)
                     val filename = WriteToFile.fileName(args(0))
                     WriteToFile.write(filename)
                 }
@@ -42,6 +43,17 @@ object Main {
         }
     }
 
+    object ASTtoCode {
+        var astNode: Option[ProgramNode] = None
+        def setNode(node: ProgramNode):Unit = {
+            astNode = Some(node)
+        }
+        def getNode(): ProgramNode = {
+            astNode.get
+        }
+
+    }
+
     object WriteToFile {
 
         def fileName(filePath: String) : String = {
@@ -57,6 +69,9 @@ object Main {
             CodeGenerator.mainFunc = mainFunc
             CodeGenerator.controlFlowGraph = mainFunc
             
+            CodeGenerator.translateAST(ASTtoCode.getNode())
+            // does not return
+            
             val pw = new PrintWriter(new File(filename))
             /* global main */
             for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
@@ -64,7 +79,6 @@ object Main {
             }
             var i = 0
             for (line <- Printer.output) {
-                pw.println(s"@ line ${i}")
                 pw.println(line)
                 i += 1
             }
