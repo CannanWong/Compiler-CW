@@ -123,9 +123,48 @@ object CodeGenerator {
     def translate(node: SkipNode): Unit = {}
 
     def translate(node: AssignIdentNode): Unit = {
+        val op = transRVal(node.rvalue)
+        currInstBlock.addInst(MovInst(Variable(node.ident.name), op))
+
+        // Pop back Caller Regs
+        node.rvalue match {
+            case CallNode(_, _) => currInstBlock.addInst(PopInst(List(r0, r1, r2, r3)))
+            case _ => 
+        }
     }
 
     def translate(node: LValuesAssignNode): Unit = {
+        // Process right value first and store it in a temp reg
+        val op = transRVal(node.rvalue)
+        node.lvalue match {
+            case IdentNode(name) => {
+                currInstBlock.addInst(MovInst(Variable(name), op))
+            }
+            case ArrayElemNode(ident, exprList) => {
+                currInstBlock.addInst(MovInst(r8, Variable(ident.name)))
+                for (arrayNum <- 1 to exprList.length - 1) {
+                    val index = translate(exprList(arrayNum))
+                    currInstBlock.addInst(
+                        // Ready for special convention for _arrLoad,
+                        // r8 for array addr, r10 for index
+                        PushInst(List(r8)),
+                        MovInst(r10, index),
+                        PopInst(List(r8)),
+                        BranchLinkInst("_arrLoad"))
+                }
+
+                currInstBlock.addInst(
+                    // Ready for special convention for _arrStore,
+                    // r8 for the value to be stored, r9 for array addr, r10 for index
+                    MovInst(r10, translate(exprList.last)),
+                    MovInst(r9, op),
+                    BranchLinkInst("_arrStore")
+                    //arrstore to be defined
+                )
+            }
+            case FstNode(lvalue) => storeToPairElemAddr(0, lvalue, op)
+            case SndNode(lvalue) => storeToPairElemAddr(4, lvalue, op)
+        }
     }
 
     def translate(node: ReadNode): Unit = {
@@ -310,7 +349,7 @@ object CodeGenerator {
                             MovCondInst("NE", r8, ImmVal(1)),
                             MovCondInst("Eq", r8, ImmVal(0))
                         )
-                        r8 
+                        r8
                     }
                 }            
             }
