@@ -45,7 +45,7 @@ case class DataDirectiveStat() extends Directive {
 
   override def build(): String = {
     val sb = new StringBuilder()
-    sb.++=(".data\n")
+    sb.++=("\n.data\n")
     for (stat <- dirContents) {
       sb.++=(stat)
     } 

@@ -45,6 +45,12 @@ object IOFunc {
 
       /* callee instruction */
       val printIntFunc = FuncBlock()
+      printIntFunc.name = PRINT_INT_LABEL
+
+      /* change current instruction block to func block */
+      val callerBlock = CodeGenerator.controlFlowGraph
+      CodeGenerator.switchCurrInstrBlock(printIntFunc)
+
       val text = printIntFunc.directive.addTextLabelToData("%d", PRINT_INT_LABEL)
       printIntFunc.body.addInst(
         PushInst(lr),
@@ -52,6 +58,9 @@ object IOFunc {
         LdrInst(r0, LabelAddress(text))
       )
       CodeGenerator.currInstBlock.addInst(printEnd())
+
+      /* change current instruction block to func where print is called */
+      CodeGenerator.switchCurrInstrBlock(callerBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_INT_LABEL, printIntFunc)
     }
 
@@ -64,6 +73,12 @@ object IOFunc {
 
       /* callee instruction */
       val printPtrFunc = FuncBlock()
+      printPtrFunc.name = PRINT_PTR_LABEL
+
+      /* change current instruction block to func block */
+      val callerBlock = CodeGenerator.controlFlowGraph
+      CodeGenerator.switchCurrInstrBlock(printPtrFunc)
+
       val text = printPtrFunc.directive.addTextLabelToData("%p", PRINT_PTR_LABEL)
       printPtrFunc.body.addInst(
         PushInst(lr),
@@ -71,6 +86,9 @@ object IOFunc {
         LdrInst(r0, LabelAddress(text))
       )
       CodeGenerator.currInstBlock.addInst(printEnd())
+
+      /* change current instruction block to func where print is called */
+      CodeGenerator.switchCurrInstrBlock(callerBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_PTR_LABEL, printPtrFunc)
     }
 
@@ -82,6 +100,12 @@ object IOFunc {
 
       /* callee instruction */
       val printStringFunc = FuncBlock()
+      printStringFunc.name = PRINT_STR_LABEL
+
+      /* change current instruction block to func block */
+      val callerBlock = CodeGenerator.controlFlowGraph
+      CodeGenerator.switchCurrInstrBlock(printStringFunc)
+
       val text = printStringFunc.directive.addTextLabelToData("%s", PRINT_STR_LABEL)
 
       printStringFunc.body.addInst(
@@ -90,7 +114,10 @@ object IOFunc {
         LdrInst(r1, ImmOffset(r0, INT_SIZE)),
         LdrInst(r0, LabelAddress(text))
       )
-      CodeGenerator.currInstBlock.addInst(printEnd())     
+      CodeGenerator.currInstBlock.addInst(printEnd())
+
+      /* change current instruction block to func where print is called */
+      CodeGenerator.switchCurrInstrBlock(callerBlock)     
       CodeGenerator.controlFlowFuncs.addOne(PRINT_STR_LABEL, printStringFunc)
     }
 
@@ -103,6 +130,12 @@ object IOFunc {
 
       /* callee instruction */
       val printCharFunc = FuncBlock()
+      printCharFunc.name = PRINT_CHAR_LABEL
+
+      /* change current instruction block to func block */
+      val callerBlock = CodeGenerator.controlFlowGraph
+      CodeGenerator.switchCurrInstrBlock(printCharFunc)
+
       val text = printCharFunc.directive.addTextLabelToData("%c", PRINT_CHAR_LABEL)
       printCharFunc.body.addInst(
         PushInst(lr),
@@ -110,6 +143,9 @@ object IOFunc {
         LdrInst(r0, LabelAddress(text))
       )
       CodeGenerator.currInstBlock.addInst(printEnd())
+
+      /* change current instruction block to func where print is called */
+      CodeGenerator.switchCurrInstrBlock(callerBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_CHAR_LABEL, printCharFunc)
     }
 
@@ -122,6 +158,12 @@ object IOFunc {
 
       /* callee instruction */
       val printBoolFunc = FuncBlock()
+      printBoolFunc.name = PRINT_BOOL_LABEL
+
+      /* change current instruction block to func block */
+      val callerBlock = CodeGenerator.controlFlowGraph
+      CodeGenerator.switchCurrInstrBlock(printBoolFunc)
+
       val falseTxt = printBoolFunc.directive.addTextLabelToData("%false", PRINT_BOOL_LABEL)
       val trueTxt = printBoolFunc.directive.addTextLabelToData("%true", PRINT_BOOL_LABEL)
       val text = printBoolFunc.directive.addTextLabelToData("%s", PRINT_BOOL_LABEL)
@@ -154,11 +196,23 @@ object IOFunc {
       )
       CodeGenerator.currInstBlock.addInst(printEnd())
 
+      /* change current instruction block to func where print is called */
+      CodeGenerator.switchCurrInstrBlock(callerBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_BOOL_LABEL, printBoolFunc)
     }
 
     def println(): Unit = {
+      CodeGenerator.currInstBlock.addInst(
+        BranchLinkInst(PRINTLN_LABEL)
+      )
+      /* callee instruction */
       val printlnFunc = FuncBlock()
+      printlnFunc.name = PRINTLN_LABEL
+
+      /* change current instruction block to func block */
+      val callerBlock = CodeGenerator.controlFlowGraph
+      CodeGenerator.switchCurrInstrBlock(printlnFunc)
+
       val text = printlnFunc.directive.addTextLabelToData("", PRINTLN_LABEL)
       printlnFunc.body.addInst(
         PushInst(lr),
@@ -166,6 +220,9 @@ object IOFunc {
         BranchLinkInst("puts")
       )
       CodeGenerator.currInstBlock.addInst(printEnd())
+
+      /* change current instruction block to func where print is called */
+      CodeGenerator.switchCurrInstrBlock(callerBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINTLN_LABEL, printlnFunc)
 
     }
@@ -183,8 +240,17 @@ object IOFunc {
         case _ => throw new IllegalArgumentException("read op is not register")
       }
       /* callee instruction */
-      val readCharFunc = FuncBlock()     
+      val readCharFunc = FuncBlock()
+      readCharFunc.name = READ_CHAR_LABEL
+
+      /* change current instruction block to func block */
+      val callerBlock = CodeGenerator.controlFlowGraph
+      CodeGenerator.switchCurrInstrBlock(readCharFunc)
+
       readCharFunc.body.addInst(readFunc(READ_CHAR_LABEL, "%c", readCharFunc))
+
+      /* change current instruction block to func where print is called */
+      CodeGenerator.switchCurrInstrBlock(callerBlock)
       CodeGenerator.controlFlowFuncs.addOne(READ_CHAR_LABEL, readCharFunc)    
     }
 
@@ -202,7 +268,16 @@ object IOFunc {
       }
       /* callee instruction */
       val readIntFunc = FuncBlock()
+      readIntFunc.name = READ_INT_LABEL
+
+      /* change current instruction block to func block */
+      val callerBlock = CodeGenerator.controlFlowGraph
+      CodeGenerator.switchCurrInstrBlock(readIntFunc)
+
       readIntFunc.body.addInst(readFunc(READ_CHAR_LABEL, "%d", readIntFunc))
+
+      /* change current instruction block to func where print is called */
+      CodeGenerator.switchCurrInstrBlock(callerBlock)
       CodeGenerator.controlFlowFuncs.addOne(READ_INT_LABEL, readIntFunc)    
     }
 }
