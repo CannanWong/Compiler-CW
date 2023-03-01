@@ -107,7 +107,7 @@ object CodeGenerator {
     def translate(node: StatNode): Unit = {
         node match {
             case n: SkipNode => translate(n: SkipNode)
-            case n:AssignIdentNode => translate(n: AssignIdentNode)
+            case n: AssignIdentNode => translate(n: AssignIdentNode)
             case n: LValuesAssignNode => translate(n: LValuesAssignNode)
             case n: ReadNode => translate(n: ReadNode)
             case n: FreeNode => translate(n: FreeNode)
@@ -158,8 +158,10 @@ object CodeGenerator {
                     // r8 for the value to be stored, r9 for array addr, r10 for index
                     MovInst(r10, translate(exprList.last)),
                     MovInst(r9, op),
-                    BranchLinkInst("_arrStore")
-                    //arrstore to be defined
+                    ident.typeVal() match {
+                        case CharIdentifier() => BranchLinkInst("_arrStoreB")
+                        case _ => BranchLinkInst("_arrStore")
+                    }
                 )
             }
             case FstNode(lvalue) => storeToPairElemAddr(0, lvalue, op)

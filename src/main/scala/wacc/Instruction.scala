@@ -23,6 +23,9 @@ case class LdrInst(rd: Register, op: Operand) extends Instruction
 case class LdrsbInst(rd: Register, op: Operand) extends Instruction
 case class LdrPseudoInst(rd: Register, num: Int) extends Instruction
 case class StrInst(rd: Register, op: Operand) extends Instruction
+case class StrbInst(rd: Register, op: Operand) extends Instruction
+case class StrChgInst(rd: Register, op: Operand) extends Instruction
+case class StrbChgInst(rd: Register, op: Operand) extends Instruction
 case class PushInst(regs: Register*) extends Instruction
 case class PopInst(regs: Register*) extends Instruction
 
@@ -49,7 +52,6 @@ case class Variable(name: String) extends Register
 case class LabelAddress(address: String) extends Operand
 case class ImmVal(num: Int) extends Operand
 case class ASR(r: Register, bits: Int) extends Operand
-case class Offset(rn: Register, value: Int) extends Operand
 case class ImmOffset(r: Register, offset: Int) extends Operand
 case class RegOffset(rm: Register, rn: Register) extends Operand
 case class ScaledOffsetLSL(rn: Register, rm: Register, shift: ImmVal) extends Operand
