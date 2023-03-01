@@ -18,10 +18,7 @@ object Printer {
 
     def printBlock(instBlock: InstBlock): Unit = {
         // Print label
-        //output += "@I" + instBlock.num + ":"
-
         for (inst <- instBlock.instList) {
-            //output += "@I" + instBlock.num + ":"
             print(inst)
         }
         printBlock(instBlock.next)
