@@ -144,12 +144,11 @@ object CodeGenerator {
             case ArrayElemNode(ident, exprList) => {
                 currInstBlock.addInst(MovInst(r8, Variable(ident.name)))
                 for (arrayNum <- 1 to exprList.length - 1) {
-                    val index = translate(exprList(arrayNum))
                     currInstBlock.addInst(
                         // Ready for special convention for _arrLoad,
                         // r8 for array addr, r10 for index
                         PushInst(r8),
-                        MovInst(r10, index),
+                        MovInst(r10, translate(exprList(arrayNum))),
                         PopInst(r8),
                         BranchLinkInst("_arrLoad"))
                 }
