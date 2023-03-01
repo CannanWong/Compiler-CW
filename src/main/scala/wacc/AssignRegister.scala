@@ -49,8 +49,8 @@ object AssignRegister {
     def assignBlock(ifBlock: IfBlock): Unit = {
         val newIfBlock = IfBlock()
         currInstBlock.next = newIfBlock
-        currInstBlock = newIfBlock.cond
-        assignBlock(ifBlock.cond)
+        // currInstBlock = newIfBlock.cond
+        // assignBlock(ifBlock.cond)
         currInstBlock = newIfBlock.nextT
         assignBlock(ifBlock.nextT)
         currInstBlock = newIfBlock.nextF

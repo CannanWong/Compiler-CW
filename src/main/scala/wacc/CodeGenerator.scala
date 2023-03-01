@@ -185,7 +185,6 @@ object CodeGenerator {
     def translate(node: IfNode): Unit = {
         val ifBlock = IfBlock()
         /* next block of current control flow graph block points to this ifBlock */
-        controlFlowGraph.body.next = ifBlock
         val ifTrue = ifBlock.nextT
         val ifFalse = ifBlock.nextF
         val next = ifBlock.next
