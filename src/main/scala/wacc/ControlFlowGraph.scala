@@ -56,10 +56,16 @@ case class CallBlock() extends ControlFlowBlock {
 }
 
 case class FuncBlock() extends ControlFlowBlock {
+    var GLOBAL_MAIN = false
     var num: Int = ControlFlowGraph.nextFuncNum
     var body: InstBlock = new InstBlock()
     var name: String = ""
     /* NEW: temporory design to accomodate print label jumps */
     val directive: DataDirectiveStat = new DataDirectiveStat()
     ControlFlowGraph.nextFuncNum += 1
+
+    def setGlobalMain(): Unit = {
+        GLOBAL_MAIN = true
+        directive.GLOBAL_MAIN = true
+    }
 }

@@ -24,11 +24,36 @@ object CodeGenerator {
     // }
 
     def translateAST(p: ProgramNode): Unit = {
-        translate(p.stat)
+        translateMain(p.stat)
+        for (func <- p.funcList) {
+            translate(func)
+        }
+    }
 
-    //     for (func <- p.funcList) {
-    //         translate(func)
-    //     }
+    def translateMain(stat: StatNode): Unit = {
+        val mainFuncBlock = FuncBlock()
+        mainFuncBlock.setGlobalMain()
+        mainFuncBlock.name = "main"
+
+        mainFunc = mainFuncBlock
+        controlFlowGraph = mainFuncBlock
+
+        mainFuncBlock.body.addInst(new PushInst(fp, lr))
+        /* TODO: push caller saved registers that will be used */
+        mainFuncBlock.body.addInst(new PushInst(r4, r5, r6, r7, r8, r10, r12))
+        /* ################################ */
+        mainFuncBlock.body.addInst(new MovInst(fp, sp))
+        /* TODO: assign args to callee saved register and stack pos */
+        translate(stat)
+
+        mainFuncBlock.body.addInst(new MovInst(r0, ImmVal(0)))
+        mainFuncBlock.body.addInst(new MovInst(sp, fp))
+        /* TODO: pop caller saved registers that are pushed */
+        mainFuncBlock.body.addInst(new PopInst(r4, r5, r6, r7, r8, r10, r12))
+        /* ################################ */
+        mainFuncBlock.body.addInst(new PopInst(fp, pc))
+
+        controlFlowFuncs.addOne(mainFuncBlock.name, mainFuncBlock)
     }
 
     def translate(f: FuncNode): Unit = {
@@ -39,18 +64,21 @@ object CodeGenerator {
                   * TODO:
                     1. set up frame pointer and lr
                     2. get arg from stack / callee saved reg
-                    2. 
                   */
                 funcBlock.body.addInst(new PushInst(fp, lr))
                 /* TODO: push caller saved registers that will be used */
+                funcBlock.body.addInst(new PushInst(r4, r5, r6, r7, r8, r10, r12))
+                /* ################################ */
                 funcBlock.body.addInst(new MovInst(fp, sp))
                 /* TODO: assign args to callee saved register and stack pos */
                 translate(stat)
                 funcBlock.body.addInst(new MovInst(sp, fp))
                 /* TODO: pop caller saved registers that are pushed */
+                funcBlock.body.addInst(new PopInst(r4, r5, r6, r7, r8, r10, r12))
+                /* ################################ */
                 funcBlock.body.addInst(new PopInst(fp, pc))
 
-                funcBlock.name = s"wacc_${ident.name}"
+                funcBlock.name = if (funcBlock.GLOBAL_MAIN) "main" else s"wacc_${ident.name}"
                 controlFlowFuncs.addOne(funcBlock.name, funcBlock)
             }
             case _ => throw new IllegalArgumentException("FuncNode translation receives non FuncNode")

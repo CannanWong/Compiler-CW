@@ -8,10 +8,6 @@ abstract class Directive() {
   var dirCount = 0
   val dirContents = ListBuffer[String]()
 
-  def setGlobalMain(): Unit = {
-    GLOBAL_MAIN = true
-  }
-
   def build(): String = {
     val ret = new StringBuilder()
     for (c <- dirContents) {
