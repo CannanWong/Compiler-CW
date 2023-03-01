@@ -23,18 +23,21 @@ object StandardFuncs {
 
     private def getFunction(name: String): FuncBlock = {
         name match {
-            case ARRAY_LOAD_LABEL => {
+            case ARRAY_LOAD_LABEL | ARRAY_LOAD_B_LABEL => {
                 var funcBlock = new FuncBlock
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
-                    MovCondInst("LT", r1, r10),
-                    BranchLinkCondInst("LT", "_boundsCheck"),
+                    MovCondInst("lt", r1, r10),
+                    BranchLinkCondInst("lt", "_boundsCheck"),
                     LdrInst(lr, ImmOffset(r8, INT_SIZE)),
                     CmpInst(r10, lr),
-                    MovCondInst("GE", r1, r10),
-                    BranchLinkCondInst("GE", "_boundsCheck"),
-                    LdrInst(r8, ScaledOffsetLSL(r8, r10, ImmVal(2))),
+                    MovCondInst("ge", r1, r10),
+                    BranchLinkCondInst("ge", "_boundsCheck"),
+                    name match {
+                        case ARRAY_LOAD_LABEL => LdrInst(r8, ScaledOffsetLSL(r8, r10, ImmVal(2)))
+                        case ARRAY_LOAD_B_LABEL => LdrInst(r8, RegOffset(r8, r10))
+                    },
                     PopInst(pc)
                 )
                 funcBlock
@@ -44,13 +47,16 @@ object StandardFuncs {
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
-                    MovCondInst("LT", r1, r10),
-                    BranchLinkCondInst("LT", "_boundsCheck"),
+                    MovCondInst("lt", r1, r10),
+                    BranchLinkCondInst("lt", "_boundsCheck"),
                     LdrInst(lr, ImmOffset(r9, INT_SIZE)),
                     CmpInst(r10, lr),
-                    MovCondInst("GE", r1, r10),
-                    BranchLinkCondInst("GE", "_boundsCheck"),
-                    LdrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2))),
+                    MovCondInst("ge", r1, r10),
+                    BranchLinkCondInst("ge", "_boundsCheck"),
+                    name match {
+                        case ARRAY_LOAD_LABEL => LdrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
+                        case ARRAY_LOAD_B_LABEL => LdrInst(r8, RegOffset(r9, r10))
+                    },
                     PopInst(pc)
                 )
                 funcBlock

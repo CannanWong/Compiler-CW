@@ -51,5 +51,6 @@ case class ImmVal(num: Int) extends Operand
 case class ASR(r: Register, bits: Int) extends Operand
 case class Offset(rn: Register, value: Int) extends Operand
 case class ImmOffset(r: Register, offset: Int) extends Operand
+case class RegOffset(rm: Register, rn: Register) extends Operand
 case class ScaledOffsetLSL(rn: Register, rm: Register, shift: ImmVal) extends Operand
 
