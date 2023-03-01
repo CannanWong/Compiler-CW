@@ -19,8 +19,10 @@ case class InstBlock() extends ControlFlowBlock {
     var next: ControlFlowBlock = null
     ControlFlowGraph.nextInstNum += 1
 
-    def addInst(inst: Instruction) = {
-        instList += inst
+    def addInst(insts: Instruction*) = {
+        for (inst <- insts) {
+            instList += inst
+        }
     }
     def addInst(insts: List[Instruction]) = {
         for (inst <- insts) {

@@ -116,7 +116,6 @@ object CodeGenerator {
     }
 
     def accessPairElem(pairOffset: Int, lvalue: LValueNode): Operand = {
-        val insts = ListBuffer[Instruction]()
         var pos: Register = r8
         lvalue match {
             case IdentNode(name) => {
@@ -128,19 +127,18 @@ object CodeGenerator {
                     case SndNode(lvalue) => accessPairElem(4, lvalue)
                 }
             }
-            case _ => {println("what")} 
+            case ArrayElemNode(ident, exprList) => 
         }
 
-        insts ++= List(
+        currInstBlock.addInst(
             CmpInst(pos, ImmVal(0, IntIdentifier())),
             BLEqInst("_errNull"),
             LdrInst(r8, Offset(pos, pairOffset))
         )
         lvalue.typeVal() match {
-            case CharIdentifier() => insts += LdrsbInst(r8, Offset(r8, 0))
-            case _ => insts += LdrInst(r8, Offset(r8, 0))
+            case CharIdentifier() => currInstBlock.addInst(LdrsbInst(r8, Offset(r8, 0)))
+            case _ => currInstBlock.addInst(LdrInst(r8, Offset(r8, 0)))
         }
-        currInstBlock.addInst(insts.toList)
         r8
     }
 
@@ -176,20 +174,22 @@ object CodeGenerator {
         currInstBlock.addInst(MovInst(Variable(node.ident.name), op))
 
         // Pop back Caller Regs
-        currInstBlock.addInst(PopInst(List(r0, r1, r2, r3)))
+        node.rvalue match {
+            case CallNode(_, _) => currInstBlock.addInst(PopInst(List(r0, r1, r2, r3)))
+            case _ => 
+        }
     }
 
     def translate(node: LValuesAssignNode): Unit = {
+        // Process right value first and store it in a temp reg
+        val op = transRVal(node.rvalue)
         node.lvalue match {
             case IdentNode(name) => {
-                val dummyNode = AssignIdentNode(BaseTypeNode("int"),
-                    IdentNode(name), node.rvalue)
-                translate(dummyNode)
+                currInstBlock.addInst(MovInst(Variable(name), op))
             }
             case ArrayElemNode(ident, exprList) => {
                 // Assuming 1d array
-                val op = transRVal(node.rvalue)
-                val insts = List(
+                currInstBlock.addInst(
                     // Ready for special convention for _arrStore,
                     // r10 for index, r8 for the value to be stored, r9 for array addr
                     MovInst(r10, translate(exprList(0))),
@@ -198,12 +198,22 @@ object CodeGenerator {
                     BranchLinkInst("_arrStore")
                     //arrstore to be defined
                 )
-                currInstBlock.addInst(insts)
             }
-            case FstNode(lvalue) => ???
-            case SndNode(lvalue) => ???
+            case FstNode(lvalue) => accessPairElemAddr(0, lvalue, op)
+            case SndNode(lvalue) => accessPairElemAddr(4, lvalue, op)
         }
     }
+
+    def accessPairElemAddr(pairOffset: Int, lvalue: LValueNode, op: Operand): Operand = {
+        lvalue match {
+            case IdentNode(name) => {
+            }
+            case ArrayElemNode(ident, exprList) =>
+            case _: PairElemNode => 
+        }
+        r8
+    }
+
     def translate(node: ReadNode): Unit = {}
     def translate(node: FreeNode): Unit = {}
     def translate(node: ReturnNode): Unit = {
