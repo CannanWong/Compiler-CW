@@ -14,9 +14,9 @@ object CodeGenerator {
     val controlFlowFuncs = LinkedHashMap[String, ControlFlowBlock]()
 
     /* utility functions */
-    def switchCurrInstrBlock(newFunBlock: FuncBlock) {
-        CodeGenerator.controlFlowGraph = newFunBlock
-        CodeGenerator.currInstBlock = newFunBlock.body
+    def switchCurrInstrBlock(newFuncBlock: FuncBlock): Unit = {
+        CodeGenerator.controlFlowGraph = newFuncBlock
+        CodeGenerator.currInstBlock = newFuncBlock.body
     }
 
     def stringDef(string: String): String = {
