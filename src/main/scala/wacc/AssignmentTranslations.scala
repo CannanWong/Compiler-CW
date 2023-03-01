@@ -79,20 +79,16 @@ object AssignmentTranslations {
         // Branch link to the function
         currInstBlock.addInst(BranchLinkInst(ident.name))
         r0
-    }   
+    }
+
+
     def accessPairElem(pairOffset: Int, lvalue: LValueNode): Operand = {
         var pos: Register = r8
         lvalue match {
-            case IdentNode(name) => {
-                pos = Variable(name)
-            }
-            case p: PairElemNode => {
-                p match {
-                    case FstNode(lvalue) => accessPairElem(0, lvalue)
-                    case SndNode(lvalue) => accessPairElem(4, lvalue)
-                }
-            }
-            case ArrayElemNode(ident, exprList) => 
+            case IdentNode(name) => pos = Variable(name)
+            case ArrayElemNode(ident, exprList) => translate(ArrayElemNode(ident, exprList))
+            case FstNode(lvalue) => accessPairElem(0, lvalue)
+            case SndNode(lvalue) => accessPairElem(4, lvalue)
         }   
         currInstBlock.addInst(
             CmpInst(pos, ImmVal(0, IntIdentifier())),
@@ -105,14 +101,11 @@ object AssignmentTranslations {
         }
         r8
     }   
-    def accessPairElemAddr(pairOffset: Int, lvalue: LValueNode, op: Operand): Operand = {
+    def storeToPairElemAddr(pairOffset: Int, lvalue: LValueNode, op: Operand): Operand = {
         var pos: Register = r8
         lvalue match {
-            case IdentNode(name) => {
-                pos = Variable(name)
-
-            }
-            case ArrayElemNode(ident, exprList) =>
+            case IdentNode(name) => pos = Variable(name)
+            case ArrayElemNode(ident, exprList) => translate(ArrayElemNode(ident, exprList))
             case FstNode(lvalue) => accessPairElem(0, lvalue)
             case SndNode(lvalue) => accessPairElem(4, lvalue)
         }
