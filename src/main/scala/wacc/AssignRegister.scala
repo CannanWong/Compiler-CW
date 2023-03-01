@@ -4,57 +4,85 @@ import scala.collection.mutable._
 
 
 object AssignRegister {
-    var IR2 = new FuncBlock()
-    var currInstBlock = IR2.body
-    var regQueue = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // R7-R0
+    var IR2: FuncBlock = new FuncBlock()
+    var currInstBlock: InstBlock = IR2.body
+    var regQueue: Queue[Int] = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // R7-R0
+
+    // When no registers are available  
+    var storeInst: Option[StrInst] = None   // To add instuction to store on stack
+    var currFPOffset: Int = 0               // fp offset
+
     val varOpTable: Map[String, Operand] = Map()
     val tempRegTable: Map[Int, Operand] = Map()
 
     def assignBlock(cfBlock: ControlFlowBlock): Unit = {
         cfBlock match {
-            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() =>
-                assignBlock(cfBlock)
+            case ins: InstBlock => assignBlock(ins: InstBlock)
+            case con: IfBlock => assignBlock(con: IfBlock)
+            case whi: WhileBlock => assignBlock(whi: WhileBlock)
+            case call: CallBlock => assignBlock(call: CallBlock)
+            case fun: FuncBlock => assignBlock(fun: FuncBlock)
+            case _ => 
         }
     }
 
     def assignBlock(instBlock: InstBlock): Unit = {
         for (inst <- instBlock.instList) {
             currInstBlock.addInst(assignInst(inst))
+            
+            // Add instuction to store on stack when no registers are available
+            storeInst match {
+                case Some(inst) => {
+                    currInstBlock.addInst(inst)
+                    storeInst = None
+                }
+                case _ => 
+            }
         }
         instBlock.next match {
             case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => 
                 assignBlock(instBlock.next)
-            case null => 
+            case _ => 
         }
     }
 
     def assignBlock(ifBlock: IfBlock): Unit = {
-        currInstBlock = ifBlock.cond
+        val newIfBlock = IfBlock()
+        currInstBlock.next = newIfBlock
+        currInstBlock = newIfBlock.cond
         assignBlock(ifBlock.cond)
-        currInstBlock = ifBlock.nextT
+        currInstBlock = newIfBlock.nextT
         assignBlock(ifBlock.nextT)
-        currInstBlock = ifBlock.nextF
+        currInstBlock = newIfBlock.nextF
         assignBlock(ifBlock.nextF)
-        currInstBlock = ifBlock.next
+        currInstBlock = newIfBlock.next
         assignBlock(ifBlock.next)
     }
 
     def assignBlock(whileBlock: WhileBlock): Unit = {
-        currInstBlock = whileBlock.cond
+        val newWhileBlock = WhileBlock()
+        currInstBlock.next = newWhileBlock
+        currInstBlock = newWhileBlock.cond
         assignBlock(whileBlock.cond)
-        currInstBlock = whileBlock.loop
+        currInstBlock = newWhileBlock.loop
         assignBlock(whileBlock.loop)
-        currInstBlock = whileBlock.next
+        currInstBlock = newWhileBlock.next
         assignBlock(whileBlock.next)
     }
 
     def assignBlock(callBlock: CallBlock): Unit = {
-        currInstBlock = callBlock.next
+        val newCallBlock = CallBlock()
+        newCallBlock.func = callBlock.func
+        currInstBlock.next = newCallBlock
+        currInstBlock = newCallBlock.next
         assignBlock(callBlock.next)
     }
 
     def assignBlock(funcBlock: FuncBlock): Unit = {
-        currInstBlock = funcBlock.body
+        val newFuncBlock = FuncBlock()
+        newFuncBlock.name = funcBlock.name
+        currInstBlock.next = newFuncBlock
+        currInstBlock = newFuncBlock.body
         assignBlock(funcBlock.body)
     }
 
@@ -117,16 +145,24 @@ object AssignRegister {
                 val reg = varOpTable.get(v.name)
                 reg match {
                     case Some(fReg: FixedRegister) => fReg
+                    case Some(im: ImmOffset) => {
+                        currInstBlock.addInst(LdrInst(Constants.r8, im))
+                        Constants.r8
+                    }
                     case _ => {
                         if (!regQueue.isEmpty) {
                             val fReg = FixedRegister(regQueue.dequeue())
                             varOpTable.addOne(v.name, fReg)
                             fReg
                         }
+                        // No available registers
                         else {
-                            // ! Stack
-                            // ! Replace instruction
-                            TempRegister()
+                            currInstBlock.addInst(SubInst(Constants.sp, Constants.sp, ImmVal(-4)))
+                            currFPOffset -= 4
+                            val op = ImmOffset(Constants.fp, currFPOffset)
+                            varOpTable.addOne(v.name, op)
+                            storeInst = Some(StrInst(Constants.r8, op))
+                            Constants.r8
                         }
                     }
                 }
@@ -135,17 +171,30 @@ object AssignRegister {
             case _ => reg
         }
     }
-    def assignReg(tReg: TempRegister): Operand = {
-        if (!regQueue.isEmpty) {
-            val fReg = FixedRegister(regQueue.dequeue())
-            tempRegTable.addOne(tReg.num, fReg)
-            fReg
-        }
-        // No more available registers
-        else {
-            // ! Stack
-            // ! Replace instruction
-            TempRegister()
+    def assignReg(tReg: TempRegister): Register = {
+        val reg = tempRegTable.get(tReg.num)
+        reg match {
+            case Some(fReg: FixedRegister) => fReg
+            case Some(im: ImmOffset) => {
+                currInstBlock.addInst(LdrInst(Constants.r8, im))
+                Constants.r8
+            }
+            case _ => {
+                if (!regQueue.isEmpty) {
+                    val fReg = FixedRegister(regQueue.dequeue())
+                    tempRegTable.addOne(tReg.num, fReg)
+                    fReg
+                }
+                // No more available registers
+                else {
+                    currInstBlock.addInst(SubInst(Constants.sp, Constants.sp, ImmVal(-4)))
+                    currFPOffset -= 4
+                    val op = ImmOffset(Constants.fp, currFPOffset)
+                    tempRegTable.addOne(tReg.num, op)
+                    storeInst = Some(StrInst(Constants.r8, op))
+                    Constants.r8
+                }
+            }
         }
     }
 }

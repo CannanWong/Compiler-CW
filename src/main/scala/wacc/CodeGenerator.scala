@@ -14,9 +14,9 @@ object CodeGenerator {
     val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
     /* utility functions */
-    def switchCurrInstrBlock(newFunBlock: FuncBlock) {
-        CodeGenerator.controlFlowGraph = newFunBlock
-        CodeGenerator.currInstBlock = newFunBlock.body
+    def switchCurrInstrBlock(newFuncBlock: FuncBlock): Unit = {
+        CodeGenerator.controlFlowGraph = newFuncBlock
+        CodeGenerator.currInstBlock = newFuncBlock.body
     }
 
     def stringDef(string: String): String = {
@@ -202,6 +202,7 @@ object CodeGenerator {
             }
         }
         currInstBlock.addInst(BranchNumCondInst("NE", ifFalse.num))
+        currInstBlock.next = ifBlock
         currInstBlock = ifTrue
         translate(node.fstStat)
         currInstBlock.addInst(BranchNumInst(next.num))
@@ -218,6 +219,7 @@ object CodeGenerator {
         val cond = whileBlock.cond
         val loop = whileBlock.loop
         val next = whileBlock.next
+        currInstBlock.next = whileBlock
         currInstBlock = cond
         translate(node.expr)
         currInstBlock.addInst(BranchNumCondInst("NE", next.num))
