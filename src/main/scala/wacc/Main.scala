@@ -20,7 +20,7 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
-                    // CodeGenerator.translateAST(x)
+                    CodeGenerator.translateAST(x)
                     val filename = WriteToFile.fileName(args(0))
                     WriteToFile.write(filename)
                 }
@@ -42,37 +42,23 @@ object Main {
         }
     }
 
+
     object WriteToFile {
 
         def fileName(filePath: String) : String = {
             filePath.split("/").last.dropRight(5) + ".s"
         }
 
-        def write(filename: String): Unit = {
+        def write(filename: String): Unit = {        
             val pw = new PrintWriter(new File(filename))
             /* global main */
-            val begin =
-                ".data\n" +
-                ".text\n" +
-                ".global main\n" +
-                "main:\n" +
-                "  push {fp, lr}\n" +
-                "  push {r8, r10, r12}\n" +
-                "  mov fp, sp\n"
-            pw.print(begin)
-            Print.printBlock(CodeGenerator.controlFlowGraph)
-            for (line <- Print.output) {
-                pw.println(line)
+            for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
+                Printer.printBlock(funcBlock)
             }
-            val end =
-                "  mov r0, #0\n" +
-                "  pop {r8, r10, r12}\n" +
-                "  pop {fp, pc}\n"
-            pw.print(end)
-
-            /* funcs */
-            for (func <- CodeGenerator.controlFlowFuncs) {
-                pw.println(func)
+            var i = 0
+            for (line <- Printer.output) {
+                pw.println(line)
+                i += 1
             }
 
             pw.close()              

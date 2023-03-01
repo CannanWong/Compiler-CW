@@ -8,7 +8,7 @@ object ControlFlowGraph {
     var nextWhileNum = 0
     var nextCallNum = 0
     var nextFuncNum = 0
-    var nextRegNum = 1
+    var nextTempRegNum = 1
 }
 
 sealed trait ControlFlowBlock
@@ -33,7 +33,7 @@ case class InstBlock() extends ControlFlowBlock {
 
 case class IfBlock() extends ControlFlowBlock {
     var num: Int = ControlFlowGraph.nextIfNum
-    var cond: InstBlock = new InstBlock()
+    // var cond: InstBlock = new InstBlock() // not used
     var nextT: InstBlock = new InstBlock()
     var nextF: InstBlock = new InstBlock()
     var next: InstBlock = new InstBlock()
@@ -56,10 +56,16 @@ case class CallBlock() extends ControlFlowBlock {
 }
 
 case class FuncBlock() extends ControlFlowBlock {
+    var GLOBAL_MAIN = false
     var num: Int = ControlFlowGraph.nextFuncNum
-    var param: InstBlock = new InstBlock()
     var body: InstBlock = new InstBlock()
+    var name: String = ""
     /* NEW: temporory design to accomodate print label jumps */
-    val labels: Labels = new dataDirectiveStat()
+    val directive: DataDirectiveStat = new DataDirectiveStat()
     ControlFlowGraph.nextFuncNum += 1
+
+    def setGlobalMain(): Unit = {
+        GLOBAL_MAIN = true
+        directive.GLOBAL_MAIN = true
+    }
 }

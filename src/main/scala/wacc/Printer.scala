@@ -2,14 +2,56 @@ package wacc
 
 import scala.collection.mutable.ListBuffer
 
-object Print {
+object Printer {
     var output: ListBuffer[String] = ListBuffer.empty
 
+    def printBlock(cfBlock: ControlFlowBlock): Unit = {
+        cfBlock match {
+            case ins: InstBlock => printBlock(ins: InstBlock)
+            case con: IfBlock => printBlock(con: IfBlock)
+            case whi: WhileBlock => printBlock(whi: WhileBlock)
+            case call: CallBlock => printBlock(call: CallBlock)
+            case fun: FuncBlock => printBlock(fun: FuncBlock)
+            case _ => 
+        }
+    }
+
     def printBlock(instBlock: InstBlock): Unit = {
+        // Print label
         for (inst <- instBlock.instList) {
             print(inst)
         }
+        if (instBlock.next != null) {
+            printBlock(instBlock.next)
+        }
+        
     }
+
+    def printBlock(ifBlock: IfBlock): Unit = {
+       // printBlock(ifBlock.cond)
+        printBlock(ifBlock.nextT)
+        printBlock(ifBlock.nextF)
+        printBlock(ifBlock.next)
+    }
+
+    def printBlock(whileBlock: WhileBlock): Unit = {
+        printBlock(whileBlock.cond)
+        printBlock(whileBlock.loop)
+        printBlock(whileBlock.next)
+    }
+
+    def printBlock(callBlock: CallBlock): Unit = {
+        printBlock(callBlock.next)
+    }
+
+    def printBlock(funcBlock: FuncBlock): Unit = {
+        output += funcBlock.directive.build()
+        output += s"${funcBlock.name}:"
+        printBlock(funcBlock.body)
+    }
+
+    /* ############### print instructions ############### */
+
     def print(inst: Instruction): Unit = {
         inst match {
             case inst: AddInst => 
@@ -35,24 +77,21 @@ object Print {
             case inst: StrInst => 
                 output += "str " + printOp(inst.rd, inst.op)
             case inst: PushInst => 
-                output += "push " + printOp(inst.regList)
+                output += "push " + printOp(inst.regs)
             case inst: PopInst => 
-                output += "pop " + printOp(inst.regList)
+                output += "pop " + printOp(inst.regs)
             case inst: BranchInst => 
-                output += "B " + inst.label
+                output += "b " + inst.label
             case inst: BranchLinkInst => 
-                output += "BL " + inst.label
+                output += "bl " + inst.label
+            case inst: FreeRegister =>
+            case _ => output += "@ Unmatched instr"
         }
     }
 
     def printOp(op: Operand): String = {
         op match {
-            case im: ImmVal => "#" + {
-                im.ty match {
-                    case IntIdentifier() | BoolIdentifier() | CharIdentifier() => im.num.toString()
-                    case _ => "UDT!" // Undefined type
-                }
-            }
+            case im: ImmVal => "#" + im.num.toString
             case r: FixedRegister => "r" + r.num.toString()
             case _ => "UAR!" // Unassigned register
         }
@@ -66,7 +105,7 @@ object Print {
         printOp(reg1) + ", " + printOp(reg2) + ", " + printOp(op)
     }
 
-    def printOp(regList: List[Register]): String = {
+    def printOp(regList: Seq[Register]): String = {
         var output = "{"
         for (reg <- regList) {
             output += printOp(reg) + ", "
