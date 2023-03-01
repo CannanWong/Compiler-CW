@@ -2,10 +2,9 @@ package wacc
 
 import scala.collection.mutable._
 
-
 object AssignRegister {
-    var IR2: FuncBlock = new FuncBlock()
-    var currInstBlock: InstBlock = IR2.body
+    val ir2cfg = LinkedHashMap[String, FuncBlock]()
+    var currInstBlock = FuncBlock().body // ! None
     var regQueue: Queue[Int] = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // R7-R0
 
     // When no registers are available  
@@ -14,6 +13,20 @@ object AssignRegister {
 
     val varOpTable: Map[String, Operand] = Map()
     val tempRegTable: Map[Int, Operand] = Map()
+
+    def assignCFG(cfg: LinkedHashMap[String, FuncBlock]): Unit = {
+        for ((name, funcBlock) <- cfg) {
+            assignBlock(funcBlock)
+        }
+    }
+
+    def assignBlock(funcBlock: FuncBlock): Unit = {
+        val newFuncBlock = FuncBlock()
+        newFuncBlock.name = funcBlock.name
+        ir2cfg.addOne(funcBlock.name, newFuncBlock)
+        currInstBlock = newFuncBlock.body
+        assignBlock(funcBlock.body)
+    }
 
     def assignBlock(cfBlock: ControlFlowBlock): Unit = {
         cfBlock match {
@@ -49,8 +62,8 @@ object AssignRegister {
     def assignBlock(ifBlock: IfBlock): Unit = {
         val newIfBlock = IfBlock()
         currInstBlock.next = newIfBlock
-        currInstBlock = newIfBlock.cond
-        assignBlock(ifBlock.cond)
+        // currInstBlock = newIfBlock.cond
+        // assignBlock(ifBlock.cond)
         currInstBlock = newIfBlock.nextT
         assignBlock(ifBlock.nextT)
         currInstBlock = newIfBlock.nextF
@@ -70,22 +83,13 @@ object AssignRegister {
         assignBlock(whileBlock.next)
     }
 
-    def assignBlock(callBlock: CallBlock): Unit = {
-        val newCallBlock = CallBlock()
-        newCallBlock.func = callBlock.func
-        currInstBlock.next = newCallBlock
-        currInstBlock = newCallBlock.next
-        assignBlock(callBlock.next)
-    }
-
-    def assignBlock(funcBlock: FuncBlock): Unit = {
-        val newFuncBlock = FuncBlock()
-        newFuncBlock.name = funcBlock.name
-        currInstBlock.next = newFuncBlock
-        currInstBlock = newFuncBlock.body
-        assignBlock(funcBlock.body)
-    }
-
+    // def assignBlock(callBlock: CallBlock): Unit = {
+    //     val newCallBlock = CallBlock()
+    //     newCallBlock.func = callBlock.func
+    //     currInstBlock.next = newCallBlock
+    //     currInstBlock = newCallBlock.next
+    //     assignBlock(callBlock.next)
+    // }
 
     // Change operand and assign register if needed
     def assignInst(i: Instruction): Instruction = {

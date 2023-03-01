@@ -25,7 +25,7 @@ object Printer {
     }
 
     def printBlock(ifBlock: IfBlock): Unit = {
-        printBlock(ifBlock.cond)
+        // printBlock(ifBlock.cond)
         printBlock(ifBlock.nextT)
         printBlock(ifBlock.nextF)
         printBlock(ifBlock.next)
@@ -37,9 +37,9 @@ object Printer {
         printBlock(whileBlock.next)
     }
 
-    def printBlock(callBlock: CallBlock): Unit = {
-        printBlock(callBlock.next)
-    }
+    // def printBlock(callBlock: CallBlock): Unit = {
+    //     printBlock(callBlock.next)
+    // }
 
     def printBlock(funcBlock: FuncBlock): Unit = {
         output += funcBlock.directive.build()
