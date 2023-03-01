@@ -11,7 +11,7 @@ object StandardFuncs {
     def addFunc(name: String): Unit = {
         name match {
             case ZERO_DIVISION_LABEL | NULL_POINTER_LABEL | OVERFLOW_LABEL | BOUNDS_CHECK_LABEL |
-                 ARRAY_LOAD_LABEL | ARRAY_STORE_LABEL => {
+                 ARRAY_LOAD_LABEL | ARRAY_LOAD_B_LABEL | ARRAY_STORE_LABEL | ARRAY_STORE_B_LABEL => {
                     if (!CodeGenerator.controlFlowFuncs.contains(name)) {
                         val funcBlock = StandardFuncs(name).getFunc
                         CodeGenerator.controlFlowFuncs += ((name, funcBlock))
@@ -42,7 +42,7 @@ object StandardFuncs {
                 )
                 funcBlock
             }
-            case ARRAY_STORE_LABEL => {
+            case ARRAY_STORE_LABEL | ARRAY_STORE_B_LABEL=> {
                 var funcBlock = new FuncBlock
                 funcBlock.body.addInst(
                     PushInst(lr),
