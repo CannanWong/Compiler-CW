@@ -81,6 +81,7 @@ object Printer {
                 output += "b " + inst.label
             case inst: BranchLinkInst => 
                 output += "bl " + inst.label
+            case inst: FreeRegister =>
             case _ => output += "@ Unmatched instr"
         }
     }

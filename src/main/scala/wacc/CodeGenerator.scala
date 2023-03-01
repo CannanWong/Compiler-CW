@@ -11,7 +11,7 @@ object CodeGenerator {
     var currInstBlock = controlFlowGraph.body
     
     /* NEW: temporory design to accomodate label jumps */
-    val controlFlowFuncs = LinkedHashMap[String, ControlFlowBlock]()
+    val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
     /* utility functions */
     def switchCurrInstrBlock(newFunBlock: FuncBlock) {
@@ -208,9 +208,9 @@ object CodeGenerator {
         currInstBlock = ifFalse
         translate(node.sndStat)
         currInstBlock = next
-        controlFlowFuncs += ((ifTrue.num.toString, ifTrue),
-        (ifFalse.num.toString, ifFalse),
-        (next.num.toString, next))
+        // controlFlowFuncs += ((ifTrue.num.toString, ifTrue),
+        // (ifFalse.num.toString, ifFalse),
+        // (next.num.toString, next))
     }
 
     def translate(node: WhileNode): Unit = {
@@ -225,9 +225,9 @@ object CodeGenerator {
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
         currInstBlock = next
-        controlFlowFuncs += ((cond.num.toString, cond),
-        (loop.num.toString, loop),
-        (next.num.toString, next))
+        // controlFlowFuncs += ((cond.num.toString, cond),
+        // (loop.num.toString, loop),
+        // (next.num.toString, next))
     }
     def translate(node: BeginEndNode): Unit = {
         translate(node.stat)
@@ -509,7 +509,7 @@ object CodeGenerator {
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
-                controlFlowFuncs += ((newBlock.num.toString, newBlock))
+                // controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
             }
             case OrNode(fstexpr, sndexpr) => {
@@ -532,7 +532,7 @@ object CodeGenerator {
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
-                controlFlowFuncs += ((newBlock.num.toString, newBlock))
+                // controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
             }
         }
