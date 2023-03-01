@@ -1,7 +1,8 @@
 package wacc
 
-import scala.collection.mutable.{ListBuffer, LinkedHashMap}
+import scala.collection.mutable.{LinkedHashMap}
 import wacc.Constants._
+import wacc.AssignmentTranslations._
 
 object CodeGenerator {
     /* .data directive stores all string declarations */
@@ -128,7 +129,7 @@ object CodeGenerator {
 
         // Pop back Caller Regs
         node.rvalue match {
-            case CallNode(_, _) => currInstBlock.addInst(PopInst(List(r0, r1, r2, r3)))
+            case CallNode(_, _) => currInstBlock.addInst(PopInst(r0, r1, r2, r3))
             case _ => 
         }
     }
@@ -147,9 +148,9 @@ object CodeGenerator {
                     currInstBlock.addInst(
                         // Ready for special convention for _arrLoad,
                         // r8 for array addr, r10 for index
-                        PushInst(List(r8)),
+                        PushInst(r8),
                         MovInst(r10, index),
-                        PopInst(List(r8)),
+                        PopInst(r8),
                         BranchLinkInst("_arrLoad"))
                 }
 

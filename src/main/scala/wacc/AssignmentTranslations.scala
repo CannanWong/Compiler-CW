@@ -25,10 +25,10 @@ object AssignmentTranslations {
         var stackOffset = 0
 
         // Calling malloc to get the address storing the array
-        currInstBlock.addInst(FreqCodeBlocks.allocSpc(4 + allocSize * exprs.length))
+        currInstBlock.addInst(allocSpc(4 + allocSize * exprs.length))
 
         // Storing the size of the array on the first 4 bytes / word
-        currInstBlock.addInst(MovInst(r8, ImmVal(exprs.length, IntIdentifier())))
+        currInstBlock.addInst(MovInst(r8, ImmVal(exprs.length)))
         currInstBlock.addInst(StrInst(r8, Offset(r10, stackOffset)))    
 
         // Iterate through the array to insert the elements
@@ -43,35 +43,35 @@ object AssignmentTranslations {
     def transNewPair(fstExpr: ExprNode, sndExpr: ExprNode): Operand = {
         val saveVal = List(
             StrInst(r8, Offset(r10, 0)),
-            PushInst(List(r10))
+            PushInst(r10)
         )
         val fstOffset = getOffset(fstExpr)
         val sndOffset = getOffset(sndExpr)
         currInstBlock.addInst(
             // Alloc for first element
-            FreqCodeBlocks.allocSpc(fstOffset) ++
+            allocSpc(fstOffset) ++
             List(MovInst(r8, translate(fstExpr))) ++
             saveVal ++
 
             // Alloc for second element
-            FreqCodeBlocks.allocSpc(sndOffset) ++
+            allocSpc(sndOffset) ++
             List(MovInst(r8, translate(sndExpr))) ++
             saveVal ++
 
             // Alloc for pointers pointing to both elements
-            FreqCodeBlocks.allocSpc(8) ++
+            allocSpc(8) ++
             
             // Popping the addresses from the stack and storing them
-            List(PopInst(List(r8)),
+            List(PopInst(r8),
                  StrInst(r8, Offset(r10, 4)),
-                 PopInst(List(r8)),
+                 PopInst(r8),
                  StrInst(r8, Offset(r10, 0)),
                  MovInst(r8, r10)))
             r8
     }   
     def transCall(ident: IdentNode, argList: ArgListNode): Operand = {
         // Push Caller Regs
-        currInstBlock.addInst(PushInst(List(r0, r1, r2, r3)))
+        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         // Push Args onto r0, 1, 2, 3, and stack afterwards
         currInstBlock.addInst(
             pushArgs(0, argList.exprList, ListBuffer[Instruction]())
@@ -91,8 +91,8 @@ object AssignmentTranslations {
             case SndNode(lvalue) => accessPairElem(4, lvalue)
         }   
         currInstBlock.addInst(
-            CmpInst(pos, ImmVal(0, IntIdentifier())),
-            BLEqInst("_errNull"),
+            CmpInst(pos, ImmVal(0)),
+            BranchLinkCondInst("Eq", "_errNull"),
             LdrInst(r8, Offset(pos, pairOffset))
         )
         lvalue.typeVal() match {
@@ -110,8 +110,8 @@ object AssignmentTranslations {
             case SndNode(lvalue) => accessPairElem(4, lvalue)
         }
         currInstBlock.addInst(
-            CmpInst(pos, ImmVal(0, IntIdentifier())),
-            BLEqInst("_errNull"),
+            CmpInst(pos, ImmVal(0)),
+            BranchLinkCondInst("Eq", "_errNull"),
             LdrInst(r8, Offset(pos, 0)),
             MovInst(r9, r8),
             MovInst(r8, op),
@@ -142,5 +142,11 @@ object AssignmentTranslations {
         insts += MovInst(r8, translate(args(0)))
         insts += StrInst(r8, Offset(sp, -argOffset))
         if (args.drop(1).isEmpty) insts else pushStack(args, insts)
+    }
+
+    def allocSpc(spc: Int): List[Instruction] = { List(
+        MovInst(r0, ImmVal(spc)),
+        BranchLinkInst("malloc"),
+        MovInst(r10, r0))
     }
 }
