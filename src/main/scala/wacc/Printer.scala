@@ -7,7 +7,8 @@ object Printer {
 
     def printBlock(instBlock: InstBlock): Unit = {
         // Print label
-        output += "I" + instBlock.num + ":"
+        //output += "@I" + instBlock.num + ":"
+
         for (inst <- instBlock.instList) {
             print(inst)
         }
@@ -36,6 +37,8 @@ object Printer {
     }
 
     def printBlock(funcBlock: FuncBlock): Unit = {
+        output += funcBlock.directive.build()
+        output += s"${funcBlock.name}:"
         printBlock(funcBlock.body)
     }
 

@@ -13,12 +13,13 @@ abstract class Directive() {
   }
 
   def build(): String = {
-    if (GLOBAL_MAIN) {
-      dirContents.addOne(".global main")
-    }
     val ret = new StringBuilder()
     for (c <- dirContents) {
       ret ++= c
+    }
+
+    if (GLOBAL_MAIN) {
+      ret ++= (".global main\n")
     }
     ret.toString()
   }
@@ -52,7 +53,11 @@ case class DataDirectiveStat() extends Directive {
     for (stat <- dirContents) {
       sb.++=(stat)
     } 
-    sb.++=(".text")
+    sb.++=(".text\n")
+
+    if (GLOBAL_MAIN) {
+      sb.++=(".global main\n")
+    }
     sb.toString()
   }
 }

@@ -52,24 +52,31 @@ object Main {
             /* add main func to func list and set main as global main*/
             val mainFunc = new FuncBlock()
             mainFunc.directive.setGlobalMain()
+            mainFunc.name = "main"
             CodeGenerator.controlFlowFuncs.addOne("main", mainFunc)
             CodeGenerator.mainFunc = mainFunc
-
+            CodeGenerator.controlFlowGraph = mainFunc
+            
             val pw = new PrintWriter(new File(filename))
             /* global main */
+            for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
+                Printer.printBlock(funcBlock)
+            }
+            var i = 0
+            for (line <- Printer.output) {
+                pw.println(s"@ line ${i}")
+                pw.println(line)
+                i += 1
+            }
             val begin =
-                ".data\n" +
-                ".text\n" +
-                ".global main\n" +
-                "main:\n" +
+                // ".data\n" +
+                // ".text\n" +
+                // ".global main\n" +
+                // "main:\n" +
                 "  push {fp, lr}\n" +
                 "  push {r8, r10, r12}\n" +
                 "  mov fp, sp\n"
             pw.print(begin)
-            Printer.printBlock(CodeGenerator.controlFlowGraph.body)
-            for (line <- Printer.output) {
-                //pw.println(line)
-            }
             val end =
                 "  mov r0, #0\n" +
                 "  pop {r8, r10, r12}\n" +

@@ -54,7 +54,9 @@ case class CallBlock() extends ControlFlowBlock {
 }
 
 case class FuncBlock() extends ControlFlowBlock {
+    var num: Int = ControlFlowGraph.nextFuncNum
     var body: InstBlock = new InstBlock()
+    var name: String = ""
     /* NEW: temporory design to accomodate print label jumps */
     val directive: DataDirectiveStat = new DataDirectiveStat()
     ControlFlowGraph.nextFuncNum += 1

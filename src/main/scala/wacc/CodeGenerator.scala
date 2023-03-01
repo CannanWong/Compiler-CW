@@ -1,17 +1,16 @@
 package wacc
 
-import scala.collection.mutable.{ListBuffer, Map}
+import scala.collection.mutable.{LinkedHashMap}
 import wacc.Constants._
 
 object CodeGenerator {
     /* .data directive stores all string declarations */
     var mainFunc = FuncBlock()
-
-    var controlFlowGraph = mainFunc
+    var controlFlowGraph = FuncBlock()
     
     var currInstBlock = controlFlowGraph.body
     /* NEW: temporory design to accomodate label jumps */
-    val controlFlowFuncs = Map[String, FuncBlock]()
+    val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
     def stringDef(string: String): String = {
         mainFunc.directive.addTextLabelToData(string)
@@ -43,7 +42,8 @@ object CodeGenerator {
                 /* TODO: pop caller saved registers that are pushed */
                 funcBlock.body.addInst(new PopInst(List(fp, pc)))
 
-                controlFlowFuncs.addOne(s"wacc_${ident.name}", funcBlock)
+                funcBlock.name = s"wacc_${ident.name}"
+                controlFlowFuncs.addOne(funcBlock.name, funcBlock)
             }
             case _ => throw new IllegalArgumentException("FuncNode translation receives non FuncNode")
         }
