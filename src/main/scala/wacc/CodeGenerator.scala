@@ -157,7 +157,7 @@ object CodeGenerator {
          * print may clobber any registers that are marked as caller-save under
          * arm's calling convention: R0, R1, R2, R3
         */
-        // currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
 
         val retOp = translate(node.expr)
         val exprTy = node.expr.typeVal()
@@ -171,7 +171,7 @@ object CodeGenerator {
             // anyIdentifier or null
             case  _ => IOFunc.printPtr(retOp)
         }
-        // currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
     def translate(node: PrintlnNode): Unit = {
