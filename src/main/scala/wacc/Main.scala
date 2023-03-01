@@ -55,12 +55,12 @@ object Main {
         def write(filename: String): Unit = {        
 
             /* IR1 --> IR2 */
-            // AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
+            AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
 
             val pw = new PrintWriter(new File(filename))
             /* global main */
-            // for ((name, funcBlock) <- AssignRegister.ir2cfg) {
-            for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
+            for ((name, funcBlock) <- AssignRegister.ir2cfg) {
+            //for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
                 Printer.printBlock(funcBlock)
             }
             var i = 0

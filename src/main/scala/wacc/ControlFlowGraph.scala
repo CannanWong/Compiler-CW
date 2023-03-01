@@ -48,12 +48,12 @@ case class WhileBlock() extends ControlFlowBlock {
     ControlFlowGraph.nextWhileNum += 1
 }
 
-case class CallBlock() extends ControlFlowBlock {
-    var num: Int = ControlFlowGraph.nextCallNum
-    var func: FuncBlock = null
-    var next: InstBlock = new InstBlock()
-    ControlFlowGraph.nextCallNum += 1
-}
+// case class CallBlock() extends ControlFlowBlock {
+//     var num: Int = ControlFlowGraph.nextCallNum
+//     var func: FuncBlock = null
+//     var next: InstBlock = new InstBlock()
+//     ControlFlowGraph.nextCallNum += 1
+// }
 
 case class FuncBlock() extends ControlFlowBlock {
     var GLOBAL_MAIN = false

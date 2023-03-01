@@ -4,7 +4,7 @@ import scala.collection.mutable._
 
 object AssignRegister {
     val ir2cfg = LinkedHashMap[String, FuncBlock]()
-    var currInstBlock = FuncBlock().body // ! None
+    var currInstBlock: InstBlock = FuncBlock().body // ! None
     var regQueue: Queue[Int] = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // R7-R0
 
     // When no registers are available  
@@ -23,7 +23,10 @@ object AssignRegister {
     def assignBlock(funcBlock: FuncBlock): Unit = {
         val newFuncBlock = FuncBlock()
         newFuncBlock.name = funcBlock.name
-        ir2cfg.addOne(funcBlock.name, newFuncBlock)
+        if (funcBlock.name == "main") {
+            newFuncBlock.setGlobalMain()
+        }
+        ir2cfg.addOne(newFuncBlock.name, newFuncBlock)
         currInstBlock = newFuncBlock.body
         assignBlock(funcBlock.body)
     }
@@ -33,7 +36,7 @@ object AssignRegister {
             case ins: InstBlock => assignBlock(ins: InstBlock)
             case con: IfBlock => assignBlock(con: IfBlock)
             case whi: WhileBlock => assignBlock(whi: WhileBlock)
-            case call: CallBlock => assignBlock(call: CallBlock)
+            // case call: CallBlock => assignBlock(call: CallBlock)
             case fun: FuncBlock => assignBlock(fun: FuncBlock)
             case _ => 
         }
@@ -52,9 +55,15 @@ object AssignRegister {
                 case _ => 
             }
         }
+        
         instBlock.next match {
-            case InstBlock() | IfBlock() | WhileBlock() | CallBlock() | FuncBlock() => 
+            case InstBlock() => {
+                val newInstBlock = InstBlock()
+                currInstBlock.next = newInstBlock
+                currInstBlock = newInstBlock
                 assignBlock(instBlock.next)
+            }
+            case IfBlock() | WhileBlock() => assignBlock(instBlock.next)
             case _ => 
         }
     }
@@ -95,13 +104,22 @@ object AssignRegister {
     def assignInst(i: Instruction): Instruction = {
         i match {
             case inst: AddInst => AddInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
+            case inst: AddsInst => AddsInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
             case inst: SubInst => SubInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
+            case inst: SubsInst => SubsInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
+            case inst: RsbInst => RsbInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
+            case inst: NegInst => NegInst(assignReg(inst.rd), assignReg(inst.rm))
             case inst: MulInst => MulInst(assignReg(inst.rd), assignReg(inst.rm), assignOp(inst.op))
+            case inst: SmullInst => SmullInst(assignReg(inst.rdlo), assignReg(inst.rdhi), assignReg(inst.rm), assignReg(inst.rs))
+            
             case inst: CmpInst => CmpInst(assignReg(inst.rn), assignOp(inst.op))
             case inst: MovInst => MovInst(assignReg(inst.rd), assignOp(inst.op))
+            case inst: MovCondInst => MovCondInst(inst.condition, assignReg(inst.rd), assignOp(inst.op))
             case inst: AndInst => AndInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: OrInst => OrInst(assignReg(inst.rd), assignOp(inst.op))
+            
             case inst: LdrInst => LdrInst(assignReg(inst.rd), assignOp(inst.op))
+            case inst: LdrPseudoInst => LdrPseudoInst(assignReg(inst.rd), inst.num)
             case inst: StrInst => StrInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: PushInst => {
                 val newRegList: ListBuffer[Register] = ListBuffer.empty

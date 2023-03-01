@@ -10,7 +10,7 @@ object Printer {
             case ins: InstBlock => printBlock(ins: InstBlock)
             case con: IfBlock => printBlock(con: IfBlock)
             case whi: WhileBlock => printBlock(whi: WhileBlock)
-            case call: CallBlock => printBlock(call: CallBlock)
+            // case call: CallBlock => printBlock(call: CallBlock)
             case fun: FuncBlock => printBlock(fun: FuncBlock)
             case _ => 
         }
