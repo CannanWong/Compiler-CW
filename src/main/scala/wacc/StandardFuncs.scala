@@ -6,7 +6,7 @@ object StandardFuncs {
     def getFunction(name: String): FuncBlock = {
         name match {
             case ARRAY_LOAD_LABEL | ARRAY_LOAD_B_LABEL => {
-                var funcBlock = new FuncBlock
+                val funcBlock = new FuncBlock
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
@@ -25,7 +25,7 @@ object StandardFuncs {
                 funcBlock
             }
             case ARRAY_STORE_LABEL | ARRAY_STORE_B_LABEL=> {
-                var funcBlock = new FuncBlock
+                val funcBlock = new FuncBlock
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),

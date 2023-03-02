@@ -36,9 +36,9 @@ case class BranchNumCondInst(condition: String, num: Int) extends Instruction
 case class BranchLinkInst(label: String) extends Instruction
 case class BranchLinkCondInst(condtion: String, label: String) extends Instruction
 
-case class Label() extends Instruction
 // Useful for assigning registers, not actual arm instruction
 case class FreeRegister(r: Register) extends Instruction
+case class WaccComment(s: String) extends Instruction
 
 sealed trait Operand
 sealed trait Register extends Operand
@@ -51,7 +51,7 @@ case class Variable(name: String) extends Register
 //NEW: address of the label
 case class LabelAddress(address: String) extends Operand
 case class ImmVal(num: Int) extends Operand
-case class ASR(r: Register, bits: Int) extends Operand
+case class ASR(r: Register, bits: ImmVal) extends Operand
 case class ImmOffset(r: Register, offset: Int) extends Operand
 case class RegOffset(rm: Register, rn: Register) extends Operand
 case class ScaledOffsetLSL(rn: Register, rm: Register, shift: ImmVal) extends Operand
