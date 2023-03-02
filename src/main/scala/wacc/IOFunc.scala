@@ -49,7 +49,7 @@ object IOFunc {
 
       /* change current instruction block to func block */
       val callerBlock = CodeGenerator.controlFlowGraph
-      CodeGenerator.switchCurrInstrBlock(printIntFunc)
+      CodeGenerator.switchCurrInstrBlock(printIntFunc, printIntFunc.currBlock)
 
       val text = printIntFunc.directive.addTextLabelToData("%d", PRINT_INT_LABEL)
       printIntFunc.body.addInst(
@@ -60,7 +60,7 @@ object IOFunc {
       CodeGenerator.currInstBlock.addInst(printEnd())
 
       /* change current instruction block to func where print is called */
-      CodeGenerator.switchCurrInstrBlock(callerBlock)
+      CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_INT_LABEL, printIntFunc)
     }
 
@@ -77,7 +77,7 @@ object IOFunc {
 
       /* change current instruction block to func block */
       val callerBlock = CodeGenerator.controlFlowGraph
-      CodeGenerator.switchCurrInstrBlock(printPtrFunc)
+      CodeGenerator.switchCurrInstrBlock(printPtrFunc, printPtrFunc.currBlock)
 
       val text = printPtrFunc.directive.addTextLabelToData("%p", PRINT_PTR_LABEL)
       printPtrFunc.body.addInst(
@@ -88,7 +88,7 @@ object IOFunc {
       CodeGenerator.currInstBlock.addInst(printEnd())
 
       /* change current instruction block to func where print is called */
-      CodeGenerator.switchCurrInstrBlock(callerBlock)
+      CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_PTR_LABEL, printPtrFunc)
     }
 
@@ -104,7 +104,7 @@ object IOFunc {
 
       /* change current instruction block to func block */
       val callerBlock = CodeGenerator.controlFlowGraph
-      CodeGenerator.switchCurrInstrBlock(printStringFunc)
+      CodeGenerator.switchCurrInstrBlock(printStringFunc, printStringFunc.currBlock)
 
       val text = printStringFunc.directive.addTextLabelToData("%s", PRINT_STR_LABEL)
 
@@ -117,7 +117,7 @@ object IOFunc {
       CodeGenerator.currInstBlock.addInst(printEnd())
 
       /* change current instruction block to func where print is called */
-      CodeGenerator.switchCurrInstrBlock(callerBlock)     
+      CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_STR_LABEL, printStringFunc)
     }
 
@@ -134,7 +134,7 @@ object IOFunc {
 
       /* change current instruction block to func block */
       val callerBlock = CodeGenerator.controlFlowGraph
-      CodeGenerator.switchCurrInstrBlock(printCharFunc)
+      CodeGenerator.switchCurrInstrBlock(printCharFunc, printCharFunc.currBlock)
 
       val text = printCharFunc.directive.addTextLabelToData("%c", PRINT_CHAR_LABEL)
       printCharFunc.body.addInst(
@@ -145,7 +145,7 @@ object IOFunc {
       CodeGenerator.currInstBlock.addInst(printEnd())
 
       /* change current instruction block to func where print is called */
-      CodeGenerator.switchCurrInstrBlock(callerBlock)
+      CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_CHAR_LABEL, printCharFunc)
     }
 
@@ -162,7 +162,7 @@ object IOFunc {
 
       /* change current instruction block to func block */
       val callerBlock = CodeGenerator.controlFlowGraph
-      CodeGenerator.switchCurrInstrBlock(printBoolFunc)
+      CodeGenerator.switchCurrInstrBlock(printBoolFunc, printBoolFunc.currBlock)
 
       val falseTxt = printBoolFunc.directive.addTextLabelToData("%false", PRINT_BOOL_LABEL)
       val trueTxt = printBoolFunc.directive.addTextLabelToData("%true", PRINT_BOOL_LABEL)
@@ -197,7 +197,7 @@ object IOFunc {
       CodeGenerator.currInstBlock.addInst(printEnd())
 
       /* change current instruction block to func where print is called */
-      CodeGenerator.switchCurrInstrBlock(callerBlock)
+      CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_BOOL_LABEL, printBoolFunc)
     }
 
@@ -211,7 +211,7 @@ object IOFunc {
 
       /* change current instruction block to func block */
       val callerBlock = CodeGenerator.controlFlowGraph
-      CodeGenerator.switchCurrInstrBlock(printlnFunc)
+      CodeGenerator.switchCurrInstrBlock(printlnFunc, printlnFunc.currBlock)
 
       val text = printlnFunc.directive.addTextLabelToData("", PRINTLN_LABEL)
       printlnFunc.body.addInst(
@@ -222,7 +222,7 @@ object IOFunc {
       CodeGenerator.currInstBlock.addInst(printEnd())
 
       /* change current instruction block to func where print is called */
-      CodeGenerator.switchCurrInstrBlock(callerBlock)
+      CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINTLN_LABEL, printlnFunc)
 
     }
@@ -245,12 +245,12 @@ object IOFunc {
 
       /* change current instruction block to func block */
       val callerBlock = CodeGenerator.controlFlowGraph
-      CodeGenerator.switchCurrInstrBlock(readCharFunc)
+      CodeGenerator.switchCurrInstrBlock(readCharFunc, readCharFunc.currBlock)
 
       readCharFunc.body.addInst(readFunc(READ_CHAR_LABEL, "%c", readCharFunc))
 
       /* change current instruction block to func where print is called */
-      CodeGenerator.switchCurrInstrBlock(callerBlock)
+      CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(READ_CHAR_LABEL, readCharFunc)    
     }
 
@@ -272,12 +272,12 @@ object IOFunc {
 
       /* change current instruction block to func block */
       val callerBlock = CodeGenerator.controlFlowGraph
-      CodeGenerator.switchCurrInstrBlock(readIntFunc)
+      CodeGenerator.switchCurrInstrBlock(readIntFunc, readIntFunc.currBlock)
 
       readIntFunc.body.addInst(readFunc(READ_CHAR_LABEL, "%d", readIntFunc))
 
       /* change current instruction block to func where print is called */
-      CodeGenerator.switchCurrInstrBlock(callerBlock)
+      CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(READ_INT_LABEL, readIntFunc)    
     }
 }

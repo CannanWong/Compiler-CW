@@ -109,6 +109,8 @@ object Printer {
 
             case inst: FreeRegister =>
 
+            case inst: WaccComment => output += s"@ ${inst.s}"
+
             case _ => output += "@ Unmatched instr"
         }
     }

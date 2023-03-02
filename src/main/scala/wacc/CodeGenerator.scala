@@ -2,6 +2,7 @@ package wacc
 
 import scala.collection.mutable.{ListBuffer, LinkedHashMap}
 import wacc.Constants._
+import scala.annotation.switch
 
 object CodeGenerator {
     /* .data directive stores all string declarations */
@@ -14,9 +15,10 @@ object CodeGenerator {
     val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
         /* utility functions */
-    def switchCurrInstrBlock(newFuncBlock: FuncBlock): Unit = {
-        CodeGenerator.controlFlowGraph = newFuncBlock
-        CodeGenerator.currInstBlock = newFuncBlock.body
+    def switchCurrInstrBlock(newFuncBlock: FuncBlock, instBlock: InstBlock): Unit = {
+        controlFlowGraph = newFuncBlock
+        currInstBlock = instBlock
+        controlFlowGraph.currBlock = instBlock        
     }
 
     def stringDef(string: String): String = {
@@ -42,7 +44,7 @@ object CodeGenerator {
 
         mainFunc = mainFuncBlock
         /* change current instruction block to func block */
-        switchCurrInstrBlock(mainFunc)
+        switchCurrInstrBlock(mainFunc, mainFunc.currBlock)
 
         currInstBlock.addInst(new PushInst(fp, lr))
         /* TODO: push caller saved registers that will be used */
@@ -65,7 +67,7 @@ object CodeGenerator {
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
         /* change current instruction block to func block */
-        switchCurrInstrBlock(funcBlock)
+        switchCurrInstrBlock(funcBlock, funcBlock.currBlock)
         f match {
             case FuncNode(ty, ident, param, stat) => {
                 /**
@@ -101,7 +103,7 @@ object CodeGenerator {
         // funcBlock.param.addInst(PushInst(regList.toList))
         // //
 
-        currInstBlock = funcBlock.body
+        // currInstBlock = funcBlock.body
         translate(f.stat)
 
     }
@@ -160,6 +162,7 @@ object CodeGenerator {
          * print may clobber any registers that are marked as caller-save under
          * arm's calling convention: R0, R1, R2, R3
         */
+
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
 
         val retOp = translate(node.expr)
@@ -206,12 +209,18 @@ object CodeGenerator {
         /* branch to false if false */
         currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, ifFalse.num))
         currInstBlock.next = ifBlock
-        currInstBlock = ifTrue
+        // currInstBlock = ifTrue
+        switchCurrInstrBlock(controlFlowGraph, ifTrue)
+
         translate(node.fstStat)
         currInstBlock.addInst(BranchNumInst(next.num))
-        currInstBlock = ifFalse
+        // currInstBlock = ifFalse
+        switchCurrInstrBlock(controlFlowGraph, ifFalse)
+
         translate(node.sndStat)
-        currInstBlock = next
+        // currInstBlock = next
+        switchCurrInstrBlock(controlFlowGraph, next)
+
         // controlFlowFuncs += ((ifTrue.num.toString, ifTrue),
         // (ifFalse.num.toString, ifFalse),
         // (next.num.toString, next))
@@ -223,13 +232,16 @@ object CodeGenerator {
         val loop = whileBlock.loop
         val next = whileBlock.next
         currInstBlock.next = whileBlock
-        currInstBlock = cond
+        // currInstBlock = cond
+        switchCurrInstrBlock(controlFlowGraph, cond)
         translate(node.expr)
         currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, next.num))
-        currInstBlock = loop
+        // currInstBlock = loop
+        switchCurrInstrBlock(controlFlowGraph, loop)
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
-        currInstBlock = next
+        // currInstBlock = next
+        switchCurrInstrBlock(controlFlowGraph, next)
         // controlFlowFuncs += ((cond.num.toString, cond),
         // (loop.num.toString, loop),
         // (next.num.toString, next))
@@ -507,7 +519,9 @@ object CodeGenerator {
                     BranchNumCondInst(NOT_EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
-                currInstBlock = newBlock
+                // currInstBlock = newBlock
+                switchCurrInstrBlock(controlFlowGraph, newBlock)
+
                 currInstBlock.addInst(
                     MovCondInst( EQUAL, r8, immTrue),
                     MovCondInst(NOT_EQUAL, r8, immFalse),
@@ -530,7 +544,8 @@ object CodeGenerator {
                     BranchNumCondInst( EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
-                currInstBlock = newBlock
+                // currInstBlock = newBlock
+                switchCurrInstrBlock(controlFlowGraph, newBlock)
                 currInstBlock.addInst(
                     MovCondInst( EQUAL, r8, immTrue),
                     MovCondInst(NOT_EQUAL, r8, immFalse),

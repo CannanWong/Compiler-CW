@@ -36,6 +36,7 @@ case class BranchLinkCondInst(condtion: String, label: String) extends Instructi
 
 // Useful for assigning registers, not actual arm instruction
 case class FreeRegister(r: Register) extends Instruction
+case class WaccComment(s: String) extends Instruction
 
 sealed trait Operand
 sealed trait Register extends Operand
