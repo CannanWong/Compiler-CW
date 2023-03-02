@@ -32,7 +32,8 @@ do
     if [ "$output" == "$expected_output" ]
         then : # echo "Output correct"
     else
-        echo -e "Outputted $output instead of $expected_output"
+        echo -e "Output: \n$output" 
+        echo -e "Expected: \n$expected_output"
         pass=0
     fi
 

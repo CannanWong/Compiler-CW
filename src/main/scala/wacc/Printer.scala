@@ -140,7 +140,8 @@ object Printer {
                 s"=${ladr.address}"
             case soff: ScaledOffsetLSL => 
                 s"${printOp(soff.rn)}, ${printOp(soff.rm)}, lsl ${printOp(soff.shift)}"
-            
+            case roff: RegOffset =>
+                s"${printOp(roff.rm)}, ${printOp(roff.rn)}"
             case treg: TempRegister =>
                 "UAR!" // Unassigned register
             case uvar: Variable =>
@@ -170,7 +171,7 @@ object Printer {
             case reg: FixedRegister => s"[${printOp(reg)}]"
             case off: ImmOffset => s"[${printOp(off)}]"
             case imm: ImmVal => s"[${printOp(imm)}]"
-            case RegOffset(rm, rn) => s"[${printOp(rm)}, ${printOp(rm)}]"
+            case roff: RegOffset => s"[${printOp(roff)}]"
             case _ => "[#0] @ not a valid load address"
         }
         s"${printOp(op)}, ${addr}"
