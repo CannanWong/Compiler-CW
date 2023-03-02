@@ -97,7 +97,8 @@ object IOFunc {
 
     def printString(op: Operand): FuncBlock = {
       CodeGenerator.currInstBlock.addInst(
-        LdrInst(r0, op),
+        //LdrInst(r0, op),
+        MovInst(r0, op),
         BranchLinkInst(PRINT_STR_LABEL)
       )
 
