@@ -173,23 +173,28 @@ object IOFunc {
       val ifFalse = ifBlock.nextF
       val next = ifBlock.next
 
+      printBoolFunc.currBlock.next = ifBlock
+
       printBoolFunc.body.addInst(
         PushInst(lr),
         CmpInst(r0, ImmVal(0)),
         BranchNumCondInst(NOT_EQUAL, ifFalse.num)
       )
       /* print true */
-      CodeGenerator.currInstBlock = ifTrue
+      // CodeGenerator.currInstBlock = ifTrue
+      CodeGenerator.switchCurrInstrBlock(CodeGenerator.controlFlowGraph, ifTrue)
       CodeGenerator.currInstBlock.addInst(
         LdrInst(r2, LabelAddress(trueTxt))
       )
       /* print false */
-      CodeGenerator.currInstBlock = ifFalse
+      CodeGenerator.switchCurrInstrBlock(CodeGenerator.controlFlowGraph, ifFalse)
+      // CodeGenerator.currInstBlock = ifFalse
       CodeGenerator.currInstBlock.addInst(
         LdrInst(r2, LabelAddress(falseTxt))
       )
       /* next block */
-      CodeGenerator.currInstBlock = next
+      CodeGenerator.switchCurrInstrBlock(CodeGenerator.controlFlowGraph, next)
+      // CodeGenerator.currInstBlock = next
       CodeGenerator.currInstBlock.addInst(
         LdrInst(r1, ImmOffset(r2, INT_SIZE)),
         LdrInst(r0, LabelAddress(text))
