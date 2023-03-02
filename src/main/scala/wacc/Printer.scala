@@ -87,6 +87,12 @@ object Printer {
                 output += "ldr " + printOp(inst.rd, LabelAddress(s"${inst.num}"))
             case inst: StrbChgInst =>
                 output += "strb " + printOp(inst.rd, inst.op) + "!"
+            case inst: StrInst => 
+                output += "str " + printOp(inst.rd, inst.op) 
+            case inst: StrbInst =>
+                output += "strb " + printOp(inst.rd, inst.op) 
+            case inst: StrChgInst =>
+                output += "str " + printOp(inst.rd, inst.op) + "!"
             case inst: LdrsbInst =>
                 output += "ldrsb " + printOp(inst.rd, inst.op)
             case inst: PushInst => 
@@ -106,12 +112,6 @@ object Printer {
                 output += "bl " + inst.label
             case inst: BranchLinkCondInst =>
                 output += s"bl${inst.condtion} " + inst.label
-
-            case inst: StrInst =>
-            
-            case inst: StrbInst =>
-                
-            case inst: StrChgInst =>
 
             case inst: FreeRegister =>
 
