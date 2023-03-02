@@ -5,7 +5,7 @@ failcount=0
 validcount=221
 
 shopt -s globstar
-for file in src/test/scala/wacc/testing/**/*.wacc
+for file in src/test/scala/wacc/back_end/**/*.wacc
 do
     expected_exit=0
     expected_output=""
@@ -32,7 +32,7 @@ do
     if [ "$output" == "$expected_output" ]
         then : # echo "Output correct"
     else
-        # echo -e "Outputted $output instead of $expected_output"
+        echo -e "Outputted $output instead of $expected_output"
         pass=0
     fi
 
@@ -40,13 +40,13 @@ do
     if [ "$exit" == "$expected_exit" ]
         then : # echo "Exit code correct"
     else
-        # echo -e "Exited $exit instead of $expected_exit"
+        echo -e "Exited $exit instead of $expected_exit"
         pass=0
     fi
 
     if [ $pass -eq 1 ]
         then 
-        echo -e "Test $file passed"
+        # echo -e "Test $file passed"
         ((passcount=passcount+1))
     else
         echo -e "Test $file failed!"

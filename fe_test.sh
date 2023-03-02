@@ -20,7 +20,7 @@ do
         expected_exit=0
     fi
 
-    output=$(./compile $file)
+    output=$(timeout 10s ./compile $file)
     exit=$?
     pass=1
 
