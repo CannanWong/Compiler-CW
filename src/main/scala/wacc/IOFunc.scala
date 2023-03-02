@@ -106,7 +106,7 @@ object IOFunc {
       val callerBlock = CodeGenerator.controlFlowGraph
       CodeGenerator.switchCurrInstrBlock(printStringFunc, printStringFunc.currBlock)
 
-      val text = printStringFunc.directive.addTextLabelToData("%s", PRINT_STR_LABEL)
+      val text = printStringFunc.directive.addTextLabelToData("%.*s", PRINT_STR_LABEL)
 
       printStringFunc.body.addInst(
         PushInst(lr),
@@ -166,7 +166,7 @@ object IOFunc {
 
       val falseTxt = printBoolFunc.directive.addTextLabelToData("%false", PRINT_BOOL_LABEL)
       val trueTxt = printBoolFunc.directive.addTextLabelToData("%true", PRINT_BOOL_LABEL)
-      val text = printBoolFunc.directive.addTextLabelToData("%s", PRINT_BOOL_LABEL)
+      val text = printBoolFunc.directive.addTextLabelToData("%.*s", PRINT_BOOL_LABEL)
 
       val ifBlock = IfBlock()
       val ifTrue = ifBlock.nextT
