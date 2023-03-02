@@ -3,8 +3,9 @@ package wacc
 import scala.collection.mutable._
 
 object AssignRegister {
-    val ir2cfg = LinkedHashMap[String, FuncBlock]()     // Control flow graph: Hash map of FuncBlocks
-    var currInstBlock: InstBlock = FuncBlock().body     // ! None
+    // val ir2cfg = LinkedHashMap[String, FuncBlock]()     // Control flow graph: Hash map of FuncBlocks
+    // var currInstBlock: InstBlock = FuncBlock().body     // ! None
+    var newInstList: ListBuffer[Instruction] = ListBuffer.empty
     var regQueue: Queue[Int] = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // Storing available registers: R7-R0
 
     // When no registers are available  
@@ -20,91 +21,51 @@ object AssignRegister {
         }
     }
 
-    def assignBlock(funcBlock: FuncBlock): Unit = {
-        val newFuncBlock = FuncBlock()
-        newFuncBlock.name = funcBlock.name
-        newFuncBlock.num = funcBlock.num
-        newFuncBlock.directive = funcBlock.directive
-        if (funcBlock.name == "main") {
-            newFuncBlock.setGlobalMain()
-        }
-        // Add FuncBlock to hash map
-        ir2cfg.addOne(newFuncBlock.name, newFuncBlock)
-        currInstBlock = newFuncBlock.body
-        assignBlock(funcBlock.body)
-    }
+    def assignBlock(funcBlock: FuncBlock): Unit = assignBlock(funcBlock.body)
 
     def assignBlock(cfBlock: ControlFlowBlock): Unit = {
         cfBlock match {
             case ins: InstBlock => assignBlock(ins: InstBlock)
             case con: IfBlock => assignBlock(con: IfBlock)
             case whi: WhileBlock => assignBlock(whi: WhileBlock)
-            // case call: CallBlock => assignBlock(call: CallBlock)
             case fun: FuncBlock => assignBlock(fun: FuncBlock)
             case _ => 
         }
     }
 
     def assignBlock(instBlock: InstBlock): Unit = {
+        newInstList = ListBuffer.empty
         for (inst <- instBlock.instList) {
-            currInstBlock.addInst(assignInst(inst))
+            newInstList += assignInst(inst)
             
             // Add instuction to store on stack when no registers are available
             storeInst match {
                 case Some(inst) => {
-                    currInstBlock.addInst(inst)
+                    newInstList += inst
                     storeInst = None
                 }
                 case _ => 
             }
         }
+        instBlock.instList = newInstList
         
         instBlock.next match {
-            // InstBlock --> InstBlock
-            case InstBlock(_) => {
-                val newInstBlock = InstBlock(instBlock.num)
-                currInstBlock.next = newInstBlock
-                currInstBlock = newInstBlock
-                assignBlock(instBlock.next)
-            }
-            case IfBlock() | WhileBlock() => assignBlock(instBlock.next)
+            case InstBlock() | IfBlock() | WhileBlock() => assignBlock(instBlock.next)
             case _ => 
         }
     }
 
     def assignBlock(ifBlock: IfBlock): Unit = {
-        val newIfBlock = IfBlock()
-        newIfBlock.num = ifBlock.num
-        currInstBlock.next = newIfBlock
-        // currInstBlock = newIfBlock.cond
-        // assignBlock(ifBlock.cond)
-        currInstBlock = newIfBlock.nextT
         assignBlock(ifBlock.nextT)
-        currInstBlock = newIfBlock.nextF
         assignBlock(ifBlock.nextF)
-        currInstBlock = newIfBlock.next
         assignBlock(ifBlock.next)
     }
 
     def assignBlock(whileBlock: WhileBlock): Unit = {
-        val newWhileBlock = WhileBlock()
-        newWhileBlock.num = whileBlock.num
-        currInstBlock.next = newWhileBlock
-        currInstBlock = newWhileBlock.cond
         assignBlock(whileBlock.cond)
-        currInstBlock = newWhileBlock.loop
         assignBlock(whileBlock.loop)
-        currInstBlock = newWhileBlock.next
         assignBlock(whileBlock.next)
     }
-
-    // def assignBlock(callBlock: CallBlock): Unit = {
-    //     val newCallBlock = CallBlock()
-    //     newCallBlock.func = callBlock.func
-    //     currInstBlock.next = newCallBlock
-    //     currInstBlock = newCallBlock.next
-    //     assignBlock(callBlock.next)
-    // }
 
     // Change operand and assign register if needed
     def assignInst(i: Instruction): Instruction = {
@@ -184,7 +145,7 @@ object AssignRegister {
                     case Some(fReg: FixedRegister) => fReg
                     // From stack
                     case Some(im: ImmOffset) => {
-                        currInstBlock.addInst(LdrInst(Constants.r8, im))
+                        newInstList += LdrInst(Constants.r8, im)
                         Constants.r8
                     }
                     case _ => {
@@ -196,7 +157,7 @@ object AssignRegister {
                         }
                         // No available registers
                         else {
-                            currInstBlock.addInst(SubInst(Constants.sp, Constants.sp, ImmVal(-4)))
+                            newInstList += SubInst(Constants.sp, Constants.sp, ImmVal(-4))
                             currFPOffset -= 4
                             val op = ImmOffset(Constants.fp, currFPOffset)
                             varOpTable.addOne(v.name, op)
@@ -216,7 +177,7 @@ object AssignRegister {
             case Some(fReg: FixedRegister) => fReg
             // From stack
             case Some(im: ImmOffset) => {
-                currInstBlock.addInst(LdrInst(Constants.r8, im))
+                newInstList += LdrInst(Constants.r8, im)
                 Constants.r8
             }
             case _ => {
@@ -228,7 +189,7 @@ object AssignRegister {
                 }
                 // No more available registers
                 else {
-                    currInstBlock.addInst(SubInst(Constants.sp, Constants.sp, ImmVal(-4)))
+                    newInstList += SubInst(Constants.sp, Constants.sp, ImmVal(-4))
                     currFPOffset -= 4
                     val op = ImmOffset(Constants.fp, currFPOffset)
                     tempRegTable.addOne(tReg.num, op)

@@ -35,9 +35,10 @@ case class DataDirectiveStat() extends Directive {
     val content = new StringBuilder()
     val textLabel = if (printType.isEmpty()) "" else s"${printType}_"
     val retLabel = s".L.${textLabel}str${dirCount}"
+    val rawText = raw"${text}"
     content ++= s"  .word ${text.length()}\n" +
                 s"${retLabel}:\n" +
-                s"  .asciz \"${text}\"\n"
+                s"  .asciz \"${rawText}\"\n"
     addToPrintDataSubsection(content.toString())
     // returns label string for text added to .data directive
     retLabel    

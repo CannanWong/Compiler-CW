@@ -60,8 +60,7 @@ object Main {
 
             val pw = new PrintWriter(new File(filename))
             /* global main */
-            for ((name, funcBlock) <- AssignRegister.ir2cfg) {
-            //for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
+            for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
                 Printer.printBlock(funcBlock)
             }
 
