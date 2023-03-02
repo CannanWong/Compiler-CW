@@ -155,6 +155,7 @@ object CodeGenerator {
                         MovInst(r10, translate(exprList(arrayNum))),
                         PopInst(r8),
                         BranchLinkInst("_arrLoad"))
+                        ArrayLoad.setUsed
                 }
 
                 currInstBlock.addInst(
@@ -167,6 +168,8 @@ object CodeGenerator {
                         case _ => BranchLinkInst("_arrStore")
                     }
                 )
+                ArrayStoreB.setUsed
+                ArrayStore.setUsed
             }
             case FstNode(lvalue) => storeToPairElemAddr(0, lvalue, op)
             case SndNode(lvalue) => storeToPairElemAddr(4, lvalue, op)
@@ -183,8 +186,35 @@ object CodeGenerator {
             case _ => throw new IllegalArgumentException("print: not an int or char")
         }
     }
-    /*  Freeing addresses allocated in the memory. */
-    def translate(node: FreeNode): Unit = {}
+    /*  Freeing addresses allocated in the memory. 
+        Segmentation fault if op translated is not */
+    def translate(node: FreeNode): Unit = {
+        val op = translate(node.expr)
+        node.expr.typeVal() match {
+            case PairIdentifier(ty1, ty2) => {
+                currInstBlock.addInst(
+                    MovInst(r0, op),
+                    BranchLinkInst("_freePair")
+                )
+                FreePair.setUsed
+            }
+            case ArrayIdentifier(baseTy, dim) => {
+                currInstBlock.addInst(
+                    // If the variable is on the stack
+                    // its translated and put into r8
+                    // TODO: Check if ident is consistent in this case
+                    SubInst(r0, r8, ImmVal(4)),
+                    BranchLinkInst("free")
+                )
+            }
+            case _ => {
+                currInstBlock.addInst(
+                    MovInst(r0, op),
+                    BranchLinkInst("free")
+                )
+            }
+        }
+    }
 
     /*  Return from function,
         moving return value to r0 and handle callee-saved register pops,
@@ -210,13 +240,6 @@ object CodeGenerator {
     
     /*  Printing statements. */
     def translate(node: PrintNode): Unit = {
-        /** 
-         * TODO: push r0 - r3 before calling print in func call, where r0 -r3 may be storing args
-         * pop when return back to scope
-         * print may clobber any registers that are marked as caller-save under
-         * arm's calling convention: R0, R1, R2, R3
-        */
-
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
 
         val retOp = translate(node.expr)
@@ -399,6 +422,8 @@ object CodeGenerator {
                             case _ => throw new UnsupportedOperationException("array type mismatched?")
                         }
                     )
+                    ArrayLoad.setUsed
+                    ArrayLoadB.setUsed
                 }
                 r8
             }
@@ -410,7 +435,6 @@ object CodeGenerator {
                         else op = immFalse
                         op 
                     }
-                    // TODO: asInstanceOf or put all remaining cases
                     case r: Register => {
                         currInstBlock.addInst(
                             CmpInst(r, ImmVal(1)),
@@ -483,6 +507,7 @@ object CodeGenerator {
                     BranchCondInst(NOT_EQUAL, "_errOverflow"),
                     FreeRegister(reg1)
                 )
+                Overflow.setUsed
                 r8
             }
             case DivNode(fstexpr, sndexpr) => {
@@ -498,6 +523,7 @@ object CodeGenerator {
                     MovInst(r8, r0),
                     PopInst(r0, r1)
                 )
+                ZeroDivision.setUsed
                 r8
             }
             case ModNode(fstexpr, sndexpr) => {
@@ -513,6 +539,7 @@ object CodeGenerator {
                     MovInst(r8, r1),
                     PopInst(r0, r1)
                 )
+                ZeroDivision.setUsed
                 r8
             }
             case AddNode(fstexpr, sndexpr) => {
@@ -527,6 +554,7 @@ object CodeGenerator {
                             BranchLinkCondInst("vs", "_errOverflow"),
                             FreeRegister(reg)
                         )
+                        Overflow.setUsed
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
@@ -534,6 +562,7 @@ object CodeGenerator {
                             AddsInst(r8, r, op2), 
                             BranchLinkCondInst("vs", "_errOverflow")
                         )
+                        Overflow.setUsed
                     }
                     case _ => throw new UnsupportedOperationException("Add node evaluation error")
                 }
@@ -551,6 +580,7 @@ object CodeGenerator {
                             BranchLinkCondInst("vs", "_errOverflow"),
                             FreeRegister(reg)
                         )
+                        Overflow.setUsed
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
@@ -558,6 +588,7 @@ object CodeGenerator {
                             SubsInst(r8, r, op2), 
                             BranchLinkCondInst("vs", "_errOverflow")
                         )
+                        Overflow.setUsed
                     }
                     case _ => throw new UnsupportedOperationException("Sub node evaluation error")
                 }

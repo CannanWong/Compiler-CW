@@ -20,7 +20,7 @@ object AssignmentTranslations {
 
     def transNewArray(exprList: List[ExprNode]): Operand = {
         val exprs = exprList
-        var stackOffset = 0
+        var stackOffset = -4
 
         // Detect type to determine allocation size for each element
         val allocSize = getOffset(exprs(0))
@@ -32,6 +32,7 @@ object AssignmentTranslations {
             MovInst(r10, r0),
 
         // Storing the size of the array on the first 4 bytes / word
+            AddInst(r10, r10, ImmVal(4)),
             MovInst(r8, ImmVal(exprs.length)),
             StrInst(r8, ImmOffset(r10, stackOffset)))
             
