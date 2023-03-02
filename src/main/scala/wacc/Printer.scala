@@ -84,19 +84,20 @@ object Printer {
                 output += "or " + printOp(inst.rd, inst.op)
 
             case inst: LdrInst =>
-                output += "ldr " + printOp(inst.rd, inst.op)
+                output += "ldr " + printLoadStoreOp(inst.rd, inst.op)
             case inst: LdrPseudoInst =>
-                output += "ldr " + printOp(inst.rd, LabelAddress(s"${inst.num}"))
+                output += "ldr " + printLoadStoreOp(inst.rd, LabelAddress(s"${inst.num}"))
             case inst: StrbChgInst =>
-                output += "strb " + printOp(inst.rd, inst.op) + "!"
+                output += "strb " + printLoadStoreOp(inst.rd, inst.op) + "!"
             case inst: StrInst => 
-                output += "str " + printOp(inst.rd, inst.op) 
+                output += "str " + printLoadStoreOp(inst.rd, inst.op) 
             case inst: StrbInst =>
-                output += "strb " + printOp(inst.rd, inst.op) 
+                output += "strb " + printLoadStoreOp(inst.rd, inst.op) 
             case inst: StrChgInst =>
-                output += "str " + printOp(inst.rd, inst.op) + "!"
+                output += "str " + printLoadStoreOp(inst.rd, inst.op) + "!"
             case inst: LdrsbInst =>
-                output += "ldrsb " + printOp(inst.rd, inst.op)
+                output += "ldrsb " + printLoadStoreOp(inst.rd, inst.op)
+
             case inst: PushInst => 
                 output += "push " + printRegList(inst.regs)
             case inst: PopInst => 
@@ -134,18 +135,18 @@ object Printer {
             case asr: ASR =>
                 s"${printOp(asr.r)}, asr ${printOp(asr.bits)}"
             case off: ImmOffset =>
-                s"[${printOp(off.r)}, #${off.offset}]"
+                s"${printOp(off.r)}, #${off.offset}"
             case ladr: LabelAddress => 
                 s"=${ladr.address}"
             case soff: ScaledOffsetLSL => 
-                s"[${printOp(soff.rn)}, ${printOp(soff.rm)}, lsl ${printOp(soff.shift)}]"
+                s"${printOp(soff.rn)}, ${printOp(soff.rm)}, lsl ${printOp(soff.shift)}"
             
             case treg: TempRegister =>
                 "UAR!" // Unassigned register
             case uvar: Variable =>
                 "UAR!" // Unassigned register
-            case _ =>
-                throw new IllegalArgumentException(s"${op} is not legal arguement")
+            // case _ =>
+            //     throw new IllegalArgumentException(s"${op} is not legal arguement")
         }
     }
 
@@ -160,6 +161,19 @@ object Printer {
             ops
             .map(op => printOp(op))
             .mkString(", ")
+    }
+
+    def printLoadStoreOp(op: Operand, addrOp: Operand): String = {
+        val addr = addrOp match {
+            case LabelAddress(address) => s"=${address}"
+            case soff: ScaledOffsetLSL => s"[${printOp(soff)}]"
+            case reg: FixedRegister => s"[${printOp(reg)}]"
+            case off: ImmOffset => s"[${printOp(off)}]"
+            case imm: ImmVal => s"[${printOp(imm)}]"
+            case RegOffset(rm, rn) => s"[${printOp(rm)}, ${printOp(rm)}]"
+            case _ => "[#0] @ not a valid load address"
+        }
+        s"${printOp(op)}, ${addr}"
     }
 
     def printRegList(regList: Seq[Register]): String = {
