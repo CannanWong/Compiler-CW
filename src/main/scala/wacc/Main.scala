@@ -63,11 +63,44 @@ object Main {
             //for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
                 Printer.printBlock(funcBlock)
             }
+
+            addStandardFuncs()
+            
             for (line <- Printer.output) {
                 pw.println(line)
             }
 
             pw.close()              
+        }
+
+        def addStandardFuncs(): Unit = {
+            if (ArrayStore.getUsed) {
+                Printer.printBlock(ArrayStore.getFunc)
+            }
+            if (ArrayStoreB.getUsed) {
+                Printer.printBlock(ArrayStoreB.getFunc)
+            }
+            if (ArrayLoad.getUsed) {
+                Printer.printBlock(ArrayLoadB.getFunc)
+            }
+            if (ArrayLoadB.getUsed) {
+                Printer.printBlock(ArrayLoadB.getFunc)
+            }
+            if (FreePair.getUsed) {
+                Printer.printBlock(FreePair.getFunc)
+            }
+            if (ZeroDivision.getUsed) {
+                Printer.printBlock(ZeroDivision.getFunc)
+            }
+            if (NullPointer.getUsed) {
+                Printer.printBlock(NullPointer.getFunc)
+            }
+            if (Overflow.getUsed) {
+                Printer.printBlock(Overflow.getFunc)
+            }
+            if (BoundsCheck.getUsed) {
+                Printer.printBlock(BoundsCheck.getFunc)
+            }
         }
     }
 }
