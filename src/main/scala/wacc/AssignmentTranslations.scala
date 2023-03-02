@@ -117,7 +117,7 @@ object AssignmentTranslations {
     def accessPairElem(pairOffset: Int, lvalue: LValueNode): Operand = {
         var pos: Register = r8
         lvalue match {
-            case IdentNode(name) => pos = Variable(name)
+            case i: IdentNode => pos = Variable(i.newName)
             case ArrayElemNode(ident, exprList) => 
                 translate(ArrayElemNode(ident, exprList))
             case FstNode(lvalue) => accessPairElem(0, lvalue)
@@ -139,7 +139,7 @@ object AssignmentTranslations {
     def storeToPairElemAddr(pairOffset: Int, lvalue: LValueNode, op: Operand): Operand = {
         var pos: Register = r8
         lvalue match {
-            case IdentNode(name) => pos = Variable(name)
+            case i: IdentNode => pos = Variable(i.newName)
             case ArrayElemNode(ident, exprList) => 
                 translate(ArrayElemNode(ident, exprList))
             case FstNode(lvalue) => accessPairElem(0, lvalue)
