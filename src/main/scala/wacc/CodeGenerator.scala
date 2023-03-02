@@ -33,6 +33,9 @@ object CodeGenerator {
     }
 
     def translateMain(stat: StatNode): Unit = {
+        /* resets control graph since instantiaing CodeGenerator will increase val in CFG */
+        ControlFlowGraph.resetCFG()
+        
         val mainFuncBlock = FuncBlock()
         mainFuncBlock.setGlobalMain()
         mainFuncBlock.name = "main"
@@ -453,42 +456,42 @@ object CodeGenerator {
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "GT", "LE")
+                translateComparisonOperators(reg, op2, GREATER_THAN, LESS_OR_EQUAL)
             }
             case GTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "GE", "LT")
+                translateComparisonOperators(reg, op2, GREATER_OR_EQUAL, LESS_THAN)
             }
             case LTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "LT", "GE")
+                translateComparisonOperators(reg, op2, LESS_THAN, GREATER_OR_EQUAL)
             }
             case LTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "LE", "GT")
+                translateComparisonOperators(reg, op2, LESS_OR_EQUAL, GREATER_THAN)
             }
             case EqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "Eq", "NE")
+                translateComparisonOperators(reg, op2, EQUAL, NOT_EQUAL)
             }
             case IEqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "NE", "Eq")
+                translateComparisonOperators(reg, op2, NOT_EQUAL, EQUAL)
             }
             // TODO: fix label
             case AndNode(fstexpr, sndexpr) => {
