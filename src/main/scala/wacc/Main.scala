@@ -87,7 +87,7 @@ object Main {
             //     Printer.printBlock(ArrayStoreB.getFunc)
             // }
             // if (ArrayLoad.getUsed) {
-            //     Printer.printBlock(ArrayLoadB.getFunc)
+            //     Printer.printBlock(ArrayLoad.getFunc)
             // }
             // if (ArrayLoadB.getUsed) {
             //     Printer.printBlock(ArrayLoadB.getFunc)

@@ -108,7 +108,7 @@ object AssignmentTranslations {
             pushArgs(0, argList.exprList, ListBuffer[Instruction]())
             .toList)
         // Branch link to the function
-        currInstBlock.addInst(BranchLinkInst(ident.name))
+        currInstBlock.addInst(BranchLinkInst(s"wacc_${ident.name}"))
         r0
     }
 
