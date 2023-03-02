@@ -339,6 +339,11 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
         identifier match {
             case None => Error.addSemErr(s"${identifier} variable \"${name}\" is not in scope " +
               s"or not defined\n")
+            case _ => newName = SemanticChecker.currScope().toString() + "!" + name
+        }
+        val funcIdentifier = SemanticChecker.symbolTable.lookUpFunc(name)
+        funcIdentifier match {
+            case Some(_) => newName = "f!" + name
             case _ =>
         }
     }
