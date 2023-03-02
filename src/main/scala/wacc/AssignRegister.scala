@@ -61,9 +61,8 @@ object AssignRegister {
         
         instBlock.next match {
             // InstBlock --> InstBlock
-            case InstBlock() => {
-                val newInstBlock = InstBlock()
-                newInstBlock.num = instBlock.num
+            case InstBlock(_) => {
+                val newInstBlock = InstBlock(instBlock.num)
                 currInstBlock.next = newInstBlock
                 currInstBlock = newInstBlock
                 assignBlock(instBlock.next)

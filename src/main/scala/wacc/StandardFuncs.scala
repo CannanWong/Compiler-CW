@@ -85,8 +85,8 @@ object StandardFuncs {
                     MovCondInst("ge", r1, r10),
                     BranchLinkCondInst("ge", "_boundsCheck"),
                     name match {
-                        case ARRAY_LOAD_LABEL => LdrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
-                        case ARRAY_LOAD_B_LABEL => LdrInst(r8, RegOffset(r9, r10))
+                        case ARRAY_STORE_LABEL => LdrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
+                        case ARRAY_STORE_B_LABEL => LdrInst(r8, RegOffset(r9, r10))
                     },
                     PopInst(pc)
                 )
