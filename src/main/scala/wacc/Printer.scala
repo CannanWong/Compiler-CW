@@ -18,7 +18,7 @@ object Printer {
 
     def printBlock(instBlock: InstBlock): Unit = {
         // Print label for instr block
-        output += s"@ .L${ControlFlowGraph.nextInstNum}:"
+        output += s".L${instBlock.num}:"
         for (inst <- instBlock.instList) {
             print(inst)
         }

@@ -13,10 +13,11 @@ object ControlFlowGraph {
 
 sealed trait ControlFlowBlock
 
-case class InstBlock() extends ControlFlowBlock {
+case class InstBlock(idxVal: Int = 0) extends ControlFlowBlock {
     val num: Int = ControlFlowGraph.nextInstNum
     var instList: ListBuffer[Instruction] = ListBuffer.empty
     var next: ControlFlowBlock = null
+    var idx: Int = idxVal
     ControlFlowGraph.nextInstNum += 1
 
     def addInst(insts: Instruction*) = {
