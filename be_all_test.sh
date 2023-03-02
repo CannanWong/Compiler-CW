@@ -22,8 +22,8 @@ do
 
     timeout 10s ./compile $file > /dev/null
     filename=$(basename $file .wacc)
-    arm-linux-gnueabi-gcc -o $filename -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $filename.s
-    output=$(qemu-arm -L /usr/arm-linux-gnueabi/ $filename)
+    timeout 10s arm-linux-gnueabi-gcc -o $filename -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $filename.s
+    output=$(timeout 10s qemu-arm -L /usr/arm-linux-gnueabi/ $filename)
     exit=$?
     
     pass=1
