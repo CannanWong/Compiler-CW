@@ -124,7 +124,7 @@ object CodeGenerator {
         and pop back caller-saved registers if RHS is a function call. */
     def translate(node: AssignIdentNode): Unit = {
         val op = transRVal(node.rvalue)
-        currInstBlock.addInst(MovInst(Variable(node.ident.name), op))
+        currInstBlock.addInst(MovInst(Variable(node.ident.newName), op))
 
         // Pop back Caller Regs
         node.rvalue match {
@@ -140,13 +140,13 @@ object CodeGenerator {
         // Process right value first and store it in a temp reg
         val op = transRVal(node.rvalue)
         node.lvalue match {
-            case IdentNode(name) => {
-                currInstBlock.addInst(MovInst(Variable(name), op))
+            case i: IdentNode => {
+                currInstBlock.addInst(MovInst(Variable(i.newName), op))
             }
             case ArrayElemNode(ident, exprList) => {
                 // Loading array addresses until it reaches final index,
                 // then store the evaluated RHS into the offsetted address.
-                currInstBlock.addInst(MovInst(r8, Variable(ident.name)))
+                currInstBlock.addInst(MovInst(r8, Variable(ident.newName)))
                 for (arrayNum <- 1 to exprList.length - 1) {
                     currInstBlock.addInst(
                         // Ready for special convention for _arrLoad,
