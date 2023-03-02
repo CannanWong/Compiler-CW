@@ -48,7 +48,7 @@ object  Constants {
     val ArrLdrB = Value(7, ARRAY_LOAD_B_LABEL)
     val FreeP = Value(8, FREE_PAIR_LABEL)
   }
-  
+
   val ZERO_DIVISION_LABEL = "_errDivZero"
   val NULL_POINTER_LABEL = "_errNull"
   val OVERFLOW_LABEL = "_errOverflow"
@@ -57,7 +57,7 @@ object  Constants {
   val ARRAY_STORE_B_LABEL = "_arrStoreB"
   val ARRAY_LOAD_LABEL = "_arrLoad"
   val ARRAY_LOAD_B_LABEL = "_arrLoadB"
-  val FREE_PAIR_LABEL = "_freepair"
+  val FREE_PAIR_LABEL = "_freePair"
 
   /* cond code (pg. 1-43 of mannual) */
   val NOT_EQUAL = "ne"

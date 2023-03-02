@@ -54,7 +54,6 @@ object StandardFuncs {
     var usedFuncs = new Array[Boolean](StdFuncsEnum.maxId)
 
     def setUsed(func: StdFuncsEnum): Unit = {
-        usedFuncs(func.id) = true
         func match {
             case ArrLdr | ArrLdrB | ArrStr | ArrStrb => {
                 setUsed(BoundsErr)
@@ -62,7 +61,9 @@ object StandardFuncs {
             case FreeP => {
                 setUsed(NullErr)
             }
+            case _ => 
         }
+        usedFuncs(func.id) = true
         
     }
 

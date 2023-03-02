@@ -2,7 +2,9 @@ package wacc
 
 import scala.collection.mutable.ListBuffer
 import wacc.CodeGenerator._
-import wacc.Registers._
+import wacc.StandardFuncs._
+import wacc.Constants._
+import wacc.Constants.StdFuncsEnum._
 
 object AssignmentTranslations {
     // General function for translating RHS Values
@@ -130,6 +132,7 @@ object AssignmentTranslations {
                 case _ => LdrInst(r8, ImmOffset(r8, 0))
             }
         )
+        setUsed(NullErr)
         r8
     }
 
@@ -153,6 +156,7 @@ object AssignmentTranslations {
                 case _ => StrInst(r8, ImmOffset(r9, 0))
             }
         )
+        setUsed(NullErr)
         r8
     }
 
