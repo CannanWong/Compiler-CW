@@ -13,6 +13,10 @@ be_all_test:
 	sbt compile assembly
 	bash be_all_test.sh
 
+be_fail_test:
+	sbt compile assembly
+	bash be_fail_test.sh
+
 clean:
 	sbt clean && rm -rf wacc-45-compiler.jar && rm -f *.s
 
