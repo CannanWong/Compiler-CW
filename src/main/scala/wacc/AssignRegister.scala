@@ -3,16 +3,16 @@ package wacc
 import scala.collection.mutable._
 
 object AssignRegister {
-    val ir2cfg = LinkedHashMap[String, FuncBlock]()
-    var currInstBlock: InstBlock = FuncBlock().body // ! None
-    var regQueue: Queue[Int] = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // R7-R0
+    val ir2cfg = LinkedHashMap[String, FuncBlock]()     // Control flow graph: Hash map of FuncBlocks
+    var currInstBlock: InstBlock = FuncBlock().body     // ! None
+    var regQueue: Queue[Int] = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // Storing available registers: R7-R0
 
     // When no registers are available  
     var storeInst: Option[StrInst] = None   // To add instuction to store on stack
     var currFPOffset: Int = 0               // fp offset
 
-    val varOpTable: Map[String, Operand] = Map()
-    val tempRegTable: Map[Int, Operand] = Map()
+    val varOpTable: Map[String, Operand] = Map()    // Table mapping variable name to operand
+    val tempRegTable: Map[Int, Operand] = Map()     // Table mapping temporary register number to operand
 
     def assignCFG(cfg: LinkedHashMap[String, FuncBlock]): Unit = {
         for ((name, funcBlock) <- cfg) {
@@ -26,6 +26,7 @@ object AssignRegister {
         if (funcBlock.name == "main") {
             newFuncBlock.setGlobalMain()
         }
+        // Add FuncBlock to hash map
         ir2cfg.addOne(newFuncBlock.name, newFuncBlock)
         currInstBlock = newFuncBlock.body
         assignBlock(funcBlock.body)
@@ -57,6 +58,7 @@ object AssignRegister {
         }
         
         instBlock.next match {
+            // InstBlock --> InstBlock
             case InstBlock() => {
                 val newInstBlock = InstBlock()
                 currInstBlock.next = newInstBlock
@@ -135,6 +137,7 @@ object AssignRegister {
                 }
                 PopInst(newRegList.toSeq:_*)
             }
+            // Free fixed register that is used by temporary register
             case inst: FreeRegister => {
                 inst.r match {
                     case t: TempRegister => {
@@ -167,11 +170,13 @@ object AssignRegister {
                 val reg = varOpTable.get(v.name)
                 reg match {
                     case Some(fReg: FixedRegister) => fReg
+                    // From stack
                     case Some(im: ImmOffset) => {
                         currInstBlock.addInst(LdrInst(Constants.r8, im))
                         Constants.r8
                     }
                     case _ => {
+                        // Get fixed register
                         if (!regQueue.isEmpty) {
                             val fReg = FixedRegister(regQueue.dequeue())
                             varOpTable.addOne(v.name, fReg)
@@ -197,11 +202,13 @@ object AssignRegister {
         val reg = tempRegTable.get(tReg.num)
         reg match {
             case Some(fReg: FixedRegister) => fReg
+            // From stack
             case Some(im: ImmOffset) => {
                 currInstBlock.addInst(LdrInst(Constants.r8, im))
                 Constants.r8
             }
             case _ => {
+                // Get fixed register
                 if (!regQueue.isEmpty) {
                     val fReg = FixedRegister(regQueue.dequeue())
                     tempRegTable.addOne(tReg.num, fReg)
