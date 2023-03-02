@@ -26,12 +26,14 @@ object RuntimeCheck {
     val prevBlock = currInstBlock
     currInstBlock = func.body
     val text = func.directive.addTextLabelToData(msg, label)
-    IOFunc.printString(LabelAddress(text))
+    val printFunc = IOFunc.printString(LabelAddress(text))
     func.name = label
     func.body.addInst(
       MovInst(r0, ImmVal(255)),
       BranchLinkInst("exit")
     )
+
+    CodeGenerator.controlFlowFuncs.addOne(IOFunc.PRINT_STR_LABEL, printFunc)
     CodeGenerator.controlFlowFuncs.addOne(label, func)
     currInstBlock = prevBlock
     func

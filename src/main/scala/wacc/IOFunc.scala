@@ -95,7 +95,7 @@ object IOFunc {
       CodeGenerator.controlFlowFuncs.addOne(PRINT_PTR_LABEL, printPtrFunc)
     }
 
-    def printString(op: Operand): Unit = {
+    def printString(op: Operand): FuncBlock = {
       CodeGenerator.currInstBlock.addInst(
         LdrInst(r0, op),
         BranchLinkInst(PRINT_STR_LABEL)
@@ -123,6 +123,8 @@ object IOFunc {
       /* change current instruction block to func where print is called */
       // CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_STR_LABEL, printStringFunc)
+
+      printStringFunc
     }
 
     def printChar(op: Operand): Unit = {
@@ -290,7 +292,7 @@ object IOFunc {
       // val callerBlock = CodeGenerator.controlFlowGraph
       // CodeGenerator.switchCurrInstrBlock(readIntFunc, readIntFunc.currBlock)
 
-      readIntFunc.body.addInst(readFunc(READ_CHAR_LABEL, "%d", readIntFunc))
+      readIntFunc.body.addInst(readFunc(READ_INT_LABEL, "%d", readIntFunc))
 
       /* change current instruction block to func where print is called */
       // CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)

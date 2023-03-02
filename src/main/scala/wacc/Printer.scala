@@ -168,7 +168,7 @@ object Printer {
         val addr = addrOp match {
             case LabelAddress(address) => s"=${address}"
             case soff: ScaledOffsetLSL => s"[${printOp(soff)}]"
-            case reg: FixedRegister => s"[${printOp(reg)}]"
+            case reg: FixedRegister => s"[${printOp(reg)}, #0]"
             case off: ImmOffset => s"[${printOp(off)}]"
             case imm: ImmVal => s"[${printOp(imm)}]"
             case roff: RegOffset => s"[${printOp(roff)}]"

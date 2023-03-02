@@ -652,6 +652,7 @@ object CodeGenerator {
                     BranchNumCondInst(NOT_EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
+                currInstBlock.next = newBlock
                 currInstBlock = newBlock
                 // switchCurrInstrBlock(controlFlowGraph, newBlock)
 
@@ -677,6 +678,7 @@ object CodeGenerator {
                     BranchNumCondInst( EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
+                currInstBlock.next = newBlock
                 currInstBlock = newBlock
                 // switchCurrInstrBlock(controlFlowGraph, newBlock)
                 currInstBlock.addInst(
