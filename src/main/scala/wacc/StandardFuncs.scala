@@ -54,6 +54,7 @@ object StandardFuncs {
         name match {
             case ARRAY_LOAD_LABEL | ARRAY_LOAD_B_LABEL => {
                 val funcBlock = FuncBlock()
+                funcBlock.name = name
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
@@ -73,6 +74,7 @@ object StandardFuncs {
             }
             case ARRAY_STORE_LABEL | ARRAY_STORE_B_LABEL=> {
                 val funcBlock = FuncBlock()
+                funcBlock.name = name
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
@@ -92,6 +94,7 @@ object StandardFuncs {
             }
             case FREE_PAIR_LABEL => {
                 val funcBlock = FuncBlock()
+                funcBlock.name = name
                 funcBlock.body.addInst(
                     PushInst(lr),
                     MovInst(r8, r0),
