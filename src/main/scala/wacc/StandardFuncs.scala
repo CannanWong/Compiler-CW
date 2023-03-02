@@ -1,60 +1,76 @@
 package wacc
 
 import wacc.Constants._
+import wacc.Constants.StdFuncsEnum._
 
-abstract class StandardFuncs(name: String) {
-    import StandardFuncs._
-    protected var used = false
-    def setUsed: Unit = {
-        used = true
-    }
-    def getUsed = used
-    def getFunc: FuncBlock = getFunction(name)
+// abstract class StandardFuncs(name: String) {
+//     import StandardFuncs._
+//     protected var used = false
+//     def setUsed: Unit = {
+//         used = true
+//     }
+//     def getUsed = used
+//     def getFunc: FuncBlock = getFunction(name)
 
-}
+// }
 
 
-case object ZeroDivision extends StandardFuncs(ZERO_DIVISION_LABEL)
-case object NullPointer extends StandardFuncs(NULL_POINTER_LABEL)
-case object Overflow extends StandardFuncs(OVERFLOW_LABEL)
-case object BoundsCheck extends StandardFuncs(BOUNDS_CHECK_LABEL)
-case object ArrayStore extends StandardFuncs(ARRAY_STORE_LABEL) {
-    override def setUsed: Unit = {
-        this.used = true
-        BoundsCheck.setUsed
-    }
-}
-case object ArrayStoreB extends StandardFuncs(ARRAY_STORE_B_LABEL) {
-    override def setUsed: Unit = {
-        this.used = true
-        BoundsCheck.setUsed
-    }
-}
-case object ArrayLoad extends StandardFuncs(ARRAY_LOAD_LABEL) {
-    override def setUsed: Unit = {
-        this.used = true
-        BoundsCheck.setUsed
-    }
-}
-case object ArrayLoadB extends StandardFuncs(ARRAY_LOAD_B_LABEL) {
-    override def setUsed: Unit = {
-        this.used = true
-        BoundsCheck.setUsed
-    }
-}
-case object FreePair extends StandardFuncs(FREE_PAIR_LABEL) {
-    override def setUsed: Unit = {
-        this.used = true
-        NullPointer.setUsed
-    }
-}
+// case object ZeroDivision extends StandardFuncs(ZERO_DIVISION_LABEL)
+// case object NullPointer extends StandardFuncs(NULL_POINTER_LABEL)
+// case object Overflow extends StandardFuncs(OVERFLOW_LABEL)
+// case object BoundsCheck extends StandardFuncs(BOUNDS_CHECK_LABEL)
+// case object ArrayStore extends StandardFuncs(ARRAY_STORE_LABEL) {
+//     override def setUsed: Unit = {
+//         this.used = true
+//         BoundsCheck.setUsed
+//     }
+// }
+// case object ArrayStoreB extends StandardFuncs(ARRAY_STORE_B_LABEL) {
+//     override def setUsed: Unit = {
+//         this.used = true
+//         BoundsCheck.setUsed
+//     }
+// }
+// case object ArrayLoad extends StandardFuncs(ARRAY_LOAD_LABEL) {
+//     override def setUsed: Unit = {
+//         this.used = true
+//         BoundsCheck.setUsed
+//     }
+// }
+// case object ArrayLoadB extends StandardFuncs(ARRAY_LOAD_B_LABEL) {
+//     override def setUsed: Unit = {
+//         this.used = true
+//         BoundsCheck.setUsed
+//     }
+// }
+// case object FreePair extends StandardFuncs(FREE_PAIR_LABEL) {
+//     override def setUsed: Unit = {
+//         this.used = true
+//         NullPointer.setUsed
+//     }
+// }
 
 object StandardFuncs {
-    def getFunction(name: String): FuncBlock = {
-        name match {
-            case ARRAY_LOAD_LABEL | ARRAY_LOAD_B_LABEL => {
+    var usedFuncs = new Array[Boolean](StdFuncsEnum.maxId)
+
+    def setUsed(func: StdFuncsEnum): Unit = {
+        usedFuncs(func.id) = true
+        func match {
+            case ArrLdr | ArrLdrB | ArrStr | ArrStrb => {
+                setUsed(BoundsErr)
+            }
+            case FreeP => {
+                setUsed(NullErr)
+            }
+        }
+        
+    }
+
+    def getFunction(func: StdFuncsEnum): FuncBlock = {
+        func match {
+            case ArrLdr | ArrLdrB => {
                 val funcBlock = FuncBlock()
-                funcBlock.name = name
+                funcBlock.name = func.toString()
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
@@ -64,17 +80,17 @@ object StandardFuncs {
                     CmpInst(r10, lr),
                     MovCondInst("ge", r1, r10),
                     BranchLinkCondInst("ge", "_boundsCheck"),
-                    name match {
-                        case ARRAY_LOAD_LABEL => LdrInst(r8, ScaledOffsetLSL(r8, r10, ImmVal(2)))
-                        case ARRAY_LOAD_B_LABEL => LdrInst(r8, RegOffset(r8, r10))
+                    func match {
+                        case ArrLdr => LdrInst(r8, ScaledOffsetLSL(r8, r10, ImmVal(2)))
+                        case ArrLdrB => LdrInst(r8, RegOffset(r8, r10))
                     },
                     PopInst(pc)
                 )
                 funcBlock
             }
-            case ARRAY_STORE_LABEL | ARRAY_STORE_B_LABEL=> {
+            case ArrStr | ArrStrb => {
                 val funcBlock = FuncBlock()
-                funcBlock.name = name
+                funcBlock.name = func.toString()
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
@@ -84,17 +100,17 @@ object StandardFuncs {
                     CmpInst(r10, lr),
                     MovCondInst("ge", r1, r10),
                     BranchLinkCondInst("ge", "_boundsCheck"),
-                    name match {
-                        case ARRAY_STORE_LABEL => LdrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
-                        case ARRAY_STORE_B_LABEL => LdrInst(r8, RegOffset(r9, r10))
+                    func match {
+                        case ArrStr => LdrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
+                        case ArrStrb => LdrInst(r8, RegOffset(r9, r10))
                     },
                     PopInst(pc)
                 )
                 funcBlock
             }
-            case FREE_PAIR_LABEL => {
+            case FreeP => {
                 val funcBlock = FuncBlock()
-                funcBlock.name = name
+                funcBlock.name = func.toString()
                 funcBlock.body.addInst(
                     PushInst(lr),
                     MovInst(r8, r0),
@@ -110,10 +126,10 @@ object StandardFuncs {
                 )
                 funcBlock
             }
-            case ZERO_DIVISION_LABEL | NULL_POINTER_LABEL | OVERFLOW_LABEL | BOUNDS_CHECK_LABEL => {
-                RuntimeCheck.runtimeErrorMsg(name)
+            case ZeroDivErr | NullErr | OverflowErr | BoundsErr => {
+                RuntimeCheck.runtimeErrorMsg(func.toString())
             }
-            case _ => throw new IllegalArgumentException(s"standard function ${name} does not exist")
+            // case _ => throw new IllegalArgumentException(s"standard function ${name} does not exist")
         }
     }
 }

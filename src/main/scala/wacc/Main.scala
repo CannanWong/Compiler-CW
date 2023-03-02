@@ -4,6 +4,7 @@ import parsley.{Parsley, Success, Failure}
 import Parser.topLevel
 
 import scala.io.Source
+import wacc.Constants._
 import java.io._ //{BufferedWriter, File, FileWriter}
 
 object Main {
@@ -65,7 +66,7 @@ object Main {
             }
 
             addStandardFuncs()
-            
+
             for (line <- Printer.output) {
                 pw.println(line)
             }
@@ -74,33 +75,38 @@ object Main {
         }
 
         def addStandardFuncs(): Unit = {
-            if (ArrayStore.getUsed) {
-                Printer.printBlock(ArrayStore.getFunc)
+            for (i <- 0 until StandardFuncs.usedFuncs.length) {
+                if (StandardFuncs.usedFuncs(i)) {
+                    Printer.printBlock(StandardFuncs.getFunction(StdFuncsEnum(i)))
+                }
             }
-            if (ArrayStoreB.getUsed) {
-                Printer.printBlock(ArrayStoreB.getFunc)
-            }
-            if (ArrayLoad.getUsed) {
-                Printer.printBlock(ArrayLoadB.getFunc)
-            }
-            if (ArrayLoadB.getUsed) {
-                Printer.printBlock(ArrayLoadB.getFunc)
-            }
-            if (FreePair.getUsed) {
-                Printer.printBlock(FreePair.getFunc)
-            }
-            if (ZeroDivision.getUsed) {
-                Printer.printBlock(ZeroDivision.getFunc)
-            }
-            if (NullPointer.getUsed) {
-                Printer.printBlock(NullPointer.getFunc)
-            }
-            if (Overflow.getUsed) {
-                Printer.printBlock(Overflow.getFunc)
-            }
-            if (BoundsCheck.getUsed) {
-                Printer.printBlock(BoundsCheck.getFunc)
-            }
+            // if (ArrayStore.getUsed) {
+            //     Printer.printBlock(ArrayStore.getFunc)
+            // }
+            // if (ArrayStoreB.getUsed) {
+            //     Printer.printBlock(ArrayStoreB.getFunc)
+            // }
+            // if (ArrayLoad.getUsed) {
+            //     Printer.printBlock(ArrayLoad.getFunc)
+            // }
+            // if (ArrayLoadB.getUsed) {
+            //     Printer.printBlock(ArrayLoadB.getFunc)
+            // }
+            // if (FreePair.getUsed) {
+            //     Printer.printBlock(FreePair.getFunc)
+            // }
+            // if (ZeroDivision.getUsed) {
+            //     Printer.printBlock(ZeroDivision.getFunc)
+            // }
+            // if (NullPointer.getUsed) {
+            //     Printer.printBlock(NullPointer.getFunc)
+            // }
+            // if (Overflow.getUsed) {
+            //     Printer.printBlock(Overflow.getFunc)
+            // }
+            // if (BoundsCheck.getUsed) {
+            //     Printer.printBlock(BoundsCheck.getFunc)
+            // }
         }
     }
 }

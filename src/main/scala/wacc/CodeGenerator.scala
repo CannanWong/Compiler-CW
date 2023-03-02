@@ -2,7 +2,9 @@ package wacc
 
 import scala.collection.mutable.{LinkedHashMap}
 import wacc.Constants._
+import wacc.Constants.StdFuncsEnum._
 import wacc.AssignmentTranslations._
+import StandardFuncs._
 
 object CodeGenerator {
     /* .data directive stores all string declarations */
@@ -154,8 +156,9 @@ object CodeGenerator {
                         PushInst(r8),
                         MovInst(r10, translate(exprList(arrayNum))),
                         PopInst(r8),
-                        BranchLinkInst("_arrLoad"))
-                        ArrayLoad.setUsed
+                        BranchLinkInst("_arrLoad")
+                    )
+                    setUsed(ArrLdr)
                 }
 
                 currInstBlock.addInst(
@@ -168,8 +171,8 @@ object CodeGenerator {
                         case _ => BranchLinkInst("_arrStore")
                     }
                 )
-                ArrayStoreB.setUsed
-                ArrayStore.setUsed
+                setUsed(ArrStrb)
+                setUsed(ArrStr)
             }
             case FstNode(lvalue) => storeToPairElemAddr(0, lvalue, op)
             case SndNode(lvalue) => storeToPairElemAddr(4, lvalue, op)
@@ -196,7 +199,7 @@ object CodeGenerator {
                     MovInst(r0, op),
                     BranchLinkInst("_freePair")
                 )
-                FreePair.setUsed
+                setUsed(FreeP)
             }
             case ArrayIdentifier(baseTy, dim) => {
                 currInstBlock.addInst(
@@ -422,8 +425,8 @@ object CodeGenerator {
                             case _ => throw new UnsupportedOperationException("array type mismatched?")
                         }
                     )
-                    ArrayLoad.setUsed
-                    ArrayLoadB.setUsed
+                    setUsed(ArrLdr)
+                    setUsed(ArrLdrB)
                 }
                 r8
             }
@@ -507,7 +510,7 @@ object CodeGenerator {
                     BranchCondInst(NOT_EQUAL, "_errOverflow"),
                     FreeRegister(reg1)
                 )
-                Overflow.setUsed
+                setUsed(OverflowErr)
                 r8
             }
             case DivNode(fstexpr, sndexpr) => {
@@ -523,7 +526,7 @@ object CodeGenerator {
                     MovInst(r8, r0),
                     PopInst(r0, r1)
                 )
-                ZeroDivision.setUsed
+                setUsed(ZeroDivErr)
                 r8
             }
             case ModNode(fstexpr, sndexpr) => {
@@ -539,7 +542,7 @@ object CodeGenerator {
                     MovInst(r8, r1),
                     PopInst(r0, r1)
                 )
-                ZeroDivision.setUsed
+                setUsed(ZeroDivErr)
                 r8
             }
             case AddNode(fstexpr, sndexpr) => {
@@ -554,7 +557,7 @@ object CodeGenerator {
                             BranchLinkCondInst("vs", "_errOverflow"),
                             FreeRegister(reg)
                         )
-                        Overflow.setUsed
+                        setUsed(OverflowErr)
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
@@ -562,7 +565,7 @@ object CodeGenerator {
                             AddsInst(r8, r, op2), 
                             BranchLinkCondInst("vs", "_errOverflow")
                         )
-                        Overflow.setUsed
+                        setUsed(OverflowErr)
                     }
                     case _ => throw new UnsupportedOperationException("Add node evaluation error")
                 }
@@ -580,7 +583,7 @@ object CodeGenerator {
                             BranchLinkCondInst("vs", "_errOverflow"),
                             FreeRegister(reg)
                         )
-                        Overflow.setUsed
+                        setUsed(OverflowErr)
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
@@ -588,7 +591,7 @@ object CodeGenerator {
                             SubsInst(r8, r, op2), 
                             BranchLinkCondInst("vs", "_errOverflow")
                         )
-                        Overflow.setUsed
+                        setUsed(OverflowErr)
                     }
                     case _ => throw new UnsupportedOperationException("Sub node evaluation error")
                 }
