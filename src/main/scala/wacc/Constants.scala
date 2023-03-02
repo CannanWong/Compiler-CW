@@ -46,6 +46,8 @@ object  Constants {
   val EQUAL = "eq"
   val LESS_THAN = "lt"
   val GREATER_THAN = "gt"
+  val GREATER_OR_EQUAL = "ge"
+  val LESS_OR_EQUAL = "le"
   val OVERFLOW = "vs"
   val NO_OVERFLOW = "vc"
 }

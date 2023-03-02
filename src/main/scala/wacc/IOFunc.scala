@@ -176,7 +176,7 @@ object IOFunc {
       printBoolFunc.body.addInst(
         PushInst(lr),
         CmpInst(r0, ImmVal(0)),
-        BranchNumCondInst("NE", ifFalse.num)
+        BranchNumCondInst(NOT_EQUAL, ifFalse.num)
       )
       /* print true */
       CodeGenerator.currInstBlock = ifTrue

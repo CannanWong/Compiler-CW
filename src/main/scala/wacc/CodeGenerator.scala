@@ -200,7 +200,7 @@ object CodeGenerator {
                 currInstBlock.addInst(CmpInst(r, immTrue))
             }
         }
-        currInstBlock.addInst(BranchNumCondInst("NE", ifFalse.num))
+        currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, ifFalse.num))
         currInstBlock.next = ifBlock
         currInstBlock = ifTrue
         translate(node.fstStat)
@@ -221,7 +221,7 @@ object CodeGenerator {
         currInstBlock.next = whileBlock
         currInstBlock = cond
         translate(node.expr)
-        currInstBlock.addInst(BranchNumCondInst("NE", next.num))
+        currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, next.num))
         currInstBlock = loop
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
@@ -307,8 +307,8 @@ object CodeGenerator {
                     case r: Register => {
                         currInstBlock.addInst(
                             CmpInst(r, ImmVal(1)),
-                            MovCondInst("NE", r8, ImmVal(1)),
-                            MovCondInst("Eq", r8, ImmVal(0))
+                            MovCondInst(NOT_EQUAL, r8, ImmVal(1)),
+                            MovCondInst(EQUAL, r8, ImmVal(0))
                         )
                         r8 
                     }
@@ -374,7 +374,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     SmullInst(r8, r9, reg1, reg2),
                     CmpInst(r9, ASR(r8, ImmVal(INT_HIGHEST_BIT))),
-                    BranchCondInst("NE", "_errOverflow"),
+                    BranchCondInst(NOT_EQUAL, "_errOverflow"),
                     FreeRegister(reg1)
                 )
                 r8
@@ -387,7 +387,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst("Eq", "_errDivZero"),
+                    BranchCondInst(EQUAL, "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r0),
                     PopInst(r0, r1)
@@ -402,7 +402,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst("Eq", "_errDivZero"),
+                    BranchCondInst(EQUAL, "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r1),
                     PopInst(r0, r1)
@@ -500,13 +500,13 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst("NE", newBlock.num),
+                    BranchNumCondInst(NOT_EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock = newBlock
                 currInstBlock.addInst(
-                    MovCondInst("Eq", r8, immTrue),
-                    MovCondInst("NE", r8, immFalse),
+                    MovCondInst(EQUAL, r8, immTrue),
+                    MovCondInst(NOT_EQUAL, r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
@@ -523,13 +523,13 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst("Eq", newBlock.num),
+                    BranchNumCondInst(EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock = newBlock
                 currInstBlock.addInst(
-                    MovCondInst("Eq", r8, immTrue),
-                    MovCondInst("NE", r8, immFalse),
+                    MovCondInst(EQUAL, r8, immTrue),
+                    MovCondInst(NOT_EQUAL, r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
