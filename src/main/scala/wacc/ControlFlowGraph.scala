@@ -14,7 +14,7 @@ object ControlFlowGraph {
 sealed trait ControlFlowBlock
 
 case class InstBlock() extends ControlFlowBlock {
-    var num: Int = ControlFlowGraph.nextInstNum
+    val num: Int = ControlFlowGraph.nextInstNum
     var instList: ListBuffer[Instruction] = ListBuffer.empty
     var next: ControlFlowBlock = null
     ControlFlowGraph.nextInstNum += 1
@@ -33,7 +33,6 @@ case class InstBlock() extends ControlFlowBlock {
 
 case class IfBlock() extends ControlFlowBlock {
     var num: Int = ControlFlowGraph.nextIfNum
-    // var cond: InstBlock = new InstBlock() // not used
     var nextT: InstBlock = new InstBlock()
     var nextF: InstBlock = new InstBlock()
     var next: InstBlock = new InstBlock()

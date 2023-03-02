@@ -200,6 +200,7 @@ object CodeGenerator {
                 currInstBlock.addInst(CmpInst(r, immTrue))
             }
         }
+        /* branch to false if false */
         currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, ifFalse.num))
         currInstBlock.next = ifBlock
         currInstBlock = ifTrue
@@ -308,7 +309,7 @@ object CodeGenerator {
                         currInstBlock.addInst(
                             CmpInst(r, ImmVal(1)),
                             MovCondInst(NOT_EQUAL, r8, ImmVal(1)),
-                            MovCondInst(EQUAL, r8, ImmVal(0))
+                            MovCondInst( EQUAL, r8, ImmVal(0))
                         )
                         r8 
                     }
@@ -387,7 +388,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst(EQUAL, "_errDivZero"),
+                    BranchCondInst( EQUAL, "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r0),
                     PopInst(r0, r1)
@@ -402,7 +403,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst(EQUAL, "_errDivZero"),
+                    BranchCondInst( EQUAL, "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r1),
                     PopInst(r0, r1)
@@ -505,7 +506,7 @@ object CodeGenerator {
                 )
                 currInstBlock = newBlock
                 currInstBlock.addInst(
-                    MovCondInst(EQUAL, r8, immTrue),
+                    MovCondInst( EQUAL, r8, immTrue),
                     MovCondInst(NOT_EQUAL, r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
@@ -523,12 +524,12 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst(EQUAL, newBlock.num),
+                    BranchNumCondInst( EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock = newBlock
                 currInstBlock.addInst(
-                    MovCondInst(EQUAL, r8, immTrue),
+                    MovCondInst( EQUAL, r8, immTrue),
                     MovCondInst(NOT_EQUAL, r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
