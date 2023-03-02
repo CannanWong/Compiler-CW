@@ -35,6 +35,20 @@ object  Constants {
 
   val INT_HIGHEST_BIT = 31
 
+  object StdFuncsEnum extends Enumeration {
+    type StdFuncsEnum = Value
+
+    val ZeroDivErr = Value(0, ZERO_DIVISION_LABEL)
+    val NullErr = Value(1, NULL_POINTER_LABEL)
+    val OverflowErr = Value(2, OVERFLOW_LABEL)
+    val BoundsErr = Value(3, BOUNDS_CHECK_LABEL)
+    val ArrStr = Value(4, ARRAY_STORE_LABEL)
+    val ArrStrb = Value(5, ARRAY_STORE_B_LABEL)
+    val ArrLdr = Value(6, ARRAY_LOAD_LABEL)
+    val ArrLdrB = Value(7, ARRAY_LOAD_B_LABEL)
+    val FreeP = Value(8, FREE_PAIR_LABEL)
+  }
+  
   val ZERO_DIVISION_LABEL = "_errDivZero"
   val NULL_POINTER_LABEL = "_errNull"
   val OVERFLOW_LABEL = "_errOverflow"
