@@ -55,10 +55,8 @@ object Main {
             for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
                 Printer.printBlock(funcBlock)
             }
-            var i = 0
             for (line <- Printer.output) {
                 pw.println(line)
-                i += 1
             }
 
             pw.close()              

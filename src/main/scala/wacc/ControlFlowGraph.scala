@@ -9,12 +9,21 @@ object ControlFlowGraph {
     var nextCallNum = 0
     var nextFuncNum = 0
     var nextTempRegNum = 1
+
+    def resetCFG(): Unit = {
+        nextInstNum = 0
+        nextIfNum = 0
+        nextWhileNum = 0
+        nextCallNum = 0
+        nextFuncNum = 0
+        nextTempRegNum = 1
+    }
 }
 
 sealed trait ControlFlowBlock
 
 case class InstBlock() extends ControlFlowBlock {
-    var num: Int = ControlFlowGraph.nextInstNum
+    val num: Int = ControlFlowGraph.nextInstNum
     var instList: ListBuffer[Instruction] = ListBuffer.empty
     var next: ControlFlowBlock = null
     ControlFlowGraph.nextInstNum += 1
@@ -33,7 +42,6 @@ case class InstBlock() extends ControlFlowBlock {
 
 case class IfBlock() extends ControlFlowBlock {
     var num: Int = ControlFlowGraph.nextIfNum
-    // var cond: InstBlock = new InstBlock() // not used
     var nextT: InstBlock = new InstBlock()
     var nextF: InstBlock = new InstBlock()
     var next: InstBlock = new InstBlock()
@@ -59,6 +67,7 @@ case class FuncBlock() extends ControlFlowBlock {
     var GLOBAL_MAIN = false
     var num: Int = ControlFlowGraph.nextFuncNum
     var body: InstBlock = new InstBlock()
+    var currBlock: InstBlock = body
     var name: String = ""
     /* NEW: temporory design to accomodate print label jumps */
     val directive: DataDirectiveStat = new DataDirectiveStat()

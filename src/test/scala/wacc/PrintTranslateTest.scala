@@ -37,7 +37,7 @@ class PrintTranslateTest extends AnyFlatSpec with TimeLimitedTests {
 
   "printBlock" should "not exceed the time limit" in {
     // Create a sample ControlFlowBlock instance
-    val block1 = new InstBlock()
+    val block1 = InstBlock()
     block1.addInst(
       List(
       AddInst(FixedRegister(4), FixedRegister(4), ImmVal(4)),
