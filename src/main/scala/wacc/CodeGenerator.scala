@@ -13,7 +13,7 @@ object CodeGenerator {
     /* NEW: temporory design to accomodate label jumps */
     val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
-    /* utility functions */
+        /* utility functions */
     def switchCurrInstrBlock(newFuncBlock: FuncBlock): Unit = {
         CodeGenerator.controlFlowGraph = newFuncBlock
         CodeGenerator.currInstBlock = newFuncBlock.body
@@ -177,9 +177,9 @@ object CodeGenerator {
     def translate(node: PrintlnNode): Unit = {
         translate(new PrintNode(node.expr))
 
-        // currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         IOFunc.println()
-        // currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
     def translate(node: IfNode): Unit = {
@@ -373,7 +373,7 @@ object CodeGenerator {
                 }
                 currInstBlock.addInst(
                     SmullInst(r8, r9, reg1, reg2),
-                    CmpInst(r9, ASR(r8, 31)),
+                    CmpInst(r9, ASR(r8, ImmVal(INT_HIGHEST_BIT))),
                     BranchCondInst("NE", "_errOverflow"),
                     FreeRegister(reg1)
                 )

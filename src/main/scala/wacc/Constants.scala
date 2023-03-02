@@ -26,6 +26,13 @@ object  Constants {
 
   val ARRAY_LENGTH_OFFSET: Int = -4
   val INT_SIZE = -4
+  val BYTE_SIZE = 1
+  
+  def data_offset(dataType :Int): Int = {
+    dataType * -1
+  }
+
+  val INT_HIGHEST_BIT = 31
 
   val ZERO_DIVISION_LABEL = "_errDivZero"
   val NULL_POINTER_LABEL = "_errNull"
@@ -33,4 +40,12 @@ object  Constants {
   val BOUNDS_CHECK_LABEL = "_boundsCheck"
   val ARRAY_STORE_LABEL = "_arrStore"
   val ARRAY_LOAD_LABEL = "_arrLoad"
+
+  /* cond code (pg. 1-43 of mannual) */
+  val NOT_EQUAL = "ne"
+  val EQUAL = "eq"
+  val LESS_THAN = "lt"
+  val GREATER_THAN = "gt"
+  val OVERFLOW = "vs"
+  val NO_OVERFLOW = "vc"
 }
