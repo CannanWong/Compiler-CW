@@ -23,6 +23,7 @@ object AssignRegister {
     def assignBlock(funcBlock: FuncBlock): Unit = {
         val newFuncBlock = FuncBlock()
         newFuncBlock.name = funcBlock.name
+        newFuncBlock.num = funcBlock.num
         newFuncBlock.directive = funcBlock.directive
         if (funcBlock.name == "main") {
             newFuncBlock.setGlobalMain()
@@ -62,6 +63,7 @@ object AssignRegister {
             // InstBlock --> InstBlock
             case InstBlock() => {
                 val newInstBlock = InstBlock()
+                newInstBlock.num = instBlock.num
                 currInstBlock.next = newInstBlock
                 currInstBlock = newInstBlock
                 assignBlock(instBlock.next)
@@ -73,6 +75,7 @@ object AssignRegister {
 
     def assignBlock(ifBlock: IfBlock): Unit = {
         val newIfBlock = IfBlock()
+        newIfBlock.num = ifBlock.num
         currInstBlock.next = newIfBlock
         // currInstBlock = newIfBlock.cond
         // assignBlock(ifBlock.cond)
@@ -86,6 +89,7 @@ object AssignRegister {
 
     def assignBlock(whileBlock: WhileBlock): Unit = {
         val newWhileBlock = WhileBlock()
+        newWhileBlock.num = whileBlock.num
         currInstBlock.next = newWhileBlock
         currInstBlock = newWhileBlock.cond
         assignBlock(whileBlock.cond)
