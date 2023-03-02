@@ -1,7 +1,8 @@
 package wacc
 
-import scala.collection.mutable.{ListBuffer, LinkedHashMap}
+import scala.collection.mutable.{LinkedHashMap}
 import wacc.Constants._
+import wacc.AssignmentTranslations._
 
 object CodeGenerator {
     /* .data directive stores all string declarations */
@@ -106,7 +107,7 @@ object CodeGenerator {
     def translate(node: StatNode): Unit = {
         node match {
             case n: SkipNode => translate(n: SkipNode)
-            case n:AssignIdentNode => translate(n: AssignIdentNode)
+            case n: AssignIdentNode => translate(n: AssignIdentNode)
             case n: LValuesAssignNode => translate(n: LValuesAssignNode)
             case n: ReadNode => translate(n: ReadNode)
             case n: FreeNode => translate(n: FreeNode)
@@ -123,9 +124,49 @@ object CodeGenerator {
     def translate(node: SkipNode): Unit = {}
 
     def translate(node: AssignIdentNode): Unit = {
+        val op = transRVal(node.rvalue)
+        currInstBlock.addInst(MovInst(Variable(node.ident.name), op))
+
+        // Pop back Caller Regs
+        node.rvalue match {
+            case CallNode(_, _) => currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+            case _ => 
+        }
     }
 
     def translate(node: LValuesAssignNode): Unit = {
+        // Process right value first and store it in a temp reg
+        val op = transRVal(node.rvalue)
+        node.lvalue match {
+            case IdentNode(name) => {
+                currInstBlock.addInst(MovInst(Variable(name), op))
+            }
+            case ArrayElemNode(ident, exprList) => {
+                currInstBlock.addInst(MovInst(r8, Variable(ident.name)))
+                for (arrayNum <- 1 to exprList.length - 1) {
+                    currInstBlock.addInst(
+                        // Ready for special convention for _arrLoad,
+                        // r8 for array addr, r10 for index
+                        PushInst(r8),
+                        MovInst(r10, translate(exprList(arrayNum))),
+                        PopInst(r8),
+                        BranchLinkInst("_arrLoad"))
+                }
+
+                currInstBlock.addInst(
+                    // Ready for special convention for _arrStore,
+                    // r8 for the value to be stored, r9 for array addr, r10 for index
+                    MovInst(r10, translate(exprList.last)),
+                    MovInst(r9, op),
+                    ident.typeVal() match {
+                        case CharIdentifier() => BranchLinkInst("_arrStoreB")
+                        case _ => BranchLinkInst("_arrStore")
+                    }
+                )
+            }
+            case FstNode(lvalue) => storeToPairElemAddr(0, lvalue, op)
+            case SndNode(lvalue) => storeToPairElemAddr(4, lvalue, op)
+        }
     }
 
     def translate(node: ReadNode): Unit = {
@@ -157,7 +198,7 @@ object CodeGenerator {
          * print may clobber any registers that are marked as caller-save under
          * arm's calling convention: R0, R1, R2, R3
         */
-        // currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
 
         val retOp = translate(node.expr)
         val exprTy = node.expr.typeVal()
@@ -171,7 +212,7 @@ object CodeGenerator {
             // anyIdentifier or null
             case  _ => IOFunc.printPtr(retOp)
         }
-        // currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
     def translate(node: PrintlnNode): Unit = {
@@ -185,7 +226,6 @@ object CodeGenerator {
     def translate(node: IfNode): Unit = {
         val ifBlock = IfBlock()
         /* next block of current control flow graph block points to this ifBlock */
-        controlFlowGraph.body.next = ifBlock
         val ifTrue = ifBlock.nextT
         val ifFalse = ifBlock.nextF
         val next = ifBlock.next
@@ -201,7 +241,7 @@ object CodeGenerator {
                 currInstBlock.addInst(CmpInst(r, immTrue))
             }
         }
-        currInstBlock.addInst(BranchNumCondInst("NE", ifFalse.num))
+        currInstBlock.addInst(BranchNumCondInst("ne", ifFalse.num))
         currInstBlock.next = ifBlock
         currInstBlock = ifTrue
         translate(node.fstStat)
@@ -222,7 +262,7 @@ object CodeGenerator {
         currInstBlock.next = whileBlock
         currInstBlock = cond
         translate(node.expr)
-        currInstBlock.addInst(BranchNumCondInst("NE", next.num))
+        currInstBlock.addInst(BranchNumCondInst("ne", next.num))
         currInstBlock = loop
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
@@ -291,7 +331,14 @@ object CodeGenerator {
                     currInstBlock.addInst(
                         MovInst(r10, op2),
                         PopInst(r8),
-                        BranchLinkInst("_arrLoad")
+                        ident.typeVal match {
+                            case ArrayIdentifier(ty, _) => {
+                                ty match {
+                                case CharIdentifier() => BranchLinkInst("_arrLoadB")
+                                case _ => BranchLinkInst("_arrLoad")
+                                }
+                            }
+                        }
                     )
                 }
                 r8
@@ -308,10 +355,10 @@ object CodeGenerator {
                     case r: Register => {
                         currInstBlock.addInst(
                             CmpInst(r, ImmVal(1)),
-                            MovCondInst("NE", r8, ImmVal(1)),
-                            MovCondInst("Eq", r8, ImmVal(0))
+                            MovCondInst("ne", r8, ImmVal(1)),
+                            MovCondInst("eq", r8, ImmVal(0))
                         )
-                        r8 
+                        r8
                     }
                 }            
             }
@@ -339,10 +386,7 @@ object CodeGenerator {
             case OrdNode(expr) => {
                 val op = translate(expr)
                 op match {
-                    case ImmVal(num) => {
-                        ImmVal(num)
-                    }
-                    case _: Register => {
+                    case _: ImmVal | _: Register => {
                         op
                     }
                 }
@@ -350,10 +394,7 @@ object CodeGenerator {
             case ChrNode(expr) => {
                 val op = translate(expr)
                 op match {
-                    case ImmVal(num) => {
-                        ImmVal(num)
-                    }
-                    case _: Register => {
+                    case _: ImmVal | _: Register => {
                         op
                     }
                 }
@@ -375,7 +416,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     SmullInst(r8, r9, reg1, reg2),
                     CmpInst(r9, ASR(r8, 31)),
-                    BranchCondInst("NE", "_errOverflow"),
+                    BranchCondInst("ne", "_errOverflow"),
                     FreeRegister(reg1)
                 )
                 r8
@@ -388,7 +429,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst("Eq", "_errDivZero"),
+                    BranchCondInst("eq", "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r0),
                     PopInst(r0, r1)
@@ -403,7 +444,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst("Eq", "_errDivZero"),
+                    BranchCondInst("eq", "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r1),
                     PopInst(r0, r1)
@@ -419,12 +460,16 @@ object CodeGenerator {
                         val op2 = translate(sndexpr)
                         currInstBlock.addInst(
                             AddsInst(r8, reg, op2),
+                            BranchLinkCondInst("vs", "_errOverflow"),
                             FreeRegister(reg)
                         )
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(AddsInst(r8, r, op2))
+                        currInstBlock.addInst(
+                            AddsInst(r8, r, op2), 
+                            BranchLinkCondInst("vs", "_errOverflow")
+                        )
                     }
                 }
                 r8
@@ -438,12 +483,16 @@ object CodeGenerator {
                         val op2 = translate(sndexpr)
                         currInstBlock.addInst(
                             SubsInst(r8, reg, op2),
+                            BranchLinkCondInst("vs", "_errOverflow"),
                             FreeRegister(reg)
                         )
                     }
                     case r: Register => {
                         val op2 = translate(sndexpr)
-                        currInstBlock.addInst(SubsInst(r8, r, op2))
+                        currInstBlock.addInst(
+                            SubsInst(r8, r, op2), 
+                            BranchLinkCondInst("vs", "_errOverflow")
+                        )
                     }
                 }
                 r8
@@ -453,42 +502,42 @@ object CodeGenerator {
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "GT", "LE")
+                translateComparisonOperators(reg, op2, "gt", "le")
             }
             case GTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "GE", "LT")
+                translateComparisonOperators(reg, op2, "ge", "lt")
             }
             case LTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "LT", "GE")
+                translateComparisonOperators(reg, op2, "lt", "ge")
             }
             case LTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "LE", "GT")
+                translateComparisonOperators(reg, op2, "le", "gt")
             }
             case EqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "Eq", "NE")
+                translateComparisonOperators(reg, op2, "eq", "ne")
             }
             case IEqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "NE", "Eq")
+                translateComparisonOperators(reg, op2, "ne", "eq")
             }
             // TODO: fix label
             case AndNode(fstexpr, sndexpr) => {
@@ -501,13 +550,13 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst("NE", newBlock.num),
+                    BranchNumCondInst("ne", newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock = newBlock
                 currInstBlock.addInst(
-                    MovCondInst("Eq", r8, immTrue),
-                    MovCondInst("NE", r8, immFalse),
+                    MovCondInst("eq", r8, immTrue),
+                    MovCondInst("ne", r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
@@ -524,13 +573,13 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst("Eq", newBlock.num),
+                    BranchNumCondInst("eq", newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock = newBlock
                 currInstBlock.addInst(
-                    MovCondInst("Eq", r8, immTrue),
-                    MovCondInst("NE", r8, immFalse),
+                    MovCondInst("eq", r8, immTrue),
+                    MovCondInst("ne", r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )

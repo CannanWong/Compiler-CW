@@ -21,7 +21,10 @@ object Printer {
         for (inst <- instBlock.instList) {
             print(inst)
         }
-        printBlock(instBlock.next)
+        if (instBlock.next != null) {
+            printBlock(instBlock.next)
+        }
+        
     }
 
     def printBlock(ifBlock: IfBlock): Unit = {

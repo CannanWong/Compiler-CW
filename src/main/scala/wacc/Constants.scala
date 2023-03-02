@@ -24,13 +24,17 @@ object  Constants {
   val immTrue = ImmVal(1)
   val immFalse = ImmVal(0)
 
+  // TODO: maybe constants not negative
   val ARRAY_LENGTH_OFFSET: Int = -4
   val INT_SIZE = -4
+  val CHAR_SIZE = -1
 
   val ZERO_DIVISION_LABEL = "_errDivZero"
   val NULL_POINTER_LABEL = "_errNull"
   val OVERFLOW_LABEL = "_errOverflow"
   val BOUNDS_CHECK_LABEL = "_boundsCheck"
   val ARRAY_STORE_LABEL = "_arrStore"
+  val ARRAY_STORE_B_LABEL = "_arrStoreB"
   val ARRAY_LOAD_LABEL = "_arrLoad"
+  val ARRAY_LOAD_B_LABEL = "_arrLoadB"
 }
