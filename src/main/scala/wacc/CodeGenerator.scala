@@ -27,6 +27,8 @@ object CodeGenerator {
 
     /* translate functions */
 
+    /*  Main entry point for the AST to IR1 (CFG),
+        translating the main program body and functions from ProgramNode. */
     def translateAST(p: ProgramNode): Unit = {
         translateMain(p.stat)
         for (func <- p.funcList) {
@@ -34,6 +36,8 @@ object CodeGenerator {
         }
     }
 
+    /*  Main body translation,
+        appending global .data strings and push/pops of registers. */
     def translateMain(stat: StatNode): Unit = {
         /* resets control graph since instantiaing CodeGenerator will increase val in CFG */
         ControlFlowGraph.resetCFG()
@@ -46,68 +50,55 @@ object CodeGenerator {
         /* change current instruction block to func block */
         switchCurrInstrBlock(mainFunc, mainFunc.currBlock)
 
-        currInstBlock.addInst(new PushInst(fp, lr))
-        /* TODO: push caller saved registers that will be used */
-        currInstBlock.addInst(new PushInst(r4, r5, r6, r7, r8, r10, r12))
-        /* ################################ */
-        currInstBlock.addInst(new MovInst(fp, sp))
-        /* TODO: assign args to callee saved register and stack pos */
+        // Callee-saved register pushes
+        currInstBlock.addInst(
+            PushInst(fp, lr),
+            PushInst(r4, r5, r6, r7, r8, r10, r12),
+            MovInst(fp, sp))
+
         translate(stat)
 
-        currInstBlock.addInst(new MovInst(r0, ImmVal(0)))
-        currInstBlock.addInst(new MovInst(sp, fp))
-        /* TODO: pop caller saved registers that are pushed */
-        currInstBlock.addInst(new PopInst(r4, r5, r6, r7, r8, r10, r12))
-        /* ################################ */
-        currInstBlock.addInst(new PopInst(fp, pc))
+        // Program exiting with code 0
+        currInstBlock.addInst(
+            MovInst(r0, ImmVal(0)),
+            MovInst(sp, fp),
+            PopInst(r4, r5, r6, r7, r8, r10, r12),
+            PopInst(fp, pc))
 
         controlFlowFuncs.addOne(mainFuncBlock.name, mainFuncBlock)
     }
 
+    /*  FuncNode translation,
+        handles naming, callee-save and saving into FuncBlock,
+        which is used to separate the code when printing assembly. */
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
         /* change current instruction block to func block */
         switchCurrInstrBlock(funcBlock, funcBlock.currBlock)
         f match {
             case FuncNode(ty, ident, param, stat) => {
-                /**
-                  * TODO:
-                    1. set up frame pointer and lr
-                    2. get arg from stack / callee saved reg
-                  */
+                // Callee-saved register pushes
+                currInstBlock.addInst(
+                    PushInst(fp, lr),
+                    PushInst(r4, r5, r6, r7, r8, r10, r12),
+                    MovInst(fp, sp))
 
-                currInstBlock.addInst(new PushInst(fp, lr))
-                /* TODO: push caller saved registers that will be used */
-                currInstBlock.addInst(new PushInst(r4, r5, r6, r7, r8, r10, r12))
-                /* ################################ */
-                currInstBlock.addInst(new MovInst(fp, sp))
-                /* TODO: assign args to callee saved register and stack pos */
+                // As front-end checked for all return paths,
+                // return pop instructions can and should be placed
+                // at return node translations.
                 translate(stat)
-                currInstBlock.addInst(new MovInst(sp, fp))
-                /* TODO: pop caller saved registers that are pushed */
-                currInstBlock.addInst(new PopInst(r4, r5, r6, r7, r8, r10, r12))
-                /* ################################ */
-                currInstBlock.addInst(new PopInst(fp, pc))
 
+                // Naming all non-main functions as wacc_*ident*
                 funcBlock.name = if (funcBlock.GLOBAL_MAIN) "main" else s"wacc_${ident.name}"
                 controlFlowFuncs.addOne(funcBlock.name, funcBlock)
             }
             case _ => throw new IllegalArgumentException("FuncNode translation receives non FuncNode")
         }
-
-        // // Sample: To be corrected/checked
-        // val varList: ListBuffer[Variable] = ListBuffer.empty
-        // for (p <- f.paramList.paramList) {
-        //     regList += new Variable()
-        // }
-        // funcBlock.param.addInst(PushInst(regList.toList))
-        // //
-
-        // currInstBlock = funcBlock.body
+        currInstBlock = funcBlock.body
         translate(f.stat)
-
     }
 
+    // Case-matching into StatNode subclasses
     def translate(node: StatNode): Unit = {
         node match {
             case n: SkipNode => translate(n: SkipNode)
@@ -125,8 +116,12 @@ object CodeGenerator {
             case n: StatJoinNode => translate(n: StatJoinNode)
         }
     }
-    def translate(node: SkipNode): Unit = {}
 
+    def translate(node: SkipNode): Unit = { /* No instruction */ }
+    
+    /*  Variable initialisations,
+        translate RHS, assigning to the register assigned to the value,
+        and pop back caller-saved registers if RHS is a function call. */
     def translate(node: AssignIdentNode): Unit = {
         val op = transRVal(node.rvalue)
         currInstBlock.addInst(MovInst(Variable(node.ident.name), op))
@@ -138,6 +133,9 @@ object CodeGenerator {
         }
     }
 
+    /*  Assignment statements to initialised variables,
+        translating RHS as initialisation does, and storing them
+        either in registers, stack or on the heap. */
     def translate(node: LValuesAssignNode): Unit = {
         // Process right value first and store it in a temp reg
         val op = transRVal(node.rvalue)
@@ -146,6 +144,8 @@ object CodeGenerator {
                 currInstBlock.addInst(MovInst(Variable(name), op))
             }
             case ArrayElemNode(ident, exprList) => {
+                // Loading array addresses until it reaches final index,
+                // then store the evaluated RHS into the offsetted address.
                 currInstBlock.addInst(MovInst(r8, Variable(ident.name)))
                 for (arrayNum <- 1 to exprList.length - 1) {
                     currInstBlock.addInst(
@@ -173,21 +173,33 @@ object CodeGenerator {
         }
     }
 
+    /*  Reading into memory. */
     def translate(node: ReadNode): Unit = {
         val retOp = new TempRegister()
         val exprTy = node.lvalue.typeVal()
         exprTy match {
             case CharIdentifier() => IOFunc.readChar(retOp)
             case IntIdentifier() => IOFunc.readInt(retOp)
-            case _ =>
-            // case _ => throw new IllegalArgumentException("print: not an int or char")
+            case _ => throw new IllegalArgumentException("print: not an int or char")
         }
     }
+    /*  Freeing addresses allocated in the memory. */
     def translate(node: FreeNode): Unit = {}
+
+    /*  Return from function,
+        moving return value to r0 and handle callee-saved register pops,
+        then pop back program counter to return to previous address. */
     def translate(node: ReturnNode): Unit = {
         val op = translate(node.expr)
-        currInstBlock.addInst(MovInst(Constants.r0, op))
+        currInstBlock.addInst(MovInst(Constants.r0, op),
+            MovInst(sp, fp),
+            PopInst(r4, r5, r6, r7, r8, r10, r12),
+            PopInst(fp, pc))
     }
+    
+    /*  Exit from program,
+        branching to exit c-function to halt the program
+        with provided exit code. */
     def translate(node: ExitNode): Unit = {
         val op = translate(node.expr)
         currInstBlock.addInst(
@@ -195,9 +207,11 @@ object CodeGenerator {
             BranchLinkInst("exit")
         )
     }
+    
+    /*  Printing statements. */
     def translate(node: PrintNode): Unit = {
         /** 
-         * TODO: push r0 - r3 before calling print in  func call, where r0 -r3 may be storing args
+         * TODO: push r0 - r3 before calling print in func call, where r0 -r3 may be storing args
          * pop when return back to scope
          * print may clobber any registers that are marked as caller-save under
          * arm's calling convention: R0, R1, R2, R3
@@ -215,11 +229,12 @@ object CodeGenerator {
             case a: ArrayIdentifier => IOFunc.printPtr(retOp)
             case p: PairIdentifier => IOFunc.printPtr(retOp)
             // anyIdentifier or null
-            case  _ => IOFunc.printPtr(retOp)
+            case _ => IOFunc.printPtr(retOp)
         }
         currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
+    /*  Print empty line. */
     def translate(node: PrintlnNode): Unit = {
         translate(new PrintNode(node.expr))
 
@@ -228,6 +243,10 @@ object CodeGenerator {
         currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
+    /*  If condition branching,
+        creates TRUE and FALSE instruction blocks and link to the current
+        instruction block, then processes the condition and add branching
+        to FALSE block, keeping TRUE block directly under code before if. */
     def translate(node: IfNode): Unit = {
         val ifBlock = IfBlock()
         /* next block of current control flow graph block points to this ifBlock */
@@ -245,6 +264,7 @@ object CodeGenerator {
             case r: Register => {
                 currInstBlock.addInst(CmpInst(r, immTrue))
             }
+            case _ => throw new UnsupportedOperationException("If condition cannot be evaluated")
         }
         /* branch to false if false */
         currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, ifFalse.num))
@@ -266,18 +286,34 @@ object CodeGenerator {
         // (next.num.toString, next))
     }
 
+    /*  While loop,
+        condition is first evaluated and if satisfied,
+        enter loop section below, which will branch back to the condition
+        once the loop is completed.
+        If the condition is not satisfied, the program will jump to the code
+        block right after the while loop. */
     def translate(node: WhileNode): Unit = {
         val whileBlock = WhileBlock()
         val cond = whileBlock.cond
         val loop = whileBlock.loop
         val next = whileBlock.next
         currInstBlock.next = whileBlock
-        // currInstBlock = cond
-        switchCurrInstrBlock(controlFlowGraph, cond)
-        translate(node.expr)
-        currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, next.num))
-        // currInstBlock = loop
-        switchCurrInstrBlock(controlFlowGraph, loop)
+        currInstBlock = cond
+        val op = translate(node.expr)
+        op match {
+            case ImmVal(num) => {
+                currInstBlock.addInst(
+                    MovInst(r8, op),
+                    CmpInst(r8, immTrue)
+                )
+            }
+            case r: Register => {
+                currInstBlock.addInst(CmpInst(r, immTrue))
+            }
+            case _ => throw new UnsupportedOperationException("While condition cannot be evaluated")
+        }
+        currInstBlock.addInst(BranchNumCondInst("ne", next.num))
+        currInstBlock = loop
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
         // currInstBlock = next
@@ -295,6 +331,13 @@ object CodeGenerator {
         }
     }
 
+    /*  Expression translations:
+        Literals => literal values
+        String => added to .data section
+        ArrayElem => load from heap
+        Unary and Binary Operators
+        =>  evaluate and add instructions for calculation,
+            storing in r8 as intermediate and return. */
     def translate(node: ExprNode): Operand = {
         def translateComparisonOperators(op1: Register, op2: Operand, cond: String, notcond: String): Register = {
             currInstBlock.addInst(
@@ -346,13 +389,14 @@ object CodeGenerator {
                     currInstBlock.addInst(
                         MovInst(r10, op2),
                         PopInst(r8),
-                        ident.typeVal match {
+                        ident.typeVal() match {
                             case ArrayIdentifier(ty, _) => {
                                 ty match {
                                 case CharIdentifier() => BranchLinkInst("_arrLoadB")
                                 case _ => BranchLinkInst("_arrLoad")
                                 }
                             }
+                            case _ => throw new UnsupportedOperationException("array type mismatched?")
                         }
                     )
                 }
@@ -375,6 +419,7 @@ object CodeGenerator {
                         )
                         r8
                     }
+                    case _ => throw new UnsupportedOperationException("Not node evaluation error")
                 }            
             }
             case NegNode(expr) => {
@@ -389,6 +434,7 @@ object CodeGenerator {
                     case r: Register => {
                         currInstBlock.addInst(NegInst(r8, r))
                     }
+                    case _ => throw new UnsupportedOperationException("Neg node evaluation error")
                 }
                 r8
             }
@@ -404,6 +450,7 @@ object CodeGenerator {
                     case _: ImmVal | _: Register => {
                         op
                     }
+                    case _ => throw new UnsupportedOperationException("Ord node evaluation error")
                 }
             }
             case ChrNode(expr) => {
@@ -412,6 +459,7 @@ object CodeGenerator {
                     case _: ImmVal | _: Register => {
                         op
                     }
+                    case _ => throw new UnsupportedOperationException("Chr node evaluation error")
                 }
             }
             case MulNode(fstexpr, sndexpr) => {
@@ -427,6 +475,7 @@ object CodeGenerator {
                     case r: Register => {
                         reg2 = r
                     }
+                    case _ => throw new UnsupportedOperationException("Mul node op2 evaluation error")
                 }
                 currInstBlock.addInst(
                     SmullInst(r8, r9, reg1, reg2),
@@ -486,6 +535,7 @@ object CodeGenerator {
                             BranchLinkCondInst("vs", "_errOverflow")
                         )
                     }
+                    case _ => throw new UnsupportedOperationException("Add node evaluation error")
                 }
                 r8
             }
@@ -509,6 +559,7 @@ object CodeGenerator {
                             BranchLinkCondInst("vs", "_errOverflow")
                         )
                     }
+                    case _ => throw new UnsupportedOperationException("Sub node evaluation error")
                 }
                 r8
             }

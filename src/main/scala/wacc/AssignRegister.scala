@@ -23,6 +23,7 @@ object AssignRegister {
     def assignBlock(funcBlock: FuncBlock): Unit = {
         val newFuncBlock = FuncBlock()
         newFuncBlock.name = funcBlock.name
+        newFuncBlock.directive = funcBlock.directive
         if (funcBlock.name == "main") {
             newFuncBlock.setGlobalMain()
         }

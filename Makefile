@@ -9,7 +9,11 @@ be_test:
 	sbt compile assembly
 	bash be_test.sh
 
+test_fail:
+	sbt compile assembly
+	bash test_fail.sh
+
 clean:
-	sbt clean && rm -rf wacc-45-compiler.jar
+	sbt clean && rm -rf wacc-45-compiler.jar && rm -f *.s
 
 .PHONY: all clean

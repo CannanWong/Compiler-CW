@@ -70,7 +70,7 @@ case class FuncBlock() extends ControlFlowBlock {
     var currBlock: InstBlock = body
     var name: String = ""
     /* NEW: temporory design to accomodate print label jumps */
-    val directive: DataDirectiveStat = new DataDirectiveStat()
+    var directive: DataDirectiveStat = new DataDirectiveStat()
     ControlFlowGraph.nextFuncNum += 1
 
     def setGlobalMain(): Unit = {
