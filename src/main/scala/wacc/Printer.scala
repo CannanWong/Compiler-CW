@@ -55,6 +55,8 @@ object Printer {
 
     def print(inst: Instruction): Unit = {
         inst match {      
+            case inst: AddInst =>
+                output += "add " + printOp(inst.rd, inst.rn, inst.op)
             case inst: AddsInst =>
                 output += "add " + printOp(inst.rd, inst.rn, inst.op)
             case inst: SubInst => 

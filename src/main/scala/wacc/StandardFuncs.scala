@@ -2,11 +2,58 @@ package wacc
 
 import wacc.Constants._
 
+abstract class StandardFuncs(name: String) {
+    import StandardFuncs._
+    private var used = false
+    def setUsed: Unit = {
+        used = true
+    }
+    def getUsed = used
+    def getFunc: FuncBlock = getFunction(name)
+
+}
+
+
+case object ZeroDivision extends StandardFuncs(ZERO_DIVISION_LABEL)
+case object NullPointer extends StandardFuncs(NULL_POINTER_LABEL)
+case object Overflow extends StandardFuncs(OVERFLOW_LABEL)
+case object BoundsCheck extends StandardFuncs(BOUNDS_CHECK_LABEL)
+case object ArrayStore extends StandardFuncs(ARRAY_STORE_LABEL) {
+    override def setUsed: Unit = {
+        this.used = true
+        BoundsCheck.setUsed()
+    }
+}
+case object ArrayStoreB extends StandardFuncs(ARRAY_STORE_B_LABEL) {
+    override def setUsed: Unit = {
+        this.used = true
+        BoundsCheck.setUsed()
+    }
+}
+case object ArrayLoad extends StandardFuncs(ARRAY_LOAD_LABEL) {
+    override def setUsed: Unit = {
+        this.used = true
+        BoundsCheck.setUsed()
+    }
+}
+case object ArrayLoadB extends StandardFuncs(ARRAY_LOAD_B_LABEL) {
+    override def setUsed: Unit = {
+        this.used = true
+        BoundsCheck.setUsed()
+    }
+}
+case object FreePair extends StandardFuncs(FREE_PAIR_LABEL) {
+    override def setUsed: Unit = {
+        this.used = true
+        NullPointer.setUsed()
+    }
+}
+
 object StandardFuncs {
     def getFunction(name: String): FuncBlock = {
         name match {
             case ARRAY_LOAD_LABEL | ARRAY_LOAD_B_LABEL => {
-                val funcBlock = new FuncBlock
+                val funcBlock = FuncBlock()
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
@@ -25,7 +72,7 @@ object StandardFuncs {
                 funcBlock
             }
             case ARRAY_STORE_LABEL | ARRAY_STORE_B_LABEL=> {
-                val funcBlock = new FuncBlock
+                val funcBlock = FuncBlock()
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
@@ -43,102 +90,27 @@ object StandardFuncs {
                 )
                 funcBlock
             }
+            case FREE_PAIR_LABEL => {
+                val funcBlock = FuncBlock()
+                funcBlock.body.addInst(
+                    PushInst(lr),
+                    MovInst(r8, r0),
+                    CmpInst(r8, ImmVal(0)),
+                    BranchLinkCondInst("eq", "_errNull"),
+                    LdrInst(r0, ImmOffset(r8, 0)),
+                    BranchLinkInst("free"),
+                    LdrInst(r0, ImmOffset(r8, 4)),
+                    BranchLinkInst("free"),
+                    MovInst(r0, r8),
+                    BranchLinkInst("free"),
+                    PopInst(pc)
+                )
+                funcBlock
+            }
             case ZERO_DIVISION_LABEL | NULL_POINTER_LABEL | OVERFLOW_LABEL | BOUNDS_CHECK_LABEL => {
                 RuntimeCheck.runtimeErrorMsg(name)
             }
             case _ => throw new IllegalArgumentException(s"standard function ${name} does not exist")
         }
-    }
-}
-
-object ZeroDivision {
-    val name = ZERO_DIVISION_LABEL
-    private var used = false
-    def setUsed(): Unit = {
-        used = true
-    }
-    def getUsed(): Boolean = {
-        used
-    }
-}
-
-object NullPointer {
-    val name = NULL_POINTER_LABEL
-    private var used = false
-    def setUsed(): Unit = {
-        used = true
-    }
-    def getUsed(): Boolean = {
-        used
-    }
-}
-
-object Overflow {
-    val name = OVERFLOW_LABEL
-    private var used = false
-    def setUsed(): Unit = {
-        used = true
-    }
-    def getUsed(): Boolean = {
-        used
-    }
-}
-
-object BoundsCheck {
-    val name = BOUNDS_CHECK_LABEL
-    private var used = false
-    def setUsed(): Unit = {
-        used = true
-    }
-    def getUsed(): Boolean = {
-        used
-    }
-}
-
-object ArrayLoad {
-    val name = ARRAY_LOAD_LABEL
-    private var used = false
-    def setUsed(): Unit = {
-        used = true
-        BoundsCheck.setUsed()
-    }
-    def getUsed(): Boolean = {
-        used
-    }
-}
-
-object ArrayLoadB {
-    val name = ARRAY_LOAD_B_LABEL
-    private var used = false
-    def setUsed(): Unit = {
-        used = true
-        BoundsCheck.setUsed()
-    }
-    def getUsed(): Boolean = {
-        used
-    }
-}
-
-object ArrayStore {
-    val name = ARRAY_STORE_LABEL
-    private var used = false
-    def setUsed(): Unit = {
-        used = true
-        BoundsCheck.setUsed()
-    }
-    def getUsed(): Boolean = {
-        used
-    }
-}
-
-object ArrayStoreB {
-    val name = ARRAY_STORE_B_LABEL
-    private var used = false
-    def setUsed(): Unit = {
-        used = true
-        BoundsCheck.setUsed()
-    }
-    def getUsed(): Boolean = {
-        used
     }
 }

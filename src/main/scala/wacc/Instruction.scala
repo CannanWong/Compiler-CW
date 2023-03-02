@@ -2,9 +2,7 @@ package wacc
 
 sealed trait Instruction
 
-case class AddInst(rd: Register, rn: Register, op: Operand) extends Instruction {
-    CodeGenerator.currInstBlock.addInst(this)
-}
+case class AddInst(rd: Register, rn: Register, op: Operand) extends Instruction
 case class AddsInst(rd: Register, rn: Register, op: Operand) extends Instruction
 case class SubInst(rd: Register, rn: Register, op: Operand) extends Instruction
 case class SubsInst(rd: Register, rn: Register, op: Operand) extends Instruction
