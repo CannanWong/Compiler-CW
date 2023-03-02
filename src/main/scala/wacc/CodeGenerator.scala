@@ -685,7 +685,6 @@ object CodeGenerator {
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
-                switchCurrInstrBlock(currBlock, currBlock.currBlock)
                 // controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
             }

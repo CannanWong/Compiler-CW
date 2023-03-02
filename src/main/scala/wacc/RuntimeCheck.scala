@@ -26,7 +26,7 @@ object RuntimeCheck {
     val prevBlock = currInstBlock
     currInstBlock = func.body
     val text = func.directive.addTextLabelToData(msg, label)
-    val printFunc = IOFunc.printString(new LabelAddress(text))
+    val printFunc = IOFunc.printString(LabelAddress(text))
     func.name = label
     func.body.addInst(
       MovInst(r0, ImmVal(255)),

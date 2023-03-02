@@ -175,12 +175,7 @@ object IOFunc {
       val trueTxt = printBoolFunc.directive.addTextLabelToData("%true", PRINT_BOOL_LABEL)
       val text = printBoolFunc.directive.addTextLabelToData("%.*s", PRINT_BOOL_LABEL)
 
-      /* change current instruction block to if block */
       val ifBlock = IfBlock()
-      CodeGenerator.currInstBlock.next = ifBlock
-
-      CodeGenerator.switchCurrInstrBlock(CodeGenerator.controlFlowGraph, CodeGenerator.currInstBlock)
-
       val ifTrue = ifBlock.nextT
       val ifFalse = ifBlock.nextF
       val next = ifBlock.next
