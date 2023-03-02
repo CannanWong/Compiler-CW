@@ -2,6 +2,7 @@ package wacc
 
 import wacc.Constants._
 import java.util.ResourceBundle.Control
+import wacc.CodeGenerator._
 
 object RuntimeCheck {
   /* messages */
@@ -20,16 +21,20 @@ object RuntimeCheck {
     }
     /* call func */
     val func = new FuncBlock()
-    CodeGenerator.switchCurrInstrBlock(func, func.currBlock)
+    // val calleeFunc = controlFlowGraph
+    // CodeGenerator.switchCurrInstrBlock(func, func.currBlock)
+    val prevBlock = currInstBlock
+    currInstBlock = func.body
     val text = func.directive.addTextLabelToData(msg, label)
     val printFunc = IOFunc.printString(new LabelAddress(text))
     func.name = label
     func.body.addInst(
-      new MovInst(r0, new ImmVal(255)),
-      new BranchLinkInst("exit")
+      MovInst(r0, ImmVal(255)),
+      BranchLinkInst("exit")
     )
     CodeGenerator.controlFlowFuncs.addOne(IOFunc.PRINT_STR_LABEL, printFunc)
     CodeGenerator.controlFlowFuncs.addOne(label, func)
+    currInstBlock = prevBlock
     func
   }
 }

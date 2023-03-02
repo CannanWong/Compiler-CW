@@ -8,20 +8,23 @@ import StandardFuncs._
 
 object CodeGenerator {
     /* .data directive stores all string declarations */
-    var mainFunc = FuncBlock()
-    var controlFlowGraph = FuncBlock()
+    val mainFunc = FuncBlock()
+    mainFunc.setGlobalMain()
+    mainFunc.name = "main"
+
+    // var controlFlowGraph = FuncBlock()
     
-    var currInstBlock = controlFlowGraph.body
+    var currInstBlock = mainFunc.body
     
     /* NEW: temporory design to accomodate label jumps */
     val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
         /* utility functions */
-    def switchCurrInstrBlock(newFuncBlock: FuncBlock, instBlock: InstBlock): Unit = {
-        controlFlowGraph = newFuncBlock
-        currInstBlock = instBlock
-        controlFlowGraph.currBlock = instBlock        
-    }
+    // def switchCurrInstrBlock(newFuncBlock: FuncBlock, instBlock: InstBlock): Unit = {
+    //     controlFlowGraph = newFuncBlock
+    //     currInstBlock = instBlock
+    //     controlFlowGraph.currBlock = instBlock        
+    // }
 
     def stringDef(string: String): String = {
         mainFunc.directive.addTextLabelToData(string)
@@ -42,21 +45,23 @@ object CodeGenerator {
         appending global .data strings and push/pops of registers. */
     def translateMain(stat: StatNode): Unit = {
         /* resets control graph since instantiaing CodeGenerator will increase val in CFG */
-        ControlFlowGraph.resetCFG()
+        // ControlFlowGraph.resetCFG()
         
-        val mainFuncBlock = FuncBlock()
-        mainFuncBlock.setGlobalMain()
-        mainFuncBlock.name = "main"
+        // val mainFuncBlock = FuncBlock()
+        // mainFuncBlock.setGlobalMain()
+        // mainFuncBlock.name = "main"
 
-        mainFunc = mainFuncBlock
+        // mainFunc = mainFuncBlock
         /* change current instruction block to func block */
-        switchCurrInstrBlock(mainFunc, mainFunc.currBlock)
+        // switchCurrInstrBlock(mainFunc, mainFunc.currBlock)
 
+        assert(currInstBlock == mainFunc.body)
         // Callee-saved register pushes
         currInstBlock.addInst(
             PushInst(fp, lr),
             PushInst(r4, r5, r6, r7, r8, r10, r12),
-            MovInst(fp, sp))
+            MovInst(fp, sp)
+        )
 
         translate(stat)
 
@@ -65,9 +70,10 @@ object CodeGenerator {
             MovInst(r0, ImmVal(0)),
             MovInst(sp, fp),
             PopInst(r4, r5, r6, r7, r8, r10, r12),
-            PopInst(fp, pc))
+            PopInst(fp, pc)
+        )
 
-        controlFlowFuncs.addOne(mainFuncBlock.name, mainFuncBlock)
+        controlFlowFuncs.addOne(mainFunc.name, mainFunc)
     }
 
     /*  FuncNode translation,
@@ -76,28 +82,23 @@ object CodeGenerator {
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
         /* change current instruction block to func block */
-        switchCurrInstrBlock(funcBlock, funcBlock.currBlock)
-        f match {
-            case FuncNode(ty, ident, param, stat) => {
-                // Callee-saved register pushes
-                currInstBlock.addInst(
-                    PushInst(fp, lr),
-                    PushInst(r4, r5, r6, r7, r8, r10, r12),
-                    MovInst(fp, sp))
-
-                // As front-end checked for all return paths,
-                // return pop instructions can and should be placed
-                // at return node translations.
-                translate(stat)
-
-                // Naming all non-main functions as wacc_*ident*
-                funcBlock.name = if (funcBlock.GLOBAL_MAIN) "main" else s"wacc_${ident.name}"
-                controlFlowFuncs.addOne(funcBlock.name, funcBlock)
-            }
-            case _ => throw new IllegalArgumentException("FuncNode translation receives non FuncNode")
-        }
+        // switchCurrInstrBlock(funcBlock, funcBlock.currBlock)
         currInstBlock = funcBlock.body
+        // Callee-saved register pushes
+        currInstBlock.addInst(
+            PushInst(fp, lr),
+            PushInst(r4, r5, r6, r7, r8, r10, r12),
+            MovInst(fp, sp)
+        )
+
+        // As front-end checked for all return paths,
+        // return pop instructions can and should be placed
+        // at return node translations.
         translate(f.stat)
+
+        // Naming all non-main functions as wacc_*ident*
+        funcBlock.name = if (funcBlock.GLOBAL_MAIN) "main" else s"wacc_${f.ident.name}"
+        controlFlowFuncs.addOne(funcBlock.name, funcBlock)
     }
 
     // Case-matching into StatNode subclasses
@@ -295,17 +296,15 @@ object CodeGenerator {
         /* branch to false if false */
         currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, ifFalse.num))
         currInstBlock.next = ifBlock
-        // currInstBlock = ifTrue
-        switchCurrInstrBlock(controlFlowGraph, ifTrue)
-
+        currInstBlock = ifTrue
+        // switchCurrInstrBlock(controlFlowGraph, ifTrue)
         translate(node.fstStat)
         currInstBlock.addInst(BranchNumInst(next.num))
-        // currInstBlock = ifFalse
-        switchCurrInstrBlock(controlFlowGraph, ifFalse)
-
+        currInstBlock = ifFalse
+        // switchCurrInstrBlock(controlFlowGraph, ifFalse)
         translate(node.sndStat)
-        // currInstBlock = next
-        switchCurrInstrBlock(controlFlowGraph, next)
+        currInstBlock = next
+        // switchCurrInstrBlock(controlFlowGraph, next)
 
         // controlFlowFuncs += ((ifTrue.num.toString, ifTrue),
         // (ifFalse.num.toString, ifFalse),
@@ -342,8 +341,8 @@ object CodeGenerator {
         currInstBlock = loop
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
-        // currInstBlock = next
-        switchCurrInstrBlock(controlFlowGraph, next)
+        currInstBlock = next
+        // switchCurrInstrBlock(controlFlowGraph, next)
         // controlFlowFuncs += ((cond.num.toString, cond),
         // (loop.num.toString, loop),
         // (next.num.toString, next))
@@ -653,10 +652,8 @@ object CodeGenerator {
                     BranchNumCondInst(NOT_EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
-                // currInstBlock = newBlock
-                val currBlock = controlFlowGraph
-                currInstBlock.next = newBlock
-                switchCurrInstrBlock(controlFlowGraph, newBlock)
+                currInstBlock = newBlock
+                // switchCurrInstrBlock(controlFlowGraph, newBlock)
 
                 currInstBlock.addInst(
                     MovCondInst( EQUAL, r8, immTrue),
@@ -664,7 +661,6 @@ object CodeGenerator {
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
-                switchCurrInstrBlock(currBlock, currBlock.currBlock)
                 // controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
             }
@@ -681,10 +677,8 @@ object CodeGenerator {
                     BranchNumCondInst( EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
-                // currInstBlock = newBlock
-                val currBlock = controlFlowGraph
-                currInstBlock.next = newBlock
-                switchCurrInstrBlock(controlFlowGraph, newBlock)
+                currInstBlock = newBlock
+                // switchCurrInstrBlock(controlFlowGraph, newBlock)
                 currInstBlock.addInst(
                     MovCondInst( EQUAL, r8, immTrue),
                     MovCondInst(NOT_EQUAL, r8, immFalse),
