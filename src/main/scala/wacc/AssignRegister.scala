@@ -124,6 +124,10 @@ object AssignRegister {
             case inst: LdrInst => LdrInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: LdrPseudoInst => LdrPseudoInst(assignReg(inst.rd), inst.num)
             case inst: StrInst => StrInst(assignReg(inst.rd), assignOp(inst.op))
+            case inst: StrbInst => StrbInst(assignReg(inst.rd), assignOp(inst.op))
+            case inst: StrChgInst => StrChgInst(assignReg(inst.rd), assignOp(inst.op))
+            case inst: StrbChgInst => StrbChgInst(assignReg(inst.rd), assignOp(inst.op))
+            
             case inst: PushInst => {
                 val newRegList: ListBuffer[Register] = ListBuffer.empty
                 for (reg <- inst.regs) {
@@ -160,6 +164,10 @@ object AssignRegister {
         op match {
             case t: TempRegister => assignReg(t)
             case v: Variable => assignReg(v)
+            case a: ASR => ASR(assignReg(a.r), a.bits)
+            case i: ImmOffset => ImmOffset(assignReg(i.r), i.offset)
+            case r: RegOffset => RegOffset(assignReg(r.rm), assignReg(r.rn))
+            case s: ScaledOffsetLSL => ScaledOffsetLSL(assignReg(s.rn), assignReg(s.rm), s.shift)
             case _ => op
         }
     }
