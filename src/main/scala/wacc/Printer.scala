@@ -10,14 +10,15 @@ object Printer {
             case ins: InstBlock => printBlock(ins: InstBlock)
             case con: IfBlock => printBlock(con: IfBlock)
             case whi: WhileBlock => printBlock(whi: WhileBlock)
-            case call: CallBlock => printBlock(call: CallBlock)
+            // case call: CallBlock => printBlock(call: CallBlock)
             case fun: FuncBlock => printBlock(fun: FuncBlock)
             case _ => 
         }
     }
 
     def printBlock(instBlock: InstBlock): Unit = {
-        // Print label
+        // Print label for instr block
+        output += s".L${instBlock.num}:"
         for (inst <- instBlock.instList) {
             print(inst)
         }
@@ -28,7 +29,7 @@ object Printer {
     }
 
     def printBlock(ifBlock: IfBlock): Unit = {
-       // printBlock(ifBlock.cond)
+        // printBlock(ifBlock.cond)
         printBlock(ifBlock.nextT)
         printBlock(ifBlock.nextF)
         printBlock(ifBlock.next)
@@ -40,9 +41,9 @@ object Printer {
         printBlock(whileBlock.next)
     }
 
-    def printBlock(callBlock: CallBlock): Unit = {
-        printBlock(callBlock.next)
-    }
+    // def printBlock(callBlock: CallBlock): Unit = {
+    //     printBlock(callBlock.next)
+    // }
 
     def printBlock(funcBlock: FuncBlock): Unit = {
         output += funcBlock.directive.build()
@@ -53,65 +54,127 @@ object Printer {
     /* ############### print instructions ############### */
 
     def print(inst: Instruction): Unit = {
-        inst match {
-            case inst: AddInst => 
+        inst match {      
+            case inst: AddsInst =>
                 output += "add " + printOp(inst.rd, inst.rn, inst.op)
             case inst: SubInst => 
                 output += "sub " + printOp(inst.rd, inst.rn, inst.op)
+            case inst: SubsInst =>
+                output += "subs " + printOp(inst.rd, inst.rn, inst.op)
+            case inst: RsbInst =>
+                output += "rsb " + printOp(inst.rd, inst.rn, inst.op)
+            case inst: NegInst =>
+                output += "neg " + printOp(inst.rd, inst.rm)
             case inst: MulInst => 
                 output += "mul " + printOp(inst.rd, inst.rm, inst.op)
-            case inst: CmpInst => 
+            case inst: SmullInst =>
+                output += "smull " + printOp(inst.rdlo, inst.rdhi, inst.rm, inst.rs)
+
+            case inst: CmpInst =>
                 output += "cmp " + printOp(inst.rn, inst.op)
-            case inst: MovInst => 
+            case inst: MovInst =>
                 output += "mov " + printOp(inst.rd, inst.op)
-            // case inst: MovEqInst => 
-            //     output += "moveq" + printOp(inst.rd, inst.op)
-            // case inst: MovNEqInst => 
-            //     output += "movneq" + printOp(inst.rd, inst.op)
-            case inst: AndInst => 
+            case inst: MovCondInst =>
+                output += s"mov${inst.condition} " + printOp(inst.rd, inst.op)
+            case inst: AndInst =>
                 output += "and " + printOp(inst.rd, inst.op)
-            case inst: OrInst => 
-                output += "orr " + printOp(inst.rd, inst.op)
-            case inst: LdrInst => 
+            case inst: OrInst =>
+                output += "or " + printOp(inst.rd, inst.op)
+
+            case inst: LdrInst =>
                 output += "ldr " + printOp(inst.rd, inst.op)
+            case inst: LdrPseudoInst =>
+                output += "ldr " + printOp(inst.rd, LabelAddress(s"${inst.num}"))
+            case inst: StrbChgInst =>
+                output += "strb " + printOp(inst.rd, inst.op) + "!"
             case inst: StrInst => 
-                output += "str " + printOp(inst.rd, inst.op)
+                output += "str " + printOp(inst.rd, inst.op) 
+            case inst: StrbInst =>
+                output += "strb " + printOp(inst.rd, inst.op) 
+            case inst: StrChgInst =>
+                output += "str " + printOp(inst.rd, inst.op) + "!"
+            case inst: LdrsbInst =>
+                output += "ldrsb " + printOp(inst.rd, inst.op)
             case inst: PushInst => 
-                output += "push " + printOp(inst.regs)
+                output += "push " + printRegList(inst.regs)
             case inst: PopInst => 
-                output += "pop " + printOp(inst.regs)
-            case inst: BranchInst => 
+                output += "pop " + printRegList(inst.regs)
+
+            case inst: BranchInst =>
                 output += "b " + inst.label
-            case inst: BranchLinkInst => 
+            case inst: BranchCondInst =>
+                output += s"b${inst.condition} " + inst.label
+            case inst: BranchNumInst =>
+                output += "b " + s".L${inst.num}"
+            case inst: BranchNumCondInst =>
+                output += s"b${inst.condition} " + s".L${inst.num}"
+            case inst: BranchLinkInst =>
                 output += "bl " + inst.label
+            case inst: BranchLinkCondInst =>
+                output += s"bl${inst.condtion} " + inst.label
+
             case inst: FreeRegister =>
+
+            case inst: WaccComment => output += s"@ ${inst.s}"
+
             case _ => output += "@ Unmatched instr"
         }
     }
 
+    /* ############### print operands ############### */
+
     def printOp(op: Operand): String = {
         op match {
-            case im: ImmVal => "#" + im.num.toString
-            case r: FixedRegister => "r" + r.num.toString()
-            case _ => "UAR!" // Unassigned register
+            case im: ImmVal =>
+                "#" + im.num.toString
+            case r: FixedRegister =>
+                printReg(r)
+            case asr: ASR =>
+                s"${printOp(asr.r)}, asr ${printOp(asr.bits)}"
+            case off: ImmOffset =>
+                s"[${printOp(off.r)}, #${off.offset}]"
+            case ladr: LabelAddress => 
+                s"=${ladr.address}"
+            case soff: ScaledOffsetLSL => 
+                s"[${printOp(soff.rn)}, ${printOp(soff.rm)}, lsl ${printOp(soff.shift)}]"
+            
+            case treg: TempRegister =>
+                "UAR!" // Unassigned register
+            case uvar: Variable =>
+                "UAR!" // Unassigned register
+            case _ =>
+                throw new IllegalArgumentException(s"${op} is not legal arguement")
         }
     }
 
-    def printOp(reg: Register, op: Operand): String = {
-        printOp(reg) + ", " + printOp(op)
+    def printOp(label: String) = {
+        label
     }
 
-    def printOp(reg1: Register, reg2: Register, op: Operand): String = {
-        printOp(reg1) + ", " + printOp(reg2) + ", " + printOp(op)
+    def printOp(ops: Operand*): String = {
+        if (ops.isEmpty)
+            ""
+        else
+            ops
+            .map(op => printOp(op))
+            .mkString(", ")
     }
 
-    def printOp(regList: Seq[Register]): String = {
-        var output = "{"
-        for (reg <- regList) {
-            output += printOp(reg) + ", "
-        }
-        output = output.dropRight(2) // remove ", "
-        output += "}"
-        output
+    def printRegList(regList: Seq[Register]): String = {
+        val regStr = if (regList.isEmpty)
+                        ""
+                    else
+                        regList.map(reg => printOp(reg)).mkString(", ")
+        s"{${regStr}}"        
+    }
+
+    def printReg(r: FixedRegister): String = {
+        r.num match {
+            case 11 => "fp"
+            case 13 => "sp"
+            case 14 => "lr"
+            case 15 => "pc"
+            case _ => s"r${r.num}"
+        } 
     }
 }

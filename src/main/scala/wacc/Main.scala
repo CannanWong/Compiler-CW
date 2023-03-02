@@ -20,7 +20,10 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No semantic error")
+                    
+                    /* AST --> IR1 */
                     CodeGenerator.translateAST(x)
+
                     val filename = WriteToFile.fileName(args(0))
                     WriteToFile.write(filename)
                 }
@@ -50,15 +53,18 @@ object Main {
         }
 
         def write(filename: String): Unit = {        
+
+            /* IR1 --> IR2 */
+            AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
+
             val pw = new PrintWriter(new File(filename))
             /* global main */
-            for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
+            for ((name, funcBlock) <- AssignRegister.ir2cfg) {
+            //for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
                 Printer.printBlock(funcBlock)
             }
-            var i = 0
             for (line <- Printer.output) {
                 pw.println(line)
-                i += 1
             }
 
             pw.close()              

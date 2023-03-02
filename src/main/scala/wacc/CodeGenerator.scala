@@ -14,10 +14,11 @@ object CodeGenerator {
     /* NEW: temporory design to accomodate label jumps */
     val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
-    /* utility functions */
-    def switchCurrInstrBlock(newFuncBlock: FuncBlock): Unit = {
-        CodeGenerator.controlFlowGraph = newFuncBlock
-        CodeGenerator.currInstBlock = newFuncBlock.body
+        /* utility functions */
+    def switchCurrInstrBlock(newFuncBlock: FuncBlock, instBlock: InstBlock): Unit = {
+        controlFlowGraph = newFuncBlock
+        currInstBlock = instBlock
+        controlFlowGraph.currBlock = instBlock        
     }
 
     def stringDef(string: String): String = {
@@ -38,13 +39,16 @@ object CodeGenerator {
     /*  Main body translation,
         appending global .data strings and push/pops of registers. */
     def translateMain(stat: StatNode): Unit = {
+        /* resets control graph since instantiaing CodeGenerator will increase val in CFG */
+        ControlFlowGraph.resetCFG()
+        
         val mainFuncBlock = FuncBlock()
         mainFuncBlock.setGlobalMain()
         mainFuncBlock.name = "main"
 
         mainFunc = mainFuncBlock
         /* change current instruction block to func block */
-        switchCurrInstrBlock(mainFunc)
+        switchCurrInstrBlock(mainFunc, mainFunc.currBlock)
 
         // Callee-saved register pushes
         currInstBlock.addInst(
@@ -69,8 +73,8 @@ object CodeGenerator {
         which is used to separate the code when printing assembly. */
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
-        /* Change current instruction block to func block */
-        switchCurrInstrBlock(funcBlock)
+        /* change current instruction block to func block */
+        switchCurrInstrBlock(funcBlock, funcBlock.currBlock)
         f match {
             case FuncNode(ty, ident, param, stat) => {
                 // Callee-saved register pushes
@@ -212,6 +216,7 @@ object CodeGenerator {
          * print may clobber any registers that are marked as caller-save under
          * arm's calling convention: R0, R1, R2, R3
         */
+
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
 
         val retOp = translate(node.expr)
@@ -233,9 +238,9 @@ object CodeGenerator {
     def translate(node: PrintlnNode): Unit = {
         translate(new PrintNode(node.expr))
 
-        // currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         IOFunc.println()
-        // currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PopInst(r0, r1, r2, r3))
     }
 
     /*  If condition branching,
@@ -261,14 +266,21 @@ object CodeGenerator {
             }
             case _ => throw new UnsupportedOperationException("If condition cannot be evaluated")
         }
-        currInstBlock.addInst(BranchNumCondInst("ne", ifFalse.num))
+        /* branch to false if false */
+        currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, ifFalse.num))
         currInstBlock.next = ifBlock
-        currInstBlock = ifTrue
+        // currInstBlock = ifTrue
+        switchCurrInstrBlock(controlFlowGraph, ifTrue)
+
         translate(node.fstStat)
         currInstBlock.addInst(BranchNumInst(next.num))
-        currInstBlock = ifFalse
+        // currInstBlock = ifFalse
+        switchCurrInstrBlock(controlFlowGraph, ifFalse)
+
         translate(node.sndStat)
-        currInstBlock = next
+        // currInstBlock = next
+        switchCurrInstrBlock(controlFlowGraph, next)
+
         // controlFlowFuncs += ((ifTrue.num.toString, ifTrue),
         // (ifFalse.num.toString, ifFalse),
         // (next.num.toString, next))
@@ -304,7 +316,8 @@ object CodeGenerator {
         currInstBlock = loop
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
-        currInstBlock = next
+        // currInstBlock = next
+        switchCurrInstrBlock(controlFlowGraph, next)
         // controlFlowFuncs += ((cond.num.toString, cond),
         // (loop.num.toString, loop),
         // (next.num.toString, next))
@@ -401,8 +414,8 @@ object CodeGenerator {
                     case r: Register => {
                         currInstBlock.addInst(
                             CmpInst(r, ImmVal(1)),
-                            MovCondInst("ne", r8, ImmVal(1)),
-                            MovCondInst("eq", r8, ImmVal(0))
+                            MovCondInst(NOT_EQUAL, r8, ImmVal(1)),
+                            MovCondInst( EQUAL, r8, ImmVal(0))
                         )
                         r8
                     }
@@ -466,8 +479,8 @@ object CodeGenerator {
                 }
                 currInstBlock.addInst(
                     SmullInst(r8, r9, reg1, reg2),
-                    CmpInst(r9, ASR(r8, 31)),
-                    BranchCondInst("ne", "_errOverflow"),
+                    CmpInst(r9, ASR(r8, ImmVal(INT_HIGHEST_BIT))),
+                    BranchCondInst(NOT_EQUAL, "_errOverflow"),
                     FreeRegister(reg1)
                 )
                 r8
@@ -480,7 +493,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst("eq", "_errDivZero"),
+                    BranchCondInst( EQUAL, "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r0),
                     PopInst(r0, r1)
@@ -495,7 +508,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst("eq", "_errDivZero"),
+                    BranchCondInst( EQUAL, "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r1),
                     PopInst(r0, r1)
@@ -555,42 +568,42 @@ object CodeGenerator {
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "gt", "le")
+                translateComparisonOperators(reg, op2, GREATER_THAN, LESS_OR_EQUAL)
             }
             case GTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "ge", "lt")
+                translateComparisonOperators(reg, op2, GREATER_OR_EQUAL, LESS_THAN)
             }
             case LTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "lt", "ge")
+                translateComparisonOperators(reg, op2, LESS_THAN, GREATER_OR_EQUAL)
             }
             case LTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "le", "gt")
+                translateComparisonOperators(reg, op2, LESS_OR_EQUAL, GREATER_THAN)
             }
             case EqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "eq", "ne")
+                translateComparisonOperators(reg, op2, EQUAL, NOT_EQUAL)
             }
             case IEqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, "ne", "eq")
+                translateComparisonOperators(reg, op2, NOT_EQUAL, EQUAL)
             }
             // TODO: fix label
             case AndNode(fstexpr, sndexpr) => {
@@ -603,13 +616,15 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst("ne", newBlock.num),
+                    BranchNumCondInst(NOT_EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
-                currInstBlock = newBlock
+                // currInstBlock = newBlock
+                switchCurrInstrBlock(controlFlowGraph, newBlock)
+
                 currInstBlock.addInst(
-                    MovCondInst("eq", r8, immTrue),
-                    MovCondInst("ne", r8, immFalse),
+                    MovCondInst( EQUAL, r8, immTrue),
+                    MovCondInst(NOT_EQUAL, r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
@@ -626,13 +641,14 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst("eq", newBlock.num),
+                    BranchNumCondInst( EQUAL, newBlock.num),
                     CmpInst(reg2, immTrue)
                 )
-                currInstBlock = newBlock
+                // currInstBlock = newBlock
+                switchCurrInstrBlock(controlFlowGraph, newBlock)
                 currInstBlock.addInst(
-                    MovCondInst("eq", r8, immTrue),
-                    MovCondInst("ne", r8, immFalse),
+                    MovCondInst( EQUAL, r8, immTrue),
+                    MovCondInst(NOT_EQUAL, r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
