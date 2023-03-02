@@ -4,7 +4,7 @@ import wacc.Constants._
 
 abstract class StandardFuncs(name: String) {
     import StandardFuncs._
-    private var used = false
+    protected var used = false
     def setUsed: Unit = {
         used = true
     }
@@ -21,31 +21,31 @@ case object BoundsCheck extends StandardFuncs(BOUNDS_CHECK_LABEL)
 case object ArrayStore extends StandardFuncs(ARRAY_STORE_LABEL) {
     override def setUsed: Unit = {
         this.used = true
-        BoundsCheck.setUsed()
+        BoundsCheck.setUsed
     }
 }
 case object ArrayStoreB extends StandardFuncs(ARRAY_STORE_B_LABEL) {
     override def setUsed: Unit = {
         this.used = true
-        BoundsCheck.setUsed()
+        BoundsCheck.setUsed
     }
 }
 case object ArrayLoad extends StandardFuncs(ARRAY_LOAD_LABEL) {
     override def setUsed: Unit = {
         this.used = true
-        BoundsCheck.setUsed()
+        BoundsCheck.setUsed
     }
 }
 case object ArrayLoadB extends StandardFuncs(ARRAY_LOAD_B_LABEL) {
     override def setUsed: Unit = {
         this.used = true
-        BoundsCheck.setUsed()
+        BoundsCheck.setUsed
     }
 }
 case object FreePair extends StandardFuncs(FREE_PAIR_LABEL) {
     override def setUsed: Unit = {
         this.used = true
-        NullPointer.setUsed()
+        NullPointer.setUsed
     }
 }
 

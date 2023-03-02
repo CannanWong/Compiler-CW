@@ -43,6 +43,7 @@ object  Constants {
   val ARRAY_STORE_B_LABEL = "_arrStoreB"
   val ARRAY_LOAD_LABEL = "_arrLoad"
   val ARRAY_LOAD_B_LABEL = "_arrLoadB"
+  val FREE_PAIR_LABEL = "_freepair"
 
   /* cond code (pg. 1-43 of mannual) */
   val NOT_EQUAL = "ne"
