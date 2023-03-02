@@ -22,12 +22,13 @@ object RuntimeCheck {
     val func = new FuncBlock()
     CodeGenerator.switchCurrInstrBlock(func, func.currBlock)
     val text = func.directive.addTextLabelToData(msg, label)
-    IOFunc.printString(new LabelAddress(text))
+    val printFunc = IOFunc.printString(new LabelAddress(text))
     func.name = label
     func.body.addInst(
       new MovInst(r0, new ImmVal(255)),
       new BranchLinkInst("exit")
     )
+    CodeGenerator.controlFlowFuncs.addOne(IOFunc.PRINT_STR_LABEL, printFunc)
     CodeGenerator.controlFlowFuncs.addOne(label, func)
     func
   }

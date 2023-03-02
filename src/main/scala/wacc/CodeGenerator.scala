@@ -654,6 +654,8 @@ object CodeGenerator {
                     CmpInst(reg2, immTrue)
                 )
                 // currInstBlock = newBlock
+                val currBlock = controlFlowGraph
+                currInstBlock.next = newBlock
                 switchCurrInstrBlock(controlFlowGraph, newBlock)
 
                 currInstBlock.addInst(
@@ -662,6 +664,7 @@ object CodeGenerator {
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
+                switchCurrInstrBlock(currBlock, currBlock.currBlock)
                 // controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
             }
@@ -679,6 +682,8 @@ object CodeGenerator {
                     CmpInst(reg2, immTrue)
                 )
                 // currInstBlock = newBlock
+                val currBlock = controlFlowGraph
+                currInstBlock.next = newBlock
                 switchCurrInstrBlock(controlFlowGraph, newBlock)
                 currInstBlock.addInst(
                     MovCondInst( EQUAL, r8, immTrue),
@@ -686,6 +691,7 @@ object CodeGenerator {
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
+                switchCurrInstrBlock(currBlock, currBlock.currBlock)
                 // controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
             }

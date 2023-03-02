@@ -92,7 +92,7 @@ object IOFunc {
       CodeGenerator.controlFlowFuncs.addOne(PRINT_PTR_LABEL, printPtrFunc)
     }
 
-    def printString(op: Operand): Unit = {
+    def printString(op: Operand): FuncBlock = {
       CodeGenerator.currInstBlock.addInst(
         LdrInst(r0, op),
         BranchLinkInst(PRINT_STR_LABEL)
@@ -119,6 +119,8 @@ object IOFunc {
       /* change current instruction block to func where print is called */
       CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_STR_LABEL, printStringFunc)
+
+      printStringFunc      
     }
 
     def printChar(op: Operand): Unit = {
@@ -168,7 +170,12 @@ object IOFunc {
       val trueTxt = printBoolFunc.directive.addTextLabelToData("%true", PRINT_BOOL_LABEL)
       val text = printBoolFunc.directive.addTextLabelToData("%.*s", PRINT_BOOL_LABEL)
 
+      /* change current instruction block to if block */
       val ifBlock = IfBlock()
+      CodeGenerator.currInstBlock.next = ifBlock
+
+      CodeGenerator.switchCurrInstrBlock(CodeGenerator.controlFlowGraph, CodeGenerator.currInstBlock)
+
       val ifTrue = ifBlock.nextT
       val ifFalse = ifBlock.nextF
       val next = ifBlock.next
@@ -179,24 +186,25 @@ object IOFunc {
         BranchNumCondInst(NOT_EQUAL, ifFalse.num)
       )
       /* print true */
-      CodeGenerator.currInstBlock = ifTrue
+      CodeGenerator.switchCurrInstrBlock(CodeGenerator.controlFlowGraph, ifTrue)
       CodeGenerator.currInstBlock.addInst(
         LdrInst(r2, LabelAddress(trueTxt))
       )
       /* print false */
-      CodeGenerator.currInstBlock = ifFalse
+      CodeGenerator.switchCurrInstrBlock(CodeGenerator.controlFlowGraph, ifFalse)
       CodeGenerator.currInstBlock.addInst(
         LdrInst(r2, LabelAddress(falseTxt))
       )
       /* next block */
-      CodeGenerator.currInstBlock = next
+      CodeGenerator.switchCurrInstrBlock(CodeGenerator.controlFlowGraph, next)
       CodeGenerator.currInstBlock.addInst(
         LdrInst(r1, ImmOffset(r2, INT_SIZE)),
         LdrInst(r0, LabelAddress(text))
       )
+
       CodeGenerator.currInstBlock.addInst(printEnd())
 
-      /* change current instruction block to func where print is called */
+      /* change current instruction block to func where func block is called */
       CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)
       CodeGenerator.controlFlowFuncs.addOne(PRINT_BOOL_LABEL, printBoolFunc)
     }
