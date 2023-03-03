@@ -26,7 +26,7 @@ object IOFunc {
       val labelStr = funcBlock.directive.addTextLabelToData(printType, label)
       List(
         PushInst(lr),
-        StrInst(r0, ImmOffset(sp, data_offset(BYTE_SIZE))),
+        StrChgInst(r0, ImmOffset(sp, data_offset(BYTE_SIZE))),
         MovInst(r1, sp),
         LdrInst(r0, LabelAddress(labelStr)),
         BranchLinkInst("scanf"),

@@ -221,7 +221,10 @@ object CodeGenerator {
         exprTy match {
             case CharIdentifier() => IOFunc.readChar(retOp)
             case IntIdentifier() => IOFunc.readInt(retOp)
-            case _ => throw new IllegalArgumentException("print: not an int or char")
+            case _ => {
+                currInstBlock.addInst(WaccComment("read creceives type: " + exprTy))
+                IOFunc.readInt(ImmVal(0))
+            }
         }
     }
     /*  Freeing addresses allocated in the memory. 
@@ -280,7 +283,7 @@ object CodeGenerator {
             BranchLinkInst("exit")
         )
     }
-    
+     
     /*  Printing statements. */
     def translate(node: PrintNode): Unit = {
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
@@ -295,6 +298,7 @@ object CodeGenerator {
             case IntIdentifier() => IOFunc.printInt(retOp)
             case StrIdentifier() => IOFunc.printString(retOp)
             case BoolIdentifier() => IOFunc.printBool(retOp)
+            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
             case ArrayIdentifier(_,_) => IOFunc.printPtr(retOp)
             case PairIdentifier(_,_) => IOFunc.printPtr(retOp)
             // anyIdentifier or null
@@ -431,11 +435,8 @@ object CodeGenerator {
                 ImmVal(num)
             }
             case StrLiterNode(s) => {
-                val str = s
-                for (ch <- ESCAPE_CHAR_LIST){
-                    str.replaceAll(ch, s"${"\\\\"+ch}")
-                }
-                val label = stringDef(str)
+                s.replaceAll("\n", s"\\\\n")       
+                val label = stringDef(s)
                 val loadlabelAddrInstr = LabelAddress(label)
                 val reg = TempRegister()
                 currInstBlock.addInst(LdrInst(reg, loadlabelAddrInstr))
