@@ -151,20 +151,20 @@ object CodeGenerator {
             case i: IdentNode => {
                 currInstBlock.addInst(MovInst(Variable(i.newName), op))
             }
-            case ArrayElemNode(ident, exprList) => {
+            case a: ArrayElemNode => {
                 // Loading array addresses until it reaches final index,
                 // then store the evaluated RHS into the offsetted address.
                 currInstBlock.addInst(
                     MovInst(r8, op),
                     PushInst(r8),
-                    MovInst(r8, Variable(ident.newName)),
+                    MovInst(r8, Variable(a.ident.newName)),
                     PushInst(r8))
-                for (arrayNum <- 1 to exprList.length - 1) {
+                for (arrayNum <- 1 to a.exprList.length - 1) {
                     currInstBlock.addInst(
                         // Ready for special convention for _arrLoad,
                         // r8 for array addr, r10 for index
                         PushInst(r8),
-                        MovInst(r10, translate(exprList(arrayNum))),
+                        MovInst(r10, translate(a.exprList(arrayNum))),
                         PopInst(r8),
                         BranchLinkInst("_arrLoad")
                     )
@@ -174,11 +174,11 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     // Ready for special convention for _arrStore,
                     // r8 for the value to be stored, r9 for array addr, r10 for index
-                    MovInst(r10, translate(exprList.last)),
+                    MovInst(r10, translate(a.exprList.last)),
                     PopInst(r9),
                     PopInst(r8),
-                    SemanticChecker.symbolTable.lookUpVarNewName(ident.newName) match {
-                        case Some(CharIdentifier()) => BranchLinkInst("_arrStoreB")
+                    a.typeVal() match {
+                        case CharIdentifier() => BranchLinkInst("_arrStoreB")
                         case _ => BranchLinkInst("_arrStore")
                     }
                 )
