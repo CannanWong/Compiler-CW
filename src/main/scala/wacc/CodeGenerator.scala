@@ -527,14 +527,19 @@ object CodeGenerator {
                     case ImmVal(num) => {
                         currInstBlock.addInst(
                             MovInst(r8, op), 
-                            NegInst(r8, r8)
+                            RsbsInst(r8, r8, ImmVal(0)),
+                            BranchLinkCondInst(OVERFLOW, "_errOverflow")
                         )
                     }
                     case r: Register => {
-                        currInstBlock.addInst(NegInst(r8, r))
+                        currInstBlock.addInst(
+                            RsbsInst(r8, r, ImmVal(0)),
+                            BranchLinkCondInst(OVERFLOW, "_errOverflow")
+                        )
                     }
                     case _ => throw new UnsupportedOperationException("Neg node evaluation error")
                 }
+                setUsed(OverflowErr)
                 r8
             }
             case LenNode(expr) => {

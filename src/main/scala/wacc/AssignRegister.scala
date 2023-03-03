@@ -103,6 +103,7 @@ object AssignRegister {
             case inst: SubInst => SubInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
             case inst: SubsInst => SubsInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
             case inst: RsbInst => RsbInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
+            case inst: RsbsInst => RsbsInst(assignReg(inst.rd), assignReg(inst.rn), assignOp(inst.op))
             case inst: NegInst => NegInst(assignReg(inst.rd), assignReg(inst.rm))
             case inst: MulInst => MulInst(assignReg(inst.rd), assignReg(inst.rm), assignOp(inst.op))
             case inst: SmullInst => SmullInst(assignReg(inst.rdlo), assignReg(inst.rdhi), assignReg(inst.rm), assignReg(inst.rs))
