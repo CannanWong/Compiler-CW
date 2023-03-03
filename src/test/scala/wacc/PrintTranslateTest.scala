@@ -13,11 +13,11 @@ class PrintTranslateTest extends AnyFlatSpec with TimeLimitedTests {
 
   val printIntNode = new PrintNode(new IntLiterNode(12))
 
-  "instruction translate print of type int" should "return correctly" in {
+  "instruction translate print of type int" should "not be empty" in {
     assert(printIntNode != null)
   }
 
-  "instruction under branch label print of type int" should "return correctly" in {
+  "instruction under branch label print of type int" should "not be empty" in {
     assert(printIntNode != null)
   }
 
@@ -35,7 +35,7 @@ class PrintTranslateTest extends AnyFlatSpec with TimeLimitedTests {
     assert(dataDirective.build().contains(label2))
   }
 
-  "printBlock" should "not exceed the time limit" in {
+  "printBlock printing" should "return" in {
     // Create a sample ControlFlowBlock instance
     val block1 = InstBlock()
     block1.addInst(

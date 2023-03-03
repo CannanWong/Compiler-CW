@@ -3,6 +3,7 @@ package wacc
 import wacc.Constants._
 
 object IOFunc {
+  /* text label for read and write functions */
     val PRINT_INT_LABEL = "_printi"
     val PRINT_STR_LABEL = "_prints"
     val PRINT_CHAR_LABEL = "_printc"

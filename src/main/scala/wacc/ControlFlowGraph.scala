@@ -2,6 +2,7 @@ package wacc
 
 import scala.collection.mutable.ListBuffer
 
+// keeps track of next control flow blocks in use in the program generated
 object ControlFlowGraph {
     var nextInstNum = 0
     var nextIfNum = 0
@@ -10,6 +11,7 @@ object ControlFlowGraph {
     var nextFuncNum = 0
     var nextTempRegNum = 1
 
+// resets the contol flow graph counter
     def resetCFG(): Unit = {
         nextInstNum = 0
         nextIfNum = 0
@@ -41,7 +43,8 @@ case class InstBlock() extends ControlFlowBlock {
 }
 
 case class IfBlock() extends ControlFlowBlock {
-    var num: Int = ControlFlowGraph.nextIfNum
+    // index of the if block
+    val num: Int = ControlFlowGraph.nextIfNum
     var nextT: InstBlock = new InstBlock()
     var nextF: InstBlock = new InstBlock()
     var next: InstBlock = new InstBlock()
@@ -49,28 +52,24 @@ case class IfBlock() extends ControlFlowBlock {
 }
 
 case class WhileBlock() extends ControlFlowBlock {
-    var num: Int = ControlFlowGraph.nextWhileNum
+    // index of the while block
+    val num: Int = ControlFlowGraph.nextWhileNum
     var cond: InstBlock = new InstBlock()
     var loop: InstBlock = new InstBlock()
     var next: InstBlock = new InstBlock()
     ControlFlowGraph.nextWhileNum += 1
 }
 
-// case class CallBlock() extends ControlFlowBlock {
-//     var num: Int = ControlFlowGraph.nextCallNum
-//     var func: FuncBlock = null
-//     var next: InstBlock = new InstBlock()
-//     ControlFlowGraph.nextCallNum += 1
-// }
-
 case class FuncBlock() extends ControlFlowBlock {
+    // boolean flag to indicate whether the current fucntion block is main
     var GLOBAL_MAIN = false
-    var num: Int = ControlFlowGraph.nextFuncNum
+    // index of the function block
+    val num: Int = ControlFlowGraph.nextFuncNum
     var body: InstBlock = new InstBlock()
     var currBlock: InstBlock = body
     var name: String = ""
     var paramList: List[ParamNode] = List.empty
-    /* NEW: temporory design to accomodate print label jumps */
+    // directive of the function to provide additional information to the assembler
     var directive: DataDirectiveStat = new DataDirectiveStat()
     ControlFlowGraph.nextFuncNum += 1
 
