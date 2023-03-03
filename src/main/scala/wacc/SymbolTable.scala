@@ -49,6 +49,11 @@ class SymbolTable {
         identifier
     }
 
+    // Look up variable or array from symbol table in same or higher scopes
+    def lookUpVarNewName(varName: String): Option[TypeIdentifier] = {
+        map.get(varName)
+    }
+
     // Get variable name stored in symbol table
     def getVarName(name: String): String = {
         var idx = 0

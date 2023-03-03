@@ -328,6 +328,7 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
     var newName: String = null
     override def typeVal() = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
+        // val identifier = SemanticChecker.symbolTable.lookUpVarNewName(newName)
         identifier match {
             // case Some(VarIdentifier(tyVal)) => tyVal
             case Some(ty) => ty
@@ -354,7 +355,8 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
     var arrayType: TypeIdentifier = new AnyIdentifier
     var arrayDim = 0
     override def typeVal() = {
-         val identifier = SemanticChecker.symbolTable.lookUpVar(ident.name)
+        val identifier = SemanticChecker.symbolTable.lookUpVar(ident.name)
+        // val identifier = SemanticChecker.symbolTable.lookUpVarNewName(ident.newName)
         identifier match {
             case Some(ArrayIdentifier(baseTy: TypeIdentifier, dim: Int)) => {
                 if (arrayDim > 0) {
@@ -397,6 +399,7 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
                 case ty => Error.addSemErr(s"expect at least 1 dimension array, gets ${ty.toString()}")
             }
         }
+        ident.semanticCheck()
     }
 }
 
