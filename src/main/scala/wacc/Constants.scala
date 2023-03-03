@@ -71,5 +71,5 @@ object  Constants {
 
 
   val ESCAPE_CHAR_LIST = 
-    List[String]("\"", "\n", "\'", "\r", "\f", "\t", "\b", "\u0000")
+    List[String]("\"", "\n", "\'", "\r", "\f", "\t", "\b", "\u0000", "\\")
 }

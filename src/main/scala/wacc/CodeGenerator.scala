@@ -762,7 +762,7 @@ object CodeGenerator {
 
     def replaceChar(s: String): String = {
         var ret = s
-        if (s == "\"") {
+        if (ESCAPE_CHAR_LIST.contains(s)) {
             ret = "\\u".replace("u", s)
         }
         ret
