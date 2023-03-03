@@ -313,10 +313,23 @@ object CodeGenerator {
             case IntIdentifier() => IOFunc.printInt(retOp)
             case StrIdentifier() => IOFunc.printString(retOp)
             case BoolIdentifier() => IOFunc.printBool(retOp)
-            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
-            case ArrayIdentifier(IntIdentifier(),_) => IOFunc.printInt(retOp)
-            case ArrayIdentifier(BoolIdentifier(),_) => IOFunc.printBool(retOp)
-            case ArrayIdentifier(_,_) => IOFunc.printPtr(retOp)
+            case ArrayIdentifier(identifier, _) => {
+                node.expr match {
+                    case i: IdentNode => {
+                        exprTy match {
+                            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
+                            case _ => IOFunc.printPtr(retOp)
+                        }
+                    }
+                    case a: ArrayElemNode => {
+                        exprTy match {
+                            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
+                            case ArrayIdentifier(IntIdentifier(),_) => IOFunc.printInt(retOp)
+                            case ArrayIdentifier(BoolIdentifier(),_) => IOFunc.printBool(retOp)
+                        }
+                    }
+                }
+            }
             case PairIdentifier(_,_) => IOFunc.printPtr(retOp)
             // anyIdentifier or null
             case _ => IOFunc.printPtr(retOp)
