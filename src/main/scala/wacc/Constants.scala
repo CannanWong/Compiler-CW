@@ -69,8 +69,7 @@ object  Constants {
   val OVERFLOW = "vs"
   val NO_OVERFLOW = "vc"
 
-  // s"${"\\"}"
+
   val ESCAPE_CHAR_LIST = 
-    List[String](s"${"\""}", s"${"\n"}", s"${"\'"}", s"${"\r"}", s"${"\f"}",
-                  s"${"\t"}", s"${"\b"}", s"${"\u0000"}")
+    List[String]("\"", "\n", "\'", "\r", "\f", "\t", "\b", "\u0000")
 }

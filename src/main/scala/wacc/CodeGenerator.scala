@@ -199,6 +199,9 @@ object CodeGenerator {
         }
     }
 
+    /* read null check */
+
+
     /*  Reading into memory. */
     def translate(node: ReadNode): Unit = {
         var retOp: Register = new TempRegister()
@@ -217,6 +220,14 @@ object CodeGenerator {
                     case i: IdentNode => {
                         retOp = Variable(i.newName)
                         SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+
+                        /* null check */
+                        currInstBlock.addInst(
+                            MovInst(TempRegister(), ImmVal(0)),
+                            CmpInst(TempRegister(), ImmVal(0)),
+                            BranchLinkCondInst(LESS_OR_EQUAL, NULL_POINTER_LABEL)
+                        )
+                        StandardFuncs.setUsed(NullErr)
                     }
                     case _ => f.lvalue.typeVal()
                 }
@@ -226,20 +237,29 @@ object CodeGenerator {
                     case i: IdentNode => {
                         retOp = Variable(i.newName)
                         SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+
+                        /* null check */
+                        currInstBlock.addInst(
+                            MovInst(TempRegister(), ImmVal(0)),
+                            CmpInst(TempRegister(), ImmVal(0)),
+                            BranchLinkCondInst(LESS_OR_EQUAL, NULL_POINTER_LABEL)
+                        )
+                        StandardFuncs.setUsed(NullErr)
                     }
                     case _ => s.lvalue.typeVal()
                 }
             }
         }
+
         exprTy match {
             case CharIdentifier() => IOFunc.readChar(retOp)
             case IntIdentifier() => IOFunc.readInt(retOp)
-            case _ => {
-                currInstBlock.addInst(WaccComment("read creceives type: " + exprTy))
-                val tempreg1 = TempRegister()
-                currInstBlock.addInst(MovInst(tempreg1, ImmVal(1)))
-                IOFunc.readInt(tempreg1)
-            }
+            case _ => throw new IllegalArgumentException("error: reading non char / int")
+            // case _ => {
+            //     val tempreg1 = TempRegister()
+            //     currInstBlock.addInst(MovInst(tempreg1, ImmVal(1)))
+            //     IOFunc.readInt(tempreg1)
+            // }
         }
     }
     /*  Freeing addresses allocated in the memory. 
@@ -467,10 +487,10 @@ object CodeGenerator {
                 ImmVal(num)
             }
             case StrLiterNode(s) => {
-                for (ch <- ESCAPE_CHAR_LIST) {
-                    s.replaceAll(ch, s"\\${ch}")    
-                }               
-                val label = stringDef(s)
+                val sList = s.split("").map(x => replaceChar(x))
+                val newStr = sList.fold("")((x: String, y: String) => s"${x}${y}")
+
+                val label = stringDef(newStr)
                 val loadlabelAddrInstr = LabelAddress(label)
                 val reg = TempRegister()
                 currInstBlock.addInst(LdrInst(reg, loadlabelAddrInstr))
@@ -738,5 +758,13 @@ object CodeGenerator {
                 r8
             }
         }
+    }
+
+    def replaceChar(s: String): String = {
+        var ret = s
+        if (s == "\"") {
+            ret = "\\u".replace("u", s)
+        }
+        ret
     }
 }
