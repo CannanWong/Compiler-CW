@@ -145,7 +145,7 @@ object Printer {
             case treg: TempRegister =>
                 "UAR!" // Unassigned register
             case uvar: Variable =>
-                "UAR!" // Unassigned register
+                s"${uvar.name}" //"UAR!" // Unassigned register
             // case _ =>
             //     throw new IllegalArgumentException(s"${op} is not legal arguement")
         }

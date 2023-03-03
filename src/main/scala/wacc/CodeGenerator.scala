@@ -438,7 +438,7 @@ object CodeGenerator {
                 reg
             }            
             case PairLiterNode() => ImmVal(0)
-            case IdentNode(newName) => Variable(newName)
+            case i: IdentNode => Variable(i.newName)
             case ArrayElemNode(ident, exprList) => {
                 val op1 = translate(ident)
                 currInstBlock.addInst(MovInst(r8, op1))

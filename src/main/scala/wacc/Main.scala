@@ -57,7 +57,7 @@ object Main {
         def write(filename: String): Unit = {        
 
             /* IR1 --> IR2 */
-            AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
+            //AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
 
             val pw = new PrintWriter(new File(filename))
             /* global main */
