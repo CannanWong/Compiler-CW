@@ -201,22 +201,32 @@ object CodeGenerator {
 
     /*  Reading into memory. */
     def translate(node: ReadNode): Unit = {
-        val retOp = new TempRegister()
+        var retOp: Register = new TempRegister()
         val exprTy = node.lvalue match {
-            case i: IdentNode =>
+            case i: IdentNode => {
+                retOp = Variable(i.newName)
                 SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
-            case a: ArrayElemNode =>
+            }
+            case a: ArrayElemNode => {
+                retOp = Variable(a.ident.newName)
                 SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
+            }
+                
             case f: FstNode => {
                 f.lvalue match {
-                    case i: IdentNode =>
+                    case i: IdentNode => {
+                        retOp = Variable(i.newName)
                         SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+                    }
                     case _ => f.lvalue.typeVal()
                 }
             }
             case s: SndNode => {
                 s.lvalue match {
-                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+                    case i: IdentNode => {
+                        retOp = Variable(i.newName)
+                        SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+                    }
                     case _ => s.lvalue.typeVal()
                 }
             }
@@ -442,12 +452,9 @@ object CodeGenerator {
                 ImmVal(num)
             }
             case StrLiterNode(s) => {
-                if (s.contains("\\n")) {
-                    currInstBlock.addInst(WaccComment("contains ln character"))
-                }
-                // for (ch <- ESCAPE_CHAR_LIST) {
-                //     s.replaceAll(ch, s"\\\\n")    
-                // }               
+                for (ch <- ESCAPE_CHAR_LIST) {
+                    s.replaceAll(ch, s"\\\\\n")    
+                }               
                 val label = stringDef(s)
                 val loadlabelAddrInstr = LabelAddress(label)
                 val reg = TempRegister()
