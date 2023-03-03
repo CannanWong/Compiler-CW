@@ -7,6 +7,8 @@ import wacc.Constants._
 import wacc.Constants.StdFuncsEnum._
 
 object AssignmentTranslations {
+    var tmpRegs: ListBuffer[TempRegister] = ListBuffer()
+
     // General function for translating RHS Values
     def transRVal(rvalue: RValueNode): Operand = {
         rvalue match {
@@ -111,12 +113,18 @@ object AssignmentTranslations {
     }
 
     def transCall(ident: IdentNode, argList: ArgListNode): Operand = {
+        tmpRegs = ListBuffer()
         // Push Caller Regs
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         // Push Args onto r0, 1, 2, 3, and stack afterwards
-        currInstBlock.addInst(
-            pushArgs(0, argList.exprList, ListBuffer[Instruction]())
-            .toList)
+        if (!argList.exprList.isEmpty) {
+            pushArgs(0, argList.exprList)
+        }
+        var count = 0
+        for (tmp <- tmpRegs) {
+            currInstBlock.addInst(MovInst(FixedRegister(count), tmp))
+            count += 1
+        }
         // Branch link to the function
         currInstBlock.addInst(BranchLinkInst(s"wacc_${ident.name}"))
         r0
@@ -204,26 +212,29 @@ object AssignmentTranslations {
         r8
     }
 
-    def pushArgs(regCount: Int, args: List[ExprNode],
-        insts: ListBuffer[Instruction]): ListBuffer[Instruction] = {
-        if (args.isEmpty) {
-            return insts
-        }
-        insts += MovInst(FixedRegister(regCount), translate(args(0)))
+    def pushArgs(regCount: Int, args: List[ExprNode]): Unit = {
+        val tmpReg = TempRegister()
+
+        currInstBlock.addInst(MovInst(tmpReg, translate(args(0))))
+        tmpRegs.addOne(tmpReg)
+        
+        
         val nextArgs = args.drop(1)
         if (nextArgs.isEmpty) {
-            insts
-        } else if (regCount >= 4) {
-            pushStack(nextArgs, insts)
+            return
+        } else if (regCount >= 3) {
+            pushStack(nextArgs)
         } else {
-            pushArgs(regCount + 1, nextArgs, insts)
+            pushArgs(regCount + 1, nextArgs)
         }
     }
 
-    def pushStack(args: List[ExprNode], insts: ListBuffer[Instruction]): ListBuffer[Instruction] = {
-        insts += MovInst(r8, translate(args.head))
-        insts += StrChgInst(r8, ImmOffset(sp, -4))
+    def pushStack(args: List[ExprNode]): Unit = {
+        currInstBlock.addInst(
+            MovInst(r8, translate(args.head)),
+            StrChgInst(r8, ImmOffset(sp, -4))
+        )
         val nextArgs = args.drop(1)
-        if (nextArgs.isEmpty) insts else pushStack(nextArgs, insts)
+        if (nextArgs.isEmpty) return else pushStack(nextArgs)
     }
 }

@@ -18,6 +18,10 @@ object AssignRegister {
 
     var r9Used = false
 
+    def resetRegQueue(): Unit = {
+        regQueue = Queue(7, 6, 5, 4, 3, 2, 1, 0)
+    }
+
     def assignCFG(cfg: LinkedHashMap[String, FuncBlock]): Unit = {
         for ((name, funcBlock) <- cfg) {
             assignBlock(funcBlock)
@@ -25,12 +29,16 @@ object AssignRegister {
     }
 
     def assignBlock(funcBlock: FuncBlock): Unit = {
+        resetRegQueue()
         val paramReg: Queue[Int] = Queue(0, 1, 2, 3)
         val paramQueue: Queue[ParamNode] = Queue(funcBlock.paramList: _*)
         // Add the first 4 parameters mapping to r0-r3
         for (i <- 1 to 4) {
             if (!paramQueue.isEmpty) {
                 varOpTable.addOne(paramQueue.dequeue().ident.newName, FixedRegister(paramReg.dequeue()))
+                val revRegQueue = regQueue.reverse
+                revRegQueue.dequeue()
+                regQueue = revRegQueue.reverse
             }
         }
         // Starting from the last parameter
