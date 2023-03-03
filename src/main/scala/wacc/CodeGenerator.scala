@@ -203,11 +203,14 @@ object CodeGenerator {
     def translate(node: ReadNode): Unit = {
         val retOp = new TempRegister()
         val exprTy = node.lvalue match {
-            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
-            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
+            case i: IdentNode =>
+                SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+            case a: ArrayElemNode =>
+                SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
             case f: FstNode => {
                 f.lvalue match {
-                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+                    case i: IdentNode =>
+                        SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
                     case _ => f.lvalue.typeVal()
                 }
             }
@@ -223,7 +226,9 @@ object CodeGenerator {
             case IntIdentifier() => IOFunc.readInt(retOp)
             case _ => {
                 currInstBlock.addInst(WaccComment("read creceives type: " + exprTy))
-                IOFunc.readInt(ImmVal(0))
+                val tempreg1 = TempRegister()
+                currInstBlock.addInst(MovInst(tempreg1, ImmVal(1)))
+                IOFunc.readInt(tempreg1)
             }
         }
     }
@@ -435,7 +440,12 @@ object CodeGenerator {
                 ImmVal(num)
             }
             case StrLiterNode(s) => {
-                s.replaceAll("\n", s"\\\\n")       
+                if (s.contains("\\n")) {
+                    currInstBlock.addInst(WaccComment("contains ln character"))
+                }
+                // for (ch <- ESCAPE_CHAR_LIST) {
+                //     s.replaceAll(ch, s"\\\\n")    
+                // }               
                 val label = stringDef(s)
                 val loadlabelAddrInstr = LabelAddress(label)
                 val reg = TempRegister()
