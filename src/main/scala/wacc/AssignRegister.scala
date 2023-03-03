@@ -196,13 +196,13 @@ object AssignRegister {
                     case Some(im: ImmOffset) => {
                         if (!r9Used) {
                             r9Used = true
-                            newInstList += LdrInst(r10, im)
-                            r10
+                            newInstList += LdrInst(r9, im)
+                            r9
                         }
                         else {
                             r9Used = false
-                            newInstList += LdrInst(r9, im)
-                            r9
+                            newInstList += LdrInst(r10, im)
+                            r10
                         }
                     }
                     case _ => {
@@ -236,13 +236,13 @@ object AssignRegister {
             case Some(im: ImmOffset) => {
                 if (!r9Used) {
                     r9Used = true
-                    newInstList += LdrInst(r10, im)
-                    r10
+                    newInstList += LdrInst(r9, im)
+                    r9
                 }
                 else {
                     r9Used = false
-                    newInstList += LdrInst(r9, im)
-                    r9
+                    newInstList += LdrInst(r10, im)
+                    r10
                 }
             }
             case _ => {
