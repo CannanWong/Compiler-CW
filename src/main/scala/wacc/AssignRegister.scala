@@ -21,7 +21,24 @@ object AssignRegister {
         }
     }
 
-    def assignBlock(funcBlock: FuncBlock): Unit = assignBlock(funcBlock.body)
+    def assignBlock(funcBlock: FuncBlock): Unit = {
+        val paramReg: Queue[Int] = Queue(0, 1, 2, 3)
+        val paramQueue: Queue[ParamNode] = Queue(funcBlock.paramList: _*)
+        // Add the first 4 parameters mapping to r0-r3
+        for (i <- 1 to 4) {
+            if (!paramQueue.isEmpty) {
+                varOpTable.addOne(paramQueue.dequeue().ident.name, FixedRegister(paramReg.dequeue()))
+            }
+        }
+        // Starting from the last parameter
+        val revParamQueue: Queue[ParamNode] = paramQueue.reverse
+        while (!revParamQueue.isEmpty) {
+            currFPOffset += 4
+            varOpTable.addOne(paramQueue.dequeue().ident.name, ImmOffset(Constants.fp, currFPOffset))
+        }
+        currFPOffset = 0
+        assignBlock(funcBlock.body)
+    }
 
     def assignBlock(cfBlock: ControlFlowBlock): Unit = {
         cfBlock match {
