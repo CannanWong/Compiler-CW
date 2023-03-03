@@ -307,7 +307,8 @@ object CodeGenerator {
             case i: IdentNode => {
                 val exprTy = SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
                 exprTy match {
-                    case a: ArrayIdentifier => IOFunc.printPtr(retOp)
+                    case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
+                    case ArrayIdentifier(_,_) => IOFunc.printPtr(retOp)
                     case _ => printType(exprTy, retOp)
                 }
             }
@@ -325,7 +326,9 @@ object CodeGenerator {
 
     def printType(ty: TypeIdentifier, retOp: Operand): Unit = {
         ty match {
-            case CharIdentifier() => IOFunc.printChar(retOp)
+            case CharIdentifier() => {
+                IOFunc.printChar(retOp)
+            }
             case IntIdentifier() | ArrayIdentifier(IntIdentifier(),_) => {
                 IOFunc.printInt(retOp)
             }
