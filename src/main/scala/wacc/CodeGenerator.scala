@@ -81,6 +81,7 @@ object CodeGenerator {
         which is used to separate the code when printing assembly. */
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
+        funcBlock.paramList = f.paramList
         /* change current instruction block to func block */
         // switchCurrInstrBlock(funcBlock, funcBlock.currBlock)
         currInstBlock = funcBlock.body

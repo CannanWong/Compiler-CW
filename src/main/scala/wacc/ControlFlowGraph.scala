@@ -69,6 +69,7 @@ case class FuncBlock() extends ControlFlowBlock {
     var body: InstBlock = new InstBlock()
     var currBlock: InstBlock = body
     var name: String = ""
+    var paramList: List[ParamNode] = List.empty
     /* NEW: temporory design to accomodate print label jumps */
     var directive: DataDirectiveStat = new DataDirectiveStat()
     ControlFlowGraph.nextFuncNum += 1

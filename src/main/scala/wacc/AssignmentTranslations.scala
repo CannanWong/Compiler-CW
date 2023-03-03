@@ -167,8 +167,6 @@ object AssignmentTranslations {
         insts: ListBuffer[Instruction]): ListBuffer[Instruction] = {
         if (args.isEmpty) {
             return insts
-        } else if (regCount >= 4) {
-            return pushStack(args, insts)
         }
         insts += MovInst(FixedRegister(regCount), translate(args(0)))
         if (args.drop(1).isEmpty) insts
