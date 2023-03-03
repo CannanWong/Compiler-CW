@@ -210,14 +210,20 @@ object AssignmentTranslations {
             return insts
         }
         insts += MovInst(FixedRegister(regCount), translate(args(0)))
-        if (args.drop(1).isEmpty) insts
-        else if (regCount >= 4) pushStack(args, insts)
-        else pushArgs(regCount + 1, args, insts)
+        val nextArgs = args.drop(1)
+        if (nextArgs.isEmpty) {
+            insts
+        } else if (regCount >= 4) {
+            pushStack(nextArgs, insts)
+        } else {
+            pushArgs(regCount + 1, nextArgs, insts)
+        }
     }
 
     def pushStack(args: List[ExprNode], insts: ListBuffer[Instruction]): ListBuffer[Instruction] = {
         insts += MovInst(r8, translate(args.head))
         insts += StrChgInst(r8, ImmOffset(sp, -4))
-        if (args.drop(1).isEmpty) insts else pushStack(args, insts)
+        val nextArgs = args.drop(1)
+        if (nextArgs.isEmpty) insts else pushStack(nextArgs, insts)
     }
 }
