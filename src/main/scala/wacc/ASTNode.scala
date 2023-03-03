@@ -482,6 +482,7 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
 
     override def semanticCheck(): Unit = {
         if (!exprList.isEmpty) {
+            exprList.map(expr => expr.semanticCheck())
             val exprTypes:List[TypeIdentifier] = exprList.map(expr => expr.typeVal())
             // check whether array literal expr all have same types
             exprTypes
@@ -664,6 +665,7 @@ sealed trait UnOpExprNode extends ExprNode
 case class NotNode(expr: ExprNode) extends UnOpExprNode {
     override def typeVal() = new BoolIdentifier
     override def semanticCheck(): Unit = {
+        expr.semanticCheck()
         if(!SemanticChecker.typeCheck(new BoolIdentifier, expr.typeVal())) {
             Error.addSemErr(s"Unary op: expression unexpected type ${expr.typeVal().toString()}, expected type bool")
         }
@@ -674,6 +676,7 @@ case class NotNode(expr: ExprNode) extends UnOpExprNode {
 case class NegNode(expr: ExprNode) extends UnOpExprNode {
      override def typeVal() = new IntIdentifier
     override def semanticCheck(): Unit = {
+        expr.semanticCheck()
         if(!SemanticChecker.typeCheck(new IntIdentifier, expr.typeVal())) {
             Error.addSemErr(s"Unary op: expression unexpected type ${expr.typeVal().toString()}, expected type int")
         }
@@ -684,6 +687,7 @@ case class NegNode(expr: ExprNode) extends UnOpExprNode {
 case class LenNode(expr: ExprNode) extends UnOpExprNode {
     override def typeVal() = new IntIdentifier
     override def semanticCheck(): Unit = {
+        expr.semanticCheck()
         expr.typeVal() match {
             case a: ArrayIdentifier => 
             case _ => Error.addSemErr(
@@ -696,6 +700,7 @@ case class LenNode(expr: ExprNode) extends UnOpExprNode {
 case class OrdNode(expr: ExprNode) extends UnOpExprNode {
     override def typeVal() = new IntIdentifier
     override def semanticCheck(): Unit = {
+        expr.semanticCheck()
         if(!SemanticChecker.typeCheck(new CharIdentifier, expr.typeVal())) {
             Error.addSemErr(s"Unary op: expression unexpected type ${expr.typeVal().toString()}, expected type char")
         }
@@ -706,6 +711,7 @@ case class OrdNode(expr: ExprNode) extends UnOpExprNode {
 case class ChrNode(expr: ExprNode) extends UnOpExprNode {
     override def typeVal() = new CharIdentifier
     override def semanticCheck(): Unit = {
+        expr.semanticCheck()
         if(!SemanticChecker.typeCheck(new IntIdentifier, expr.typeVal())) {
             Error.addSemErr(s"Unary op: expression unexpected type ${expr.typeVal().toString()}, expected type int")
         }
