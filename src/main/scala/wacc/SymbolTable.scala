@@ -49,6 +49,21 @@ class SymbolTable {
         identifier
     }
 
+    // Get variable name stored in symbol table
+    def getVarName(name: String): String = {
+        var idx = 0
+        var scope = -1
+        var varName = ""
+        var identifier: Option[TypeIdentifier] = None
+        while (!SemanticChecker.scopeStack.isEmpty && idx < SemanticChecker.scopeStack.size && identifier.isEmpty) {
+            scope = SemanticChecker.scopeStack.apply(idx)
+            varName = scope.toString() + "!" + name
+            identifier = map.get(varName)
+            idx += 1
+        }
+        varName
+    }
+
     // Check if variable is defined in the same scope
     def checkVarDefined(name: String): Boolean = {
         val varName = SemanticChecker.currScope().toString() + "!" + name

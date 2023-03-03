@@ -175,13 +175,8 @@ object AssignmentTranslations {
     }
 
     def pushStack(args: List[ExprNode], insts: ListBuffer[Instruction]): ListBuffer[Instruction] = {
-        val argOffset = getOffset(args.head)
         insts += MovInst(r8, translate(args.head))
-        argOffset match {
-            case 1 => insts += StrbChgInst(r8, ImmOffset(sp, -argOffset))
-            case 4 => insts += StrChgInst(r8, ImmOffset(sp, -argOffset))
-            case _ => throw new UnsupportedOperationException("wrong offset")
-        }
+        insts += StrChgInst(r8, ImmOffset(sp, -4))
         if (args.drop(1).isEmpty) insts else pushStack(args, insts)
     }
 }
