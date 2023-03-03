@@ -37,7 +37,7 @@ object AssignRegister {
         val revParamQueue: Queue[ParamNode] = paramQueue.reverse
         while (!revParamQueue.isEmpty) {
             currFPOffset += 4
-            varOpTable.addOne(paramQueue.dequeue().ident.name, ImmOffset(fp, currFPOffset))
+            varOpTable.addOne(revParamQueue.dequeue().ident.name, ImmOffset(fp, currFPOffset))
         }
         currFPOffset = 0
         assignBlock(funcBlock.body)
