@@ -19,13 +19,6 @@ object CodeGenerator {
     /* NEW: temporory design to accomodate label jumps */
     val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
-        /* utility functions */
-    // def switchCurrInstrBlock(newFuncBlock: FuncBlock, instBlock: InstBlock): Unit = {
-    //     controlFlowGraph = newFuncBlock
-    //     currInstBlock = instBlock
-    //     controlFlowGraph.currBlock = instBlock        
-    // }
-
     def stringDef(string: String): String = {
         mainFunc.directive.addTextLabelToData(string)
     }
@@ -44,16 +37,6 @@ object CodeGenerator {
     /*  Main body translation,
         appending global .data strings and push/pops of registers. */
     def translateMain(stat: StatNode): Unit = {
-        /* resets control graph since instantiaing CodeGenerator will increase val in CFG */
-        // ControlFlowGraph.resetCFG()
-        
-        // val mainFuncBlock = FuncBlock()
-        // mainFuncBlock.setGlobalMain()
-        // mainFuncBlock.name = "main"
-
-        // mainFunc = mainFuncBlock
-        /* change current instruction block to func block */
-        // switchCurrInstrBlock(mainFunc, mainFunc.currBlock)
 
         assert(currInstBlock == mainFunc.body)
         // Callee-saved register pushes
@@ -83,7 +66,6 @@ object CodeGenerator {
         val funcBlock = FuncBlock()
         funcBlock.paramList = f.paramList.paramList
         /* change current instruction block to func block */
-        // switchCurrInstrBlock(funcBlock, funcBlock.currBlock)
         currInstBlock = funcBlock.body
         // Callee-saved register pushes
         currInstBlock.addInst(
@@ -322,6 +304,7 @@ object CodeGenerator {
     def translate(node: PrintNode): Unit = {
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         val retOp = translate(node.expr)
+        // Find the type to print
         node.expr match {
             case i: IdentNode => {
                 val exprTy = SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
@@ -345,19 +328,11 @@ object CodeGenerator {
 
     def printType(ty: TypeIdentifier, retOp: Operand): Unit = {
         ty match {
-            case CharIdentifier() => {
-                IOFunc.printChar(retOp)
-            }
-            case IntIdentifier() | ArrayIdentifier(IntIdentifier(),_) => {
-                IOFunc.printInt(retOp)
-            }
+            case CharIdentifier() => IOFunc.printChar(retOp)
+            case IntIdentifier() | ArrayIdentifier(IntIdentifier(),_) => IOFunc.printInt(retOp)
             case StrIdentifier() | ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
             case BoolIdentifier() | ArrayIdentifier(BoolIdentifier(),_) => IOFunc.printBool(retOp)
-            case ArrayIdentifier(_,_) | PairIdentifier(_,_) => IOFunc.printPtr(retOp)
-            // anyIdentifier or null
-            case _ => {
-                IOFunc.printPtr(retOp)
-            }
+            case _ => IOFunc.printPtr(retOp)
         }
     }
 
@@ -397,18 +372,13 @@ object CodeGenerator {
         currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, ifFalse.num))
         currInstBlock.next = ifBlock
         currInstBlock = ifTrue
-        // switchCurrInstrBlock(controlFlowGraph, ifTrue)
+
         translate(node.fstStat)
         currInstBlock.addInst(BranchNumInst(next.num))
         currInstBlock = ifFalse
-        // switchCurrInstrBlock(controlFlowGraph, ifFalse)
+
         translate(node.sndStat)
         currInstBlock = next
-        // switchCurrInstrBlock(controlFlowGraph, next)
-
-        // controlFlowFuncs += ((ifTrue.num.toString, ifTrue),
-        // (ifFalse.num.toString, ifFalse),
-        // (next.num.toString, next))
     }
 
     /*  While loop,
@@ -422,8 +392,10 @@ object CodeGenerator {
         val cond = whileBlock.cond
         val loop = whileBlock.loop
         val next = whileBlock.next
+
         currInstBlock.next = whileBlock
         currInstBlock = cond
+        
         val op = translate(node.expr)
         op match {
             case ImmVal(num) => {
@@ -442,10 +414,6 @@ object CodeGenerator {
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
         currInstBlock = next
-        // switchCurrInstrBlock(controlFlowGraph, next)
-        // controlFlowFuncs += ((cond.num.toString, cond),
-        // (loop.num.toString, loop),
-        // (next.num.toString, next))
     }
     def translate(node: BeginEndNode): Unit = {
         translate(node.stat)
@@ -728,7 +696,6 @@ object CodeGenerator {
                 )
                 currInstBlock.next = newBlock
                 currInstBlock = newBlock
-                // switchCurrInstrBlock(controlFlowGraph, newBlock)
 
                 currInstBlock.addInst(
                     MovCondInst( EQUAL, r8, immTrue),
@@ -736,7 +703,6 @@ object CodeGenerator {
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
-                // controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
             }
             case OrNode(fstexpr, sndexpr) => {
@@ -754,14 +720,13 @@ object CodeGenerator {
                 )
                 currInstBlock.next = newBlock
                 currInstBlock = newBlock
-                // switchCurrInstrBlock(controlFlowGraph, newBlock)
+                
                 currInstBlock.addInst(
                     MovCondInst( EQUAL, r8, immTrue),
                     MovCondInst(NOT_EQUAL, r8, immFalse),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
-                // controlFlowFuncs += ((newBlock.num.toString, newBlock))
                 r8
             }
         }

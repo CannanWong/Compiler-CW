@@ -4,24 +4,25 @@ import scala.collection.mutable._
 import wacc.Constants._
 
 object AssignRegister {
-    // val ir2cfg = LinkedHashMap[String, FuncBlock]()     // Control flow graph: Hash map of FuncBlocks
-    // var currInstBlock: InstBlock = FuncBlock().body     // ! None
     var newInstList: ListBuffer[Instruction] = ListBuffer.empty
     var regQueue: Queue[Int] = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // Storing available registers: R7-R0
 
     // When no registers are available  
-    var storeInst: Option[StrInst] = None   // To add instuction to store on stack
-    var currFPOffset: Int = 0               // fp offset
+    var storeInst: Option[StrInst] = None           // To add instuction to store on stack
+    var currFPOffset: Int = 0                       // fp offset
 
     val varOpTable: Map[String, Operand] = Map()    // Table mapping variable name to operand
     val tempRegTable: Map[Int, Operand] = Map()     // Table mapping temporary register number to operand
 
-    var r9Used = false
+    var r9Used = false                              // Store whether r9 is used
+    val interRegs = List(r8, r9, r10)
 
     def resetRegQueue(): Unit = {
         regQueue = Queue(7, 6, 5, 4, 3, 2, 1, 0)
     }
 
+    // Update the CFG in IR1 recursively and replace variables and temporary registers
+    // with fixed registers
     def assignCFG(cfg: LinkedHashMap[String, FuncBlock]): Unit = {
         for ((name, funcBlock) <- cfg) {
             assignBlock(funcBlock)
@@ -30,6 +31,7 @@ object AssignRegister {
 
     def assignBlock(funcBlock: FuncBlock): Unit = {
         resetRegQueue()
+        // Only use r7-r4 if in main
         if (funcBlock.GLOBAL_MAIN) {
             regQueue = Queue(7, 6, 5, 4)
         }
@@ -98,8 +100,6 @@ object AssignRegister {
         assignBlock(whileBlock.loop)
         assignBlock(whileBlock.next)
     }
-
-    val interRegs = List(r8, r9, r10)
 
     // Change operand and assign register if needed
     def assignInst(i: Instruction): Instruction = {
@@ -209,7 +209,7 @@ object AssignRegister {
                             varOpTable.addOne(v.name, fReg)
                             fReg
                         }
-                        // No available registers
+                        // No available registers, store in stack using fp offset
                         else {
                             newInstList += SubInst(sp, sp, ImmVal(4))
                             currFPOffset -= 4
@@ -249,7 +249,7 @@ object AssignRegister {
                     tempRegTable.addOne(tReg.num, fReg)
                     fReg
                 }
-                // No more available registers
+                // No available registers, store in stack using fp offset
                 else {
                     newInstList += SubInst(sp, sp, ImmVal(4))
                     currFPOffset -= 4

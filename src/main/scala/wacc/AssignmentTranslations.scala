@@ -150,6 +150,7 @@ object AssignmentTranslations {
             BranchLinkCondInst("Eq", "_errNull"),
             LdrInst(r8, ImmOffset(pos, pairOffset))
         )
+        // Find type of lvalue
         val exprTy = lvalue match {
             case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
             case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
@@ -192,6 +193,7 @@ object AssignmentTranslations {
             MovInst(r9, r8),
             MovInst(r8, op)
         )
+        // Find type of lvalue
         val exprTy = lvalue match {
             case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
             case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
@@ -224,7 +226,6 @@ object AssignmentTranslations {
         currInstBlock.addInst(MovInst(tmpReg, translate(args(0))))
         tmpRegs.addOne(tmpReg)
         
-
         val nextArgs = args.drop(1)
         if (nextArgs.isEmpty) {
             return

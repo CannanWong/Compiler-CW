@@ -331,9 +331,7 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
     var isFunction: Boolean = false
     override def typeVal() = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
-        // val identifier = SemanticChecker.symbolTable.lookUpVarNewName(newName)
         identifier match {
-            // case Some(VarIdentifier(tyVal)) => tyVal
             case Some(ty) => ty
             case None => new AnyIdentifier
         }
@@ -366,7 +364,6 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
     var arrayDim = 0
     override def typeVal() = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(ident.name)
-        // val identifier = SemanticChecker.symbolTable.lookUpVarNewName(ident.newName)
         identifier match {
             case Some(ArrayIdentifier(baseTy: TypeIdentifier, dim: Int)) => {
                 if (arrayDim > 0) {
@@ -424,7 +421,6 @@ case class FstNode(lvalue: LValueNode) extends PairElemNode {
                     case Some(ty) => {
                         ty match {
                             case p: PairIdentifier => p.ty1
-                            // case VarIdentifier(PairIdentifier(ty1, ty2)) => ty1
                             case _ => {
                                 Error.addSemErr(s"Wrong type assigned for fst, gets ${ty.toString()}")
                                 new AnyIdentifier
@@ -451,7 +447,6 @@ case class SndNode(lvalue: LValueNode) extends PairElemNode {
                     case Some(ty) => {
                         ty match {
                             case p: PairIdentifier => p.ty2
-                            // case VarIdentifier(PairIdentifier(ty1, ty2)) => ty2
                             case _ => {
                                 Error.addSemErr(s"Wrong type assigned for snd, gets ${ty.toString()}")
                                 new AnyIdentifier
