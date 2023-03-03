@@ -7,16 +7,15 @@ import wacc.AssignmentTranslations._
 import StandardFuncs._
 
 object CodeGenerator {
-    /* .data directive stores all string declarations */
+    /* .data directive in mainFunc stores all string declarations */
     val mainFunc = FuncBlock()
     mainFunc.setGlobalMain()
     mainFunc.name = "main"
 
-    // var controlFlowGraph = FuncBlock()
     
     var currInstBlock = mainFunc.body
     
-    /* NEW: temporory design to accomodate label jumps */
+    /* List of functions defined or in use in the program */
     val controlFlowFuncs = LinkedHashMap[String, FuncBlock]()
 
     def stringDef(string: String): String = {
@@ -153,7 +152,7 @@ object CodeGenerator {
                         PushInst(r8),
                         MovInst(r10, translate(a.exprList(arrayNum))),
                         PopInst(r8),
-                        BranchLinkInst("_arrLoad")
+                        BranchLinkInst(ARRAY_LOAD_LABEL)
                     )
                     setUsed(ArrLdr)
                 }
@@ -165,8 +164,8 @@ object CodeGenerator {
                     PopInst(r9),
                     PopInst(r8),
                     a.typeVal() match {
-                        case CharIdentifier() => BranchLinkInst("_arrStoreB")
-                        case _ => BranchLinkInst("_arrStore")
+                        case CharIdentifier() => BranchLinkInst(ARRAY_STORE_B_LABEL)
+                        case _ => BranchLinkInst(ARRAY_STORE_LABEL)
                     }
                 )
                 setUsed(ArrStrb)
@@ -256,7 +255,7 @@ object CodeGenerator {
             case PairIdentifier(ty1, ty2) => {
                 currInstBlock.addInst(
                     MovInst(r0, op),
-                    BranchLinkInst("_freePair")
+                    BranchLinkInst(FREE_PAIR_LABEL)
                 )
                 setUsed(FreeP)
             }
@@ -264,7 +263,6 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     // If the variable is on the stack
                     // its translated and put into r8
-                    // TODO: Check if ident is consistent in this case
                     SubInst(r0, r8, ImmVal(4)),
                     BranchLinkInst("free")
                 )
@@ -409,7 +407,7 @@ object CodeGenerator {
             }
             case _ => throw new UnsupportedOperationException("While condition cannot be evaluated")
         }
-        currInstBlock.addInst(BranchNumCondInst("ne", next.num))
+        currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, next.num))
         currInstBlock = loop
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
@@ -480,8 +478,8 @@ object CodeGenerator {
                         SemanticChecker.symbolTable.lookUpVarNewName(ident.newName) match {
                             case Some(ArrayIdentifier(ty, _)) => {
                                 ty match {
-                                case CharIdentifier() => BranchLinkInst("_arrLoadB")
-                                case _ => BranchLinkInst("_arrLoad")
+                                case CharIdentifier() => BranchLinkInst(ARRAY_LOAD_B_LABEL)
+                                case _ => BranchLinkInst(ARRAY_LOAD_LABEL)
                                 }
                             }
                             case _ => throw new UnsupportedOperationException("array type mismatched?")
@@ -518,13 +516,13 @@ object CodeGenerator {
                         currInstBlock.addInst(
                             MovInst(r8, op), 
                             RsbsInst(r8, r8, ImmVal(0)),
-                            BranchLinkCondInst(OVERFLOW, "_errOverflow")
+                            BranchLinkCondInst(OVERFLOW, OVERFLOW_LABEL)
                         )
                     }
                     case r: Register => {
                         currInstBlock.addInst(
                             RsbsInst(r8, r, ImmVal(0)),
-                            BranchLinkCondInst(OVERFLOW, "_errOverflow")
+                            BranchLinkCondInst(OVERFLOW, OVERFLOW_LABEL)
                         )
                     }
                     case _ => throw new UnsupportedOperationException("Neg node evaluation error")
@@ -574,7 +572,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     SmullInst(r8, r9, reg1, reg2),
                     CmpInst(r9, ASR(r8, ImmVal(INT_HIGHEST_BIT))),
-                    BranchCondInst(NOT_EQUAL, "_errOverflow"),
+                    BranchCondInst(NOT_EQUAL, OVERFLOW_LABEL),
                     FreeRegister(reg1)
                 )
                 setUsed(OverflowErr)
@@ -588,7 +586,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst( EQUAL, "_errDivZero"),
+                    BranchCondInst( EQUAL, ZERO_DIVISION_LABEL),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r0),
                     PopInst(r0, r1, r2, r3)
@@ -604,7 +602,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst( EQUAL, "_errDivZero"),
+                    BranchCondInst( EQUAL, ZERO_DIVISION_LABEL),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r1),
                     PopInst(r0, r1, r2, r3)
@@ -619,7 +617,7 @@ object CodeGenerator {
                 val op2 = translate(sndexpr)
                 currInstBlock.addInst(
                     AddsInst(r8, reg, op2),
-                    BranchLinkCondInst(OVERFLOW, "_errOverflow"),
+                    BranchLinkCondInst(OVERFLOW, OVERFLOW_LABEL),
                     FreeRegister(reg)
                 )
                 setUsed(OverflowErr)
@@ -632,7 +630,7 @@ object CodeGenerator {
                 val op2 = translate(sndexpr)
                 currInstBlock.addInst(
                     SubsInst(r8, reg, op2),
-                    BranchLinkCondInst(OVERFLOW, "_errOverflow"),
+                    BranchLinkCondInst(OVERFLOW, OVERFLOW_LABEL),
                     FreeRegister(reg)
                 )
                 setUsed(OverflowErr)
@@ -680,7 +678,6 @@ object CodeGenerator {
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, NOT_EQUAL, EQUAL)
             }
-            // TODO: fix label
             case AndNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg1 = TempRegister()
@@ -732,6 +729,7 @@ object CodeGenerator {
         }
     }
 
+    // append forward slash character to special character to print in program file
     def replaceChar(s: String): String = {
         var ret = s
         if (ESCAPE_CHAR_LIST.contains(s)) {

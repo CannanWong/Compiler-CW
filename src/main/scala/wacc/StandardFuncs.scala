@@ -3,56 +3,11 @@ package wacc
 import wacc.Constants._
 import wacc.Constants.StdFuncsEnum._
 
-// abstract class StandardFuncs(name: String) {
-//     import StandardFuncs._
-//     protected var used = false
-//     def setUsed: Unit = {
-//         used = true
-//     }
-//     def getUsed = used
-//     def getFunc: FuncBlock = getFunction(name)
-
-// }
-
-
-// case object ZeroDivision extends StandardFuncs(ZERO_DIVISION_LABEL)
-// case object NullPointer extends StandardFuncs(NULL_POINTER_LABEL)
-// case object Overflow extends StandardFuncs(OVERFLOW_LABEL)
-// case object BoundsCheck extends StandardFuncs(BOUNDS_CHECK_LABEL)
-// case object ArrayStore extends StandardFuncs(ARRAY_STORE_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         BoundsCheck.setUsed
-//     }
-// }
-// case object ArrayStoreB extends StandardFuncs(ARRAY_STORE_B_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         BoundsCheck.setUsed
-//     }
-// }
-// case object ArrayLoad extends StandardFuncs(ARRAY_LOAD_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         BoundsCheck.setUsed
-//     }
-// }
-// case object ArrayLoadB extends StandardFuncs(ARRAY_LOAD_B_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         BoundsCheck.setUsed
-//     }
-// }
-// case object FreePair extends StandardFuncs(FREE_PAIR_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         NullPointer.setUsed
-//     }
-// }
 
 object StandardFuncs {
     var usedFuncs = new Array[Boolean](StdFuncsEnum.maxId)
 
+    /* record the function as used so to add function to program at the end of code generation */
     def setUsed(func: StdFuncsEnum): Unit = {
         func match {
             case ArrLdr | ArrLdrB | ArrStr | ArrStrb => {
@@ -66,7 +21,7 @@ object StandardFuncs {
         usedFuncs(func.id) = true
         
     }
-
+    /* returns the standard function inicated by func ENUM parameter */
     def getFunction(func: StdFuncsEnum): FuncBlock = {
         func match {
             case ArrLdr | ArrLdrB => {
@@ -75,12 +30,12 @@ object StandardFuncs {
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
-                    MovCondInst("lt", r1, r10),
-                    BranchLinkCondInst("lt", "_boundsCheck"),
+                    MovCondInst(LESS_THAN, r1, r10),
+                    BranchLinkCondInst(LESS_THAN, BOUNDS_CHECK_LABEL),
                     LdrInst(lr, ImmOffset(r8, INT_SIZE)),
                     CmpInst(r10, lr),
-                    MovCondInst("ge", r1, r10),
-                    BranchLinkCondInst("ge", "_boundsCheck"),
+                    MovCondInst(GREATER_OR_EQUAL, r1, r10),
+                    BranchLinkCondInst(GREATER_OR_EQUAL, BOUNDS_CHECK_LABEL),
                     func match {
                         case ArrLdr => LdrInst(r8, ScaledOffsetLSL(r8, r10, ImmVal(2)))
                         case ArrLdrB => LdrInst(r8, RegOffset(r8, r10))
@@ -95,12 +50,12 @@ object StandardFuncs {
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
-                    MovCondInst("lt", r1, r10),
-                    BranchLinkCondInst("lt", "_boundsCheck"),
+                    MovCondInst(LESS_THAN, r1, r10),
+                    BranchLinkCondInst(LESS_THAN, BOUNDS_CHECK_LABEL),
                     LdrInst(lr, ImmOffset(r9, INT_SIZE)),
                     CmpInst(r10, lr),
-                    MovCondInst("ge", r1, r10),
-                    BranchLinkCondInst("ge", "_boundsCheck"),
+                    MovCondInst(GREATER_OR_EQUAL, r1, r10),
+                    BranchLinkCondInst(GREATER_OR_EQUAL, BOUNDS_CHECK_LABEL),
                     func match {
                         case ArrStr => StrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
                         case ArrStrb => StrbInst(r8, RegOffset(r9, r10))
@@ -116,7 +71,7 @@ object StandardFuncs {
                     PushInst(lr),
                     MovInst(r8, r0),
                     CmpInst(r8, ImmVal(0)),
-                    BranchLinkCondInst("eq", "_errNull"),
+                    BranchLinkCondInst(EQUAL, NULL_POINTER_LABEL),
                     LdrInst(r0, ImmOffset(r8, 0)),
                     BranchLinkInst("free"),
                     LdrInst(r0, ImmOffset(r8, 4)),
@@ -130,7 +85,6 @@ object StandardFuncs {
             case ZeroDivErr | NullErr | OverflowErr | BoundsErr => {
                 RuntimeCheck.runtimeErrorMsg(func.toString())
             }
-            // case _ => throw new IllegalArgumentException(s"standard function ${name} does not exist")
         }
     }
 }

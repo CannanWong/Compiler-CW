@@ -3,6 +3,7 @@ package wacc
 import wacc.Constants._
 import wacc.CodeGenerator._
 
+/* returns function for reoprting runtime errors */
 object RuntimeCheck {
   /* messages */
   val zeroDivMsg = "fatal error: division or modulo by zero"
@@ -10,6 +11,7 @@ object RuntimeCheck {
   val overflowMsg = "fatal error: integer overflow or underflow occurred"
   val boundsCheckMsg = "fatal error: array index %d out of bounds"
 
+  /* returns the runtime error message return function corresponding to the label parameter*/
   def runtimeErrorMsg(label: String): FuncBlock = {
     val msg = label match {
       case ZERO_DIVISION_LABEL => zeroDivMsg
@@ -20,12 +22,9 @@ object RuntimeCheck {
     }
     /* call func */
     val func = new FuncBlock()
-    // val calleeFunc = controlFlowGraph
-    // CodeGenerator.switchCurrInstrBlock(func, func.currBlock)
     val prevBlock = currInstBlock
     currInstBlock = func.body
     val text = func.directive.addTextLabelToData(msg, label)
-    // val printFunc = IOFunc.printString(LabelAddress(text))
     func.name = label
     func.body.addInst(
       LdrInst(r0, LabelAddress(text)),

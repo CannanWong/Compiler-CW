@@ -18,7 +18,8 @@ object AssignmentTranslations {
             case CallNode(ident, argList) => transCall(ident, argList)
             case FstNode(lvalue) => accessPairElem(0, lvalue)
             case SndNode(lvalue) => accessPairElem(4, lvalue)
-            case _ => {throw new UnsupportedOperationException("what")}
+            case _ => 
+                {throw new UnsupportedOperationException("operation is not a assignable expression")}
         }
     }
 
@@ -219,7 +220,8 @@ object AssignmentTranslations {
         setUsed(NullErr)
         r8
     }
-
+    
+    // push args onto the stack in order
     def pushArgs(regCount: Int, args: List[ExprNode]): Unit = {
         val tmpReg = TempRegister()
 
