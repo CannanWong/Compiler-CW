@@ -7,6 +7,7 @@ case class AddsInst(rd: Register, rn: Register, op: Operand) extends Instruction
 case class SubInst(rd: Register, rn: Register, op: Operand) extends Instruction
 case class SubsInst(rd: Register, rn: Register, op: Operand) extends Instruction
 case class RsbInst(rd: Register, rn: Register, op: Operand) extends Instruction
+case class RsbsInst(rd: Register, rn: Register, op: Operand) extends Instruction
 case class NegInst(rd: Register, rm: Register) extends Instruction
 case class MulInst(rd: Register, rm: Register, op: Operand) extends Instruction
 case class SmullInst(rdlo: Register, rdhi: Register, rm: Register, rs: Register) extends Instruction
