@@ -315,7 +315,12 @@ object CodeGenerator {
             case BoolIdentifier() => IOFunc.printBool(retOp)
             case ArrayIdentifier(identifier, _) => {
                 node.expr match {
-                    case i: IdentNode => IOFunc.printPtr(retOp)
+                    case i: IdentNode => {
+                        exprTy match {
+                            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
+                            case _ => IOFunc.printPtr(retOp)
+                        }
+                    }
                     case a: ArrayElemNode => {
                         exprTy match {
                             case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
