@@ -30,14 +30,14 @@ object AssignRegister {
         // Add the first 4 parameters mapping to r0-r3
         for (i <- 1 to 4) {
             if (!paramQueue.isEmpty) {
-                varOpTable.addOne(paramQueue.dequeue().ident.name, FixedRegister(paramReg.dequeue()))
+                varOpTable.addOne(paramQueue.dequeue().ident.newName, FixedRegister(paramReg.dequeue()))
             }
         }
         // Starting from the last parameter
         val revParamQueue: Queue[ParamNode] = paramQueue.reverse
         while (!revParamQueue.isEmpty) {
             currFPOffset += 4
-            varOpTable.addOne(paramQueue.dequeue().ident.name, ImmOffset(fp, currFPOffset))
+            varOpTable.addOne(revParamQueue.dequeue().ident.newName, ImmOffset(fp, currFPOffset))
         }
         currFPOffset = 0
         assignBlock(funcBlock.body)
