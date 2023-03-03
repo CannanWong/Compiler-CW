@@ -102,8 +102,8 @@ object StandardFuncs {
                     MovCondInst("ge", r1, r10),
                     BranchLinkCondInst("ge", "_boundsCheck"),
                     func match {
-                        case ArrStr => LdrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
-                        case ArrStrb => LdrInst(r8, RegOffset(r9, r10))
+                        case ArrStr => StrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
+                        case ArrStrb => StrbInst(r8, RegOffset(r9, r10))
                     },
                     PopInst(pc)
                 )
