@@ -114,6 +114,7 @@ object AssignRegister {
             case inst: OrInst => OrInst(assignReg(inst.rd), assignOp(inst.op))
             
             case inst: LdrInst => LdrInst(assignReg(inst.rd), assignOp(inst.op))
+            case inst: LdrsbInst => LdrsbInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: LdrPseudoInst => LdrPseudoInst(assignReg(inst.rd), inst.num)
             case inst: StrInst => StrInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: StrbInst => StrbInst(assignReg(inst.rd), assignOp(inst.op))

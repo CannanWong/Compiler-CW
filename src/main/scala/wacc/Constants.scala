@@ -27,7 +27,7 @@ object  Constants {
   // TODO: maybe constants not negative
   val ARRAY_LENGTH_OFFSET: Int = -4
   val INT_SIZE = -4
-  val BYTE_SIZE = 1
+  val BYTE_SIZE = -1
   
   def data_offset(dataType :Int): Int = {
     dataType * -1
