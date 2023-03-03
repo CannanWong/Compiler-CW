@@ -6,4 +6,3 @@
 java -jar wacc-45-compiler.jar $@
 
 exit $?
-

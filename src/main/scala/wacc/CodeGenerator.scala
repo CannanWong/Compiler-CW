@@ -203,11 +203,14 @@ object CodeGenerator {
     def translate(node: ReadNode): Unit = {
         val retOp = new TempRegister()
         val exprTy = node.lvalue match {
-            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
-            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
+            case i: IdentNode =>
+                SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+            case a: ArrayElemNode =>
+                SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
             case f: FstNode => {
                 f.lvalue match {
-                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+                    case i: IdentNode =>
+                        SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
                     case _ => f.lvalue.typeVal()
                 }
             }
@@ -221,7 +224,12 @@ object CodeGenerator {
         exprTy match {
             case CharIdentifier() => IOFunc.readChar(retOp)
             case IntIdentifier() => IOFunc.readInt(retOp)
-            case _ => throw new IllegalArgumentException("print: not an int or char")
+            case _ => {
+                currInstBlock.addInst(WaccComment("read creceives type: " + exprTy))
+                val tempreg1 = TempRegister()
+                currInstBlock.addInst(MovInst(tempreg1, ImmVal(1)))
+                IOFunc.readInt(tempreg1)
+            }
         }
     }
     /*  Freeing addresses allocated in the memory. 
@@ -280,7 +288,7 @@ object CodeGenerator {
             BranchLinkInst("exit")
         )
     }
-    
+     
     /*  Printing statements. */
     def translate(node: PrintNode): Unit = {
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
@@ -295,6 +303,9 @@ object CodeGenerator {
             case IntIdentifier() => IOFunc.printInt(retOp)
             case StrIdentifier() => IOFunc.printString(retOp)
             case BoolIdentifier() => IOFunc.printBool(retOp)
+            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
+            case ArrayIdentifier(IntIdentifier(),_) => IOFunc.printInt(retOp)
+            case ArrayIdentifier(BoolIdentifier(),_) => IOFunc.printBool(retOp)
             case ArrayIdentifier(_,_) => IOFunc.printPtr(retOp)
             case PairIdentifier(_,_) => IOFunc.printPtr(retOp)
             // anyIdentifier or null
@@ -431,6 +442,12 @@ object CodeGenerator {
                 ImmVal(num)
             }
             case StrLiterNode(s) => {
+                if (s.contains("\\n")) {
+                    currInstBlock.addInst(WaccComment("contains ln character"))
+                }
+                // for (ch <- ESCAPE_CHAR_LIST) {
+                //     s.replaceAll(ch, s"\\\\n")    
+                // }               
                 val label = stringDef(s)
                 val loadlabelAddrInstr = LabelAddress(label)
                 val reg = TempRegister()

@@ -59,7 +59,8 @@ object Main {
             /* IR1 --> IR2 */
             AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
 
-            val pw = new PrintWriter(new File(filename))
+            val file = new File(filename)
+            val bw = new BufferedWriter(new FileWriter(file))
             /* global main */
             for ((name, funcBlock) <- CodeGenerator.controlFlowFuncs) {
                 Printer.printBlock(funcBlock)
@@ -86,11 +87,14 @@ object Main {
                 Printer.printBlock(printStringFunc)
             }
 
-            for (line <- Printer.output) {
-                pw.println(line)
-            }
-
-            pw.close()              
+            try {
+                Printer.output.foreach { s =>
+                bw.write(s)
+                bw.newLine()
+                }
+            } finally {
+                bw.close()
+            }             
         }
 
         def addStandardFuncs(): Unit = {
