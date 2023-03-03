@@ -47,6 +47,8 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
         }
     }
     override def semanticCheck(): Unit = {
+
+        ident.isFunction = true
         
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
@@ -326,6 +328,7 @@ sealed trait LValueNode extends ASTNode {
 
 case class IdentNode(name: String) extends LValueNode with ExprNode {
     var newName: String = null
+    var isFunction: Boolean = false
     override def typeVal() = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
         // val identifier = SemanticChecker.symbolTable.lookUpVarNewName(newName)
@@ -340,13 +343,20 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
         identifier match {
             case None => Error.addSemErr(s"${identifier} variable \"${name}\" is not in scope " +
               s"or not defined\n")
-            case _ => newName = SemanticChecker.symbolTable.getVarName(name)
+            case _ => {
+                if (!isFunction) {
+                    newName = SemanticChecker.symbolTable.getVarName(name)
+                }
+                else {    
+                    val funcIdentifier = SemanticChecker.symbolTable.lookUpFunc(name)
+                    funcIdentifier match {
+                        case Some(_) => newName = "f!" + name
+                        case _ =>
+                    }
+                }
+            }
         }
-        val funcIdentifier = SemanticChecker.symbolTable.lookUpFunc(name)
-        funcIdentifier match {
-            case Some(_) => newName = "f!" + name
-            case _ =>
-        }
+
     }
 }
 

@@ -303,38 +303,40 @@ object CodeGenerator {
     def translate(node: PrintNode): Unit = {
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         val retOp = translate(node.expr)
-        val exprTy = node.expr match {
-            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
-            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
-            case _ => node.expr.typeVal()
-        }
-        exprTy match {
-            case CharIdentifier() => IOFunc.printChar(retOp)
-            case IntIdentifier() => IOFunc.printInt(retOp)
-            case StrIdentifier() => IOFunc.printString(retOp)
-            case BoolIdentifier() => IOFunc.printBool(retOp)
-            case ArrayIdentifier(identifier, _) => {
-                node.expr match {
-                    case i: IdentNode => {
-                        exprTy match {
-                            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
-                            case _ => IOFunc.printPtr(retOp)
-                        }
-                    }
-                    case a: ArrayElemNode => {
-                        exprTy match {
-                            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
-                            case ArrayIdentifier(IntIdentifier(),_) => IOFunc.printInt(retOp)
-                            case ArrayIdentifier(BoolIdentifier(),_) => IOFunc.printBool(retOp)
-                        }
-                    }
+        node.expr match {
+            case i: IdentNode => {
+                val exprTy = SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+                exprTy match {
+                    case a: ArrayIdentifier => IOFunc.printPtr(retOp)
+                    case _ => printType(exprTy, retOp)
                 }
             }
-            case PairIdentifier(_,_) => IOFunc.printPtr(retOp)
-            // anyIdentifier or null
-            case _ => IOFunc.printPtr(retOp)
+            case a: ArrayElemNode => {
+                val exprTy = SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
+                printType(exprTy, retOp)
+            }
+            case _ => {
+                val exprTy = node.expr.typeVal()
+                printType(exprTy, retOp)
+            }
         }
         currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+    }
+
+    def printType(ty: TypeIdentifier, retOp: Operand): Unit = {
+        ty match {
+            case CharIdentifier() => IOFunc.printChar(retOp)
+            case IntIdentifier() | ArrayIdentifier(IntIdentifier(),_) => {
+                IOFunc.printInt(retOp)
+            }
+            case StrIdentifier() | ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
+            case BoolIdentifier() | ArrayIdentifier(BoolIdentifier(),_) => IOFunc.printBool(retOp)
+            case ArrayIdentifier(_,_) | PairIdentifier(_,_) => IOFunc.printPtr(retOp)
+            // anyIdentifier or null
+            case _ => {
+                IOFunc.printPtr(retOp)
+            }
+        }
     }
 
     /*  Print empty line. */
