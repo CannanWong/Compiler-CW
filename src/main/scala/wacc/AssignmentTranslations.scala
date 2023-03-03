@@ -115,7 +115,13 @@ object AssignmentTranslations {
     def transCall(ident: IdentNode, argList: ArgListNode): Operand = {
         tmpRegs = ListBuffer()
         // Push Caller Regs
-        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        if (argList.exprList.length >= 4) {
+            currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        } else {
+            for (c <- 0 to argList.exprList.length - 1) {
+                currInstBlock.addInst(PushInst(FixedRegister(c)))
+            }
+        }
         // Push Args onto r0, 1, 2, 3, and stack afterwards
         if (!argList.exprList.isEmpty) {
             pushArgs(0, argList.exprList)
@@ -218,7 +224,7 @@ object AssignmentTranslations {
         currInstBlock.addInst(MovInst(tmpReg, translate(args(0))))
         tmpRegs.addOne(tmpReg)
         
-        
+
         val nextArgs = args.drop(1)
         if (nextArgs.isEmpty) {
             return

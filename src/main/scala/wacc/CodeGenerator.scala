@@ -133,9 +133,14 @@ object CodeGenerator {
         // Pop back Caller Regs
         node.rvalue match {
             case CallNode(_, argList) => {
-                currInstBlock.addInst(PopInst(r0, r1, r2, r3))
-                if (argList.exprList.length > 4)
+                if (argList.exprList.length >= 4) {
+                    currInstBlock.addInst(PopInst(r0, r1, r2, r3))
                     currInstBlock.addInst(AddInst(sp, sp, ImmVal(4 * (argList.exprList.length - 4))))
+                } else {
+                    for (c <- 0 to argList.exprList.length - 1) {
+                        currInstBlock.addInst(PopInst(FixedRegister(c)))
+                    }
+                }
             }
             case _ => 
         }
@@ -191,9 +196,14 @@ object CodeGenerator {
         // Pop back Caller Regs
         node.rvalue match {
             case CallNode(_, argList) => {
-                currInstBlock.addInst(PopInst(r0, r1, r2, r3))
-                if (argList.exprList.length > 4)
+                if (argList.exprList.length >= 4) {
+                    currInstBlock.addInst(PopInst(r0, r1, r2, r3))
                     currInstBlock.addInst(AddInst(sp, sp, ImmVal(4 * (argList.exprList.length - 4))))
+                } else {
+                    for (c <- 0 to argList.exprList.length - 1) {
+                        currInstBlock.addInst(PopInst(FixedRegister(c)))
+                    }
+                }
             }
             case _ => 
         }
