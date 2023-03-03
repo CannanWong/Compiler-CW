@@ -453,7 +453,7 @@ object CodeGenerator {
             }
             case StrLiterNode(s) => {
                 for (ch <- ESCAPE_CHAR_LIST) {
-                    s.replaceAll(ch, s"\\\\\n")    
+                    s.replaceAll(ch, s"\\${ch}")    
                 }               
                 val label = stringDef(s)
                 val loadlabelAddrInstr = LabelAddress(label)

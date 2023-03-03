@@ -30,7 +30,7 @@ object IOFunc {
         MovInst(r1, sp),
         LdrInst(r0, LabelAddress(labelStr)),
         BranchLinkInst("scanf"),
-        LdrsbInst(r0, ImmOffset(sp, 0)),
+        LdrInst(r0, ImmOffset(sp, 0)),
         AddInst(sp, sp, ImmVal(data_offset(INT_SIZE))),
         PopInst(pc)
       )
