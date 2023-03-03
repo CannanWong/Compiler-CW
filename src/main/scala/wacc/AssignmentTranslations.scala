@@ -92,12 +92,12 @@ object AssignmentTranslations {
 
     def getOffset(expr: ExprNode): Int = {
         val exprTy = expr match {
-            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
-            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
+            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
             case _ => expr.typeVal()
         }
         exprTy match {
-            case Some(CharIdentifier()) => 1
+            case CharIdentifier() => 1
             case _ => 4
         }
     }
@@ -147,14 +147,14 @@ object AssignmentTranslations {
             }
             case s: SndNode => {
                 s.lvalue match {
-                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
                     case _ => s.lvalue.typeVal()
                 }
             }
         }
         currInstBlock.addInst(
             exprTy match {
-                case Some(CharIdentifier()) => LdrsbInst(r8, ImmOffset(r8, 0))
+                case CharIdentifier() => LdrsbInst(r8, ImmOffset(r8, 0))
                 case _ => LdrInst(r8, ImmOffset(r8, 0))
             }
         )

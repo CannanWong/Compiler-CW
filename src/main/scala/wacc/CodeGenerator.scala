@@ -208,14 +208,14 @@ object CodeGenerator {
             }
             case s: SndNode => {
                 s.lvalue match {
-                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
                     case _ => s.lvalue.typeVal()
                 }
             }
         }
         exprTy match {
-            case Some(CharIdentifier()) => IOFunc.readChar(retOp)
-            case Some(IntIdentifier()) => IOFunc.readInt(retOp)
+            case CharIdentifier() => IOFunc.readChar(retOp)
+            case IntIdentifier() => IOFunc.readInt(retOp)
             case _ => throw new IllegalArgumentException("print: not an int or char")
         }
     }
@@ -224,19 +224,19 @@ object CodeGenerator {
     def translate(node: FreeNode): Unit = {
         val op = translate(node.expr)
         val exprTy = node.expr match {
-            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
-            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
+            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
             case _ => node.expr.typeVal()
         }
         exprTy match {
-            case Some(PairIdentifier(ty1, ty2)) => {
+            case PairIdentifier(ty1, ty2) => {
                 currInstBlock.addInst(
                     MovInst(r0, op),
                     BranchLinkInst("_freePair")
                 )
                 setUsed(FreeP)
             }
-            case Some(ArrayIdentifier(baseTy, dim)) => {
+            case ArrayIdentifier(baseTy, dim) => {
                 currInstBlock.addInst(
                     // If the variable is on the stack
                     // its translated and put into r8
@@ -281,17 +281,17 @@ object CodeGenerator {
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         val retOp = translate(node.expr)
         val exprTy = node.expr match {
-            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
-            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
+            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
             case _ => node.expr.typeVal()
         }
         exprTy match {
-            case Some(CharIdentifier()) => IOFunc.printChar(retOp)
-            case Some(IntIdentifier()) => IOFunc.printInt(retOp)
-            case Some(StrIdentifier()) => IOFunc.printString(retOp)
-            case Some(BoolIdentifier()) => IOFunc.printBool(retOp)
-            case Some(ArrayIdentifier(_,_)) => IOFunc.printPtr(retOp)
-            case Some(PairIdentifier(_,_)) => IOFunc.printPtr(retOp)
+            case CharIdentifier() => IOFunc.printChar(retOp)
+            case IntIdentifier() => IOFunc.printInt(retOp)
+            case StrIdentifier() => IOFunc.printString(retOp)
+            case BoolIdentifier() => IOFunc.printBool(retOp)
+            case ArrayIdentifier(_,_) => IOFunc.printPtr(retOp)
+            case PairIdentifier(_,_) => IOFunc.printPtr(retOp)
             // anyIdentifier or null
             case _ => IOFunc.printPtr(retOp)
         }
@@ -433,7 +433,7 @@ object CodeGenerator {
                 reg
             }            
             case PairLiterNode() => ImmVal(0)
-            case IdentNode(newName) => Variable(newName)
+            case i: IdentNode => Variable(i.newName)
             case ArrayElemNode(ident, exprList) => {
                 val op1 = translate(ident)
                 currInstBlock.addInst(MovInst(r8, op1))
