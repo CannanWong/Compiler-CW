@@ -99,6 +99,8 @@ object AssignRegister {
         assignBlock(whileBlock.next)
     }
 
+    val interRegs = List(r8, r9, r10)
+
     // Change operand and assign register if needed
     def assignInst(i: Instruction): Instruction = {
         i match {
@@ -113,7 +115,17 @@ object AssignRegister {
             case inst: SmullInst => SmullInst(assignReg(inst.rdlo), assignReg(inst.rdhi), assignReg(inst.rm), assignReg(inst.rs))
             
             case inst: CmpInst => CmpInst(assignReg(inst.rn), assignOp(inst.op))
-            case inst: MovInst => MovInst(assignReg(inst.rd), assignOp(inst.op))
+            case inst: MovInst => {
+                val reg1 = assignReg(inst.rd)
+                val op = assignOp(inst.op)
+                if (interRegs.contains(reg1) && interRegs.contains(op)) {
+                    inst.rd match {
+                        case Variable(name) => storeInst = Some(StrInst(reg1, varOpTable.get(name).get))
+                        case _ => 
+                    }
+                }
+                MovInst(reg1, op)
+            }
             case inst: MovCondInst => MovCondInst(inst.condition, assignReg(inst.rd), assignOp(inst.op))
             case inst: AndInst => AndInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: OrInst => OrInst(assignReg(inst.rd), assignOp(inst.op))
