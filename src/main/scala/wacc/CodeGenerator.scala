@@ -580,54 +580,28 @@ object CodeGenerator {
             }
             case AddNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                op1 match {
-                    case ImmVal(num) => {
-                        val reg = TempRegister()
-                        currInstBlock.addInst(MovInst(reg, op1))
-                        val op2 = translate(sndexpr)
-                        currInstBlock.addInst(
-                            AddsInst(r8, reg, op2),
-                            BranchLinkCondInst("vs", "_errOverflow"),
-                            FreeRegister(reg)
-                        )
-                        setUsed(OverflowErr)
-                    }
-                    case r: Register => {
-                        val op2 = translate(sndexpr)
-                        currInstBlock.addInst(
-                            AddsInst(r8, r, op2), 
-                            BranchLinkCondInst("vs", "_errOverflow")
-                        )
-                        setUsed(OverflowErr)
-                    }
-                    case _ => throw new UnsupportedOperationException("Add node evaluation error")
-                }
+                val reg = TempRegister()
+                currInstBlock.addInst(MovInst(reg, op1))
+                val op2 = translate(sndexpr)
+                currInstBlock.addInst(
+                    AddsInst(r8, reg, op2),
+                    BranchLinkCondInst(OVERFLOW, "_errOverflow"),
+                    FreeRegister(reg)
+                )
+                setUsed(OverflowErr)
                 r8
             }
             case SubNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                op1 match {
-                    case ImmVal(num) => {
-                        val reg = TempRegister()
-                        currInstBlock.addInst(MovInst(reg, op1))
-                        val op2 = translate(sndexpr)
-                        currInstBlock.addInst(
-                            SubsInst(r8, reg, op2),
-                            BranchLinkCondInst("vs", "_errOverflow"),
-                            FreeRegister(reg)
-                        )
-                        setUsed(OverflowErr)
-                    }
-                    case r: Register => {
-                        val op2 = translate(sndexpr)
-                        currInstBlock.addInst(
-                            SubsInst(r8, r, op2), 
-                            BranchLinkCondInst("vs", "_errOverflow")
-                        )
-                        setUsed(OverflowErr)
-                    }
-                    case _ => throw new UnsupportedOperationException("Sub node evaluation error")
-                }
+                val reg = TempRegister()
+                currInstBlock.addInst(MovInst(reg, op1))
+                val op2 = translate(sndexpr)
+                currInstBlock.addInst(
+                    SubsInst(r8, reg, op2),
+                    BranchLinkCondInst(OVERFLOW, "_errOverflow"),
+                    FreeRegister(reg)
+                )
+                setUsed(OverflowErr)
                 r8
             }
             case GTNode(fstexpr, sndexpr) => {
