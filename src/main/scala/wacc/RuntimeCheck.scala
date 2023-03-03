@@ -26,21 +26,14 @@ object RuntimeCheck {
     val prevBlock = currInstBlock
     currInstBlock = func.body
     val text = func.directive.addTextLabelToData(msg, label)
-    currInstBlock.addInst(PushInst(r0, r1, r2, r3))
-    currInstBlock.addInst(LdrInst(r1, LabelAddress(text)))
-    currInstBlock.addInst(WaccComment("should add print inst block"))
-    val printFunc = IOFunc.printString(r1)
-    
-    if (printFunc == null) {
-      currInstBlock.addInst(WaccComment("did not add print inst block"))
-    }else {currInstBlock.addInst(WaccComment("added print inst block"))}
-    currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+    // val printFunc = IOFunc.printString(LabelAddress(text))
     func.name = label
     func.body.addInst(
+      LdrInst(r0, LabelAddress(text)),
+      BranchLinkInst(IOFunc.PRINT_STR_LABEL),
       MovInst(r0, ImmVal(255)),
       BranchLinkInst("exit")
     )
-    CodeGenerator.controlFlowFuncs.addOne(IOFunc.PRINT_STR_LABEL, printFunc)
     CodeGenerator.controlFlowFuncs.addOne(label, func)
     currInstBlock = prevBlock
     func

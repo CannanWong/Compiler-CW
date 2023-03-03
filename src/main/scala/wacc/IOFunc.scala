@@ -97,7 +97,6 @@ object IOFunc {
 
     def printString(op: Operand): FuncBlock = {
       CodeGenerator.currInstBlock.addInst(
-        //LdrInst(r0, op),
         MovInst(r0, op),
         BranchLinkInst(PRINT_STR_LABEL)
       )
@@ -172,8 +171,8 @@ object IOFunc {
       // val callerBlock = CodeGenerator.controlFlowGraph
       // CodeGenerator.switchCurrInstrBlock(printBoolFunc, printBoolFunc.currBlock)
 
-      val falseTxt = printBoolFunc.directive.addTextLabelToData("%false", PRINT_BOOL_LABEL)
-      val trueTxt = printBoolFunc.directive.addTextLabelToData("%true", PRINT_BOOL_LABEL)
+      val falseTxt = printBoolFunc.directive.addTextLabelToData("false", PRINT_BOOL_LABEL)
+      val trueTxt = printBoolFunc.directive.addTextLabelToData("true", PRINT_BOOL_LABEL)
       val text = printBoolFunc.directive.addTextLabelToData("%.*s", PRINT_BOOL_LABEL)
 
       val ifBlock = IfBlock()
@@ -193,14 +192,17 @@ object IOFunc {
       // CodeGenerator.currInstBlock.addInst(
       //   LdrInst(r2, LabelAddress(trueTxt))
       // )
-      ifTrue.addInst(LdrInst(r2, LabelAddress(trueTxt)))
+      ifTrue.addInst(
+        LdrInst(r2, LabelAddress(falseTxt)),
+        BranchNumInst(next.num)
+      )
 
       /* print false */
       // CodeGenerator.currInstBlock = ifFalse
       // CodeGenerator.currInstBlock.addInst(
       //   LdrInst(r2, LabelAddress(falseTxt))
       // )
-      ifFalse.addInst(LdrInst(r2, LabelAddress(falseTxt)))
+      ifFalse.addInst(LdrInst(r2, LabelAddress(trueTxt)))
 
       /* next block */
       // CodeGenerator.currInstBlock = next
@@ -236,9 +238,12 @@ object IOFunc {
       printlnFunc.body.addInst(
         PushInst(lr),
         LdrInst(r0, LabelAddress(text)),
-        BranchLinkInst("puts")
+        BranchLinkInst("puts"),
+        MovInst(r0, ImmVal(0)),
+        BranchLinkInst("fflush"),
+        PopInst(pc)
       )
-      printlnFunc.body.addInst(printEnd():_*)
+      // printlnFunc.body.addInst(printEnd():_*)
       // CodeGenerator.currInstBlock.addInst(printEnd())
 
       /* change current instruction block to func where print is called */

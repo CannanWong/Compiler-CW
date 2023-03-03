@@ -25,7 +25,10 @@ object AssignmentTranslations {
         var stackOffset = -4
 
         // Detect type to determine allocation size for each element
-        val allocSize = getOffset(exprs(0))
+        var allocSize = 4
+        if (!exprList.isEmpty) {
+        allocSize = getOffset(exprs(0))
+        }
 
         // Calling malloc to get the address storing the array
         currInstBlock.addInst(
@@ -117,7 +120,7 @@ object AssignmentTranslations {
     def accessPairElem(pairOffset: Int, lvalue: LValueNode): Operand = {
         var pos: Register = r8
         lvalue match {
-            case IdentNode(name) => pos = Variable(name)
+            case i: IdentNode => pos = Variable(i.newName)
             case ArrayElemNode(ident, exprList) => 
                 translate(ArrayElemNode(ident, exprList))
             case FstNode(lvalue) => accessPairElem(0, lvalue)
@@ -139,7 +142,7 @@ object AssignmentTranslations {
     def storeToPairElemAddr(pairOffset: Int, lvalue: LValueNode, op: Operand): Operand = {
         var pos: Register = r8
         lvalue match {
-            case IdentNode(name) => pos = Variable(name)
+            case i: IdentNode => pos = Variable(i.newName)
             case ArrayElemNode(ident, exprList) => 
                 translate(ArrayElemNode(ident, exprList))
             case FstNode(lvalue) => accessPairElem(0, lvalue)
@@ -148,7 +151,7 @@ object AssignmentTranslations {
         currInstBlock.addInst(
             CmpInst(pos, ImmVal(0)),
             BranchLinkCondInst("Eq", "_errNull"),
-            LdrInst(r8, ImmOffset(pos, 0)),
+            LdrInst(r8, ImmOffset(pos, pairOffset)),
             MovInst(r9, r8),
             MovInst(r8, op),
             lvalue.typeVal() match {

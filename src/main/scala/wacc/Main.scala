@@ -5,6 +5,7 @@ import Parser.topLevel
 
 import scala.io.Source
 import wacc.Constants._
+import wacc.IOFunc.PRINT_STR_LABEL
 import java.io._ //{BufferedWriter, File, FileWriter}
 
 object Main {
@@ -65,6 +66,25 @@ object Main {
             }
 
             addStandardFuncs()
+            if (!CodeGenerator.controlFlowFuncs.contains(PRINT_STR_LABEL)) {
+                val printStringFunc = FuncBlock()
+                printStringFunc.name = PRINT_STR_LABEL
+
+                /* change current instruction block to func block */
+                // val callerBlock = CodeGenerator.controlFlowGraph
+                // CodeGenerator.switchCurrInstrBlock(printStringFunc, printStringFunc.currBlock)
+
+                val text = printStringFunc.directive.addTextLabelToData("%.*s", PRINT_STR_LABEL)
+
+                printStringFunc.body.addInst(
+                    PushInst(lr),
+                    MovInst(r2, r0),
+                    LdrInst(r1, ImmOffset(r0, INT_SIZE)),
+                    LdrInst(r0, LabelAddress(text))
+                )
+                printStringFunc.body.addInst(IOFunc.printEnd():_*)
+                Printer.printBlock(printStringFunc)
+            }
 
             for (line <- Printer.output) {
                 pw.println(line)

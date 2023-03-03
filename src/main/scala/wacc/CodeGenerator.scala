@@ -393,7 +393,11 @@ object CodeGenerator {
                 ImmVal(num)
             }
             case StrLiterNode(s) => {
-                val label = stringDef(s)
+                val str = s
+                for (ch <- ESCAPE_CHAR_LIST){
+                    str.replaceAll(ch, "\\\\" + ch)
+                }
+                val label = stringDef(str)
                 val loadlabelAddrInstr = LabelAddress(label)
                 val reg = TempRegister()
                 currInstBlock.addInst(LdrInst(reg, loadlabelAddrInstr))
