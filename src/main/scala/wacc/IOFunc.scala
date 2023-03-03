@@ -36,6 +36,20 @@ object IOFunc {
       )
     }
 
+    def readCFunc(label: String, printType: String, funcBlock: FuncBlock): List[Instruction] = {
+      val labelStr = funcBlock.directive.addTextLabelToData(printType, label)
+      List(
+        PushInst(lr),
+        StrbChgInst(r0, ImmOffset(sp, BYTE_SIZE)),
+        MovInst(r1, sp),
+        LdrInst(r0, LabelAddress(labelStr)),
+        BranchLinkInst("scanf"),
+        LdrsbInst(r0, ImmOffset(sp, 0)),
+        AddInst(sp, sp, ImmVal(data_offset(BYTE_SIZE))),
+        PopInst(pc)
+      )
+    }
+
     def printInt(op: Operand): Unit = {
       /* caller instruction */
       CodeGenerator.currInstBlock.addInst(
@@ -273,7 +287,7 @@ object IOFunc {
       // val callerBlock = CodeGenerator.controlFlowGraph
       // CodeGenerator.switchCurrInstrBlock(readCharFunc, readCharFunc.currBlock)
 
-      readCharFunc.body.addInst(readFunc(READ_CHAR_LABEL, "%c", readCharFunc))
+      readCharFunc.body.addInst(readCFunc(READ_CHAR_LABEL, " %c", readCharFunc))
 
       /* change current instruction block to func where print is called */
       // CodeGenerator.switchCurrInstrBlock(callerBlock, callerBlock.currBlock)

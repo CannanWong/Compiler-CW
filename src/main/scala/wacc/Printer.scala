@@ -65,6 +65,8 @@ object Printer {
                 output += "subs " + printOp(inst.rd, inst.rn, inst.op)
             case inst: RsbInst =>
                 output += "rsb " + printOp(inst.rd, inst.rn, inst.op)
+            case inst: RsbsInst =>
+                output += "rsbs " + printOp(inst.rd, inst.rn, inst.op)
             case inst: NegInst =>
                 output += "neg " + printOp(inst.rd, inst.rm)
             case inst: MulInst => 

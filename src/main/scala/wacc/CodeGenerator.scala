@@ -151,20 +151,20 @@ object CodeGenerator {
             case i: IdentNode => {
                 currInstBlock.addInst(MovInst(Variable(i.newName), op))
             }
-            case ArrayElemNode(ident, exprList) => {
+            case a: ArrayElemNode => {
                 // Loading array addresses until it reaches final index,
                 // then store the evaluated RHS into the offsetted address.
                 currInstBlock.addInst(
                     MovInst(r8, op),
                     PushInst(r8),
-                    MovInst(r8, Variable(ident.newName)),
+                    MovInst(r8, Variable(a.ident.newName)),
                     PushInst(r8))
-                for (arrayNum <- 1 to exprList.length - 1) {
+                for (arrayNum <- 1 to a.exprList.length - 1) {
                     currInstBlock.addInst(
                         // Ready for special convention for _arrLoad,
                         // r8 for array addr, r10 for index
                         PushInst(r8),
-                        MovInst(r10, translate(exprList(arrayNum))),
+                        MovInst(r10, translate(a.exprList(arrayNum))),
                         PopInst(r8),
                         BranchLinkInst("_arrLoad")
                     )
@@ -174,11 +174,11 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     // Ready for special convention for _arrStore,
                     // r8 for the value to be stored, r9 for array addr, r10 for index
-                    MovInst(r10, translate(exprList.last)),
+                    MovInst(r10, translate(a.exprList.last)),
                     PopInst(r9),
                     PopInst(r8),
-                    SemanticChecker.symbolTable.lookUpVarNewName(ident.newName) match {
-                        case Some(CharIdentifier()) => BranchLinkInst("_arrStoreB")
+                    a.typeVal() match {
+                        case CharIdentifier() => BranchLinkInst("_arrStoreB")
                         case _ => BranchLinkInst("_arrStore")
                     }
                 )
@@ -199,6 +199,9 @@ object CodeGenerator {
         }
     }
 
+    /* read null check */
+
+
     /*  Reading into memory. */
     def translate(node: ReadNode): Unit = {
         var retOp: Register = new TempRegister()
@@ -217,6 +220,14 @@ object CodeGenerator {
                     case i: IdentNode => {
                         retOp = Variable(i.newName)
                         SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+
+                        /* null check */
+                        currInstBlock.addInst(
+                            MovInst(TempRegister(), ImmVal(0)),
+                            CmpInst(TempRegister(), ImmVal(0)),
+                            BranchLinkCondInst(LESS_OR_EQUAL, NULL_POINTER_LABEL)
+                        )
+                        StandardFuncs.setUsed(NullErr)
                     }
                     case _ => f.lvalue.typeVal()
                 }
@@ -226,20 +237,29 @@ object CodeGenerator {
                     case i: IdentNode => {
                         retOp = Variable(i.newName)
                         SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+
+                        /* null check */
+                        currInstBlock.addInst(
+                            MovInst(TempRegister(), ImmVal(0)),
+                            CmpInst(TempRegister(), ImmVal(0)),
+                            BranchLinkCondInst(LESS_OR_EQUAL, NULL_POINTER_LABEL)
+                        )
+                        StandardFuncs.setUsed(NullErr)
                     }
                     case _ => s.lvalue.typeVal()
                 }
             }
         }
+
         exprTy match {
             case CharIdentifier() => IOFunc.readChar(retOp)
             case IntIdentifier() => IOFunc.readInt(retOp)
-            case _ => {
-                currInstBlock.addInst(WaccComment("read creceives type: " + exprTy))
-                val tempreg1 = TempRegister()
-                currInstBlock.addInst(MovInst(tempreg1, ImmVal(1)))
-                IOFunc.readInt(tempreg1)
-            }
+            case _ => throw new IllegalArgumentException("error: reading non char / int")
+            // case _ => {
+            //     val tempreg1 = TempRegister()
+            //     currInstBlock.addInst(MovInst(tempreg1, ImmVal(1)))
+            //     IOFunc.readInt(tempreg1)
+            // }
         }
     }
     /*  Freeing addresses allocated in the memory. 
@@ -303,38 +323,43 @@ object CodeGenerator {
     def translate(node: PrintNode): Unit = {
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         val retOp = translate(node.expr)
-        val exprTy = node.expr match {
-            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
-            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
-            case _ => node.expr.typeVal()
-        }
-        exprTy match {
-            case CharIdentifier() => IOFunc.printChar(retOp)
-            case IntIdentifier() => IOFunc.printInt(retOp)
-            case StrIdentifier() => IOFunc.printString(retOp)
-            case BoolIdentifier() => IOFunc.printBool(retOp)
-            case ArrayIdentifier(identifier, _) => {
-                node.expr match {
-                    case i: IdentNode => {
-                        exprTy match {
-                            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
-                            case _ => IOFunc.printPtr(retOp)
-                        }
-                    }
-                    case a: ArrayElemNode => {
-                        exprTy match {
-                            case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
-                            case ArrayIdentifier(IntIdentifier(),_) => IOFunc.printInt(retOp)
-                            case ArrayIdentifier(BoolIdentifier(),_) => IOFunc.printBool(retOp)
-                        }
-                    }
+        node.expr match {
+            case i: IdentNode => {
+                val exprTy = SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
+                exprTy match {
+                    case ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
+                    case ArrayIdentifier(_,_) => IOFunc.printPtr(retOp)
+                    case _ => printType(exprTy, retOp)
                 }
             }
-            case PairIdentifier(_,_) => IOFunc.printPtr(retOp)
-            // anyIdentifier or null
-            case _ => IOFunc.printPtr(retOp)
+            case a: ArrayElemNode => {
+                val exprTy = SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
+                printType(exprTy, retOp)
+            }
+            case _ => {
+                val exprTy = node.expr.typeVal()
+                printType(exprTy, retOp)
+            }
         }
         currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+    }
+
+    def printType(ty: TypeIdentifier, retOp: Operand): Unit = {
+        ty match {
+            case CharIdentifier() => {
+                IOFunc.printChar(retOp)
+            }
+            case IntIdentifier() | ArrayIdentifier(IntIdentifier(),_) => {
+                IOFunc.printInt(retOp)
+            }
+            case StrIdentifier() | ArrayIdentifier(CharIdentifier(),_) => IOFunc.printString(retOp)
+            case BoolIdentifier() | ArrayIdentifier(BoolIdentifier(),_) => IOFunc.printBool(retOp)
+            case ArrayIdentifier(_,_) | PairIdentifier(_,_) => IOFunc.printPtr(retOp)
+            // anyIdentifier or null
+            case _ => {
+                IOFunc.printPtr(retOp)
+            }
+        }
     }
 
     /*  Print empty line. */
@@ -465,10 +490,10 @@ object CodeGenerator {
                 ImmVal(num)
             }
             case StrLiterNode(s) => {
-                for (ch <- ESCAPE_CHAR_LIST) {
-                    s.replaceAll(ch, s"\\${ch}")    
-                }               
-                val label = stringDef(s)
+                val sList = s.split("").map(x => replaceChar(x))
+                val newStr = sList.fold("")((x: String, y: String) => s"${x}${y}")
+
+                val label = stringDef(newStr)
                 val loadlabelAddrInstr = LabelAddress(label)
                 val reg = TempRegister()
                 currInstBlock.addInst(LdrInst(reg, loadlabelAddrInstr))
@@ -525,14 +550,19 @@ object CodeGenerator {
                     case ImmVal(num) => {
                         currInstBlock.addInst(
                             MovInst(r8, op), 
-                            NegInst(r8, r8)
+                            RsbsInst(r8, r8, ImmVal(0)),
+                            BranchLinkCondInst(OVERFLOW, "_errOverflow")
                         )
                     }
                     case r: Register => {
-                        currInstBlock.addInst(NegInst(r8, r))
+                        currInstBlock.addInst(
+                            RsbsInst(r8, r, ImmVal(0)),
+                            BranchLinkCondInst(OVERFLOW, "_errOverflow")
+                        )
                     }
                     case _ => throw new UnsupportedOperationException("Neg node evaluation error")
                 }
+                setUsed(OverflowErr)
                 r8
             }
             case LenNode(expr) => {
@@ -736,5 +766,13 @@ object CodeGenerator {
                 r8
             }
         }
+    }
+
+    def replaceChar(s: String): String = {
+        var ret = s
+        if (ESCAPE_CHAR_LIST.contains(s)) {
+            ret = "\\u".replace("u", s)
+        }
+        ret
     }
 }
