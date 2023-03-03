@@ -1,6 +1,7 @@
 package wacc
 
 import scala.collection.mutable._
+import wacc.Constants._
 
 object AssignRegister {
     // val ir2cfg = LinkedHashMap[String, FuncBlock]()     // Control flow graph: Hash map of FuncBlocks
@@ -14,6 +15,8 @@ object AssignRegister {
 
     val varOpTable: Map[String, Operand] = Map()    // Table mapping variable name to operand
     val tempRegTable: Map[Int, Operand] = Map()     // Table mapping temporary register number to operand
+
+    var r9Used = false
 
     def assignCFG(cfg: LinkedHashMap[String, FuncBlock]): Unit = {
         for ((name, funcBlock) <- cfg) {
@@ -34,7 +37,7 @@ object AssignRegister {
         val revParamQueue: Queue[ParamNode] = paramQueue.reverse
         while (!revParamQueue.isEmpty) {
             currFPOffset += 4
-            varOpTable.addOne(paramQueue.dequeue().ident.name, ImmOffset(Constants.fp, currFPOffset))
+            varOpTable.addOne(paramQueue.dequeue().ident.name, ImmOffset(fp, currFPOffset))
         }
         currFPOffset = 0
         assignBlock(funcBlock.body)
@@ -162,8 +165,16 @@ object AssignRegister {
                     case Some(fReg: FixedRegister) => fReg
                     // From stack
                     case Some(im: ImmOffset) => {
-                        newInstList += LdrInst(Constants.r8, im)
-                        Constants.r8
+                        if (!r9Used) {
+                            r9Used = true
+                            newInstList += LdrInst(r9, im)
+                            r9
+                        }
+                        else {
+                            r9Used = false
+                            newInstList += LdrInst(r10, im)
+                            r10
+                        }
                     }
                     case _ => {
                         // Get fixed register
@@ -174,12 +185,12 @@ object AssignRegister {
                         }
                         // No available registers
                         else {
-                            newInstList += SubInst(Constants.sp, Constants.sp, ImmVal(-4))
+                            newInstList += SubInst(sp, sp, ImmVal(-4))
                             currFPOffset -= 4
-                            val op = ImmOffset(Constants.fp, currFPOffset)
+                            val op = ImmOffset(fp, currFPOffset)
                             varOpTable.addOne(v.name, op)
-                            storeInst = Some(StrInst(Constants.r8, op))
-                            Constants.r8
+                            storeInst = Some(StrInst(r8, op))
+                            r8
                         }
                     }
                 }
@@ -194,8 +205,16 @@ object AssignRegister {
             case Some(fReg: FixedRegister) => fReg
             // From stack
             case Some(im: ImmOffset) => {
-                newInstList += LdrInst(Constants.r8, im)
-                Constants.r8
+                if (!r9Used) {
+                    r9Used = true
+                    newInstList += LdrInst(r9, im)
+                    r9
+                }
+                else {
+                    r9Used = false
+                    newInstList += LdrInst(r10, im)
+                    r10
+                }
             }
             case _ => {
                 // Get fixed register
@@ -206,12 +225,12 @@ object AssignRegister {
                 }
                 // No more available registers
                 else {
-                    newInstList += SubInst(Constants.sp, Constants.sp, ImmVal(-4))
+                    newInstList += SubInst(sp, sp, ImmVal(-4))
                     currFPOffset -= 4
-                    val op = ImmOffset(Constants.fp, currFPOffset)
+                    val op = ImmOffset(fp, currFPOffset)
                     tempRegTable.addOne(tReg.num, op)
-                    storeInst = Some(StrInst(Constants.r8, op))
-                    Constants.r8
+                    storeInst = Some(StrInst(r8, op))
+                    r8
                 }
             }
         }
