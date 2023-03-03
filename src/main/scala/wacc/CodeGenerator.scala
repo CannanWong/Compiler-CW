@@ -81,7 +81,7 @@ object CodeGenerator {
         which is used to separate the code when printing assembly. */
     def translate(f: FuncNode): Unit = {
         val funcBlock = FuncBlock()
-        funcBlock.paramList = f.paramList
+        funcBlock.paramList = f.paramList.paramList
         /* change current instruction block to func block */
         // switchCurrInstrBlock(funcBlock, funcBlock.currBlock)
         currInstBlock = funcBlock.body
@@ -132,7 +132,11 @@ object CodeGenerator {
 
         // Pop back Caller Regs
         node.rvalue match {
-            case CallNode(_, _) => currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+            case CallNode(_, argList) => {
+                currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+                if (argList.exprList.length > 4)
+                    currInstBlock.addInst(AddInst(sp, sp, ImmVal(4 * (argList.exprList.length - 4))))
+            }
             case _ => 
         }
     }
@@ -178,6 +182,15 @@ object CodeGenerator {
             }
             case FstNode(lvalue) => storeToPairElemAddr(0, lvalue, op)
             case SndNode(lvalue) => storeToPairElemAddr(4, lvalue, op)
+        }
+        // Pop back Caller Regs
+        node.rvalue match {
+            case CallNode(_, argList) => {
+                currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+                if (argList.exprList.length > 4)
+                    currInstBlock.addInst(AddInst(sp, sp, ImmVal(4 * (argList.exprList.length - 4))))
+            }
+            case _ => 
         }
     }
 
