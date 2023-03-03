@@ -418,7 +418,7 @@ object CodeGenerator {
         
         node match {
             case IntLiterNode(n) => {
-                if (n >= 0) {ImmVal(n)}
+                if (n >= 0 && n <= 255) {ImmVal(n)}
                 else {
                     currInstBlock.addInst(LdrPseudoInst(r8, n))
                     r8

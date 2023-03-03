@@ -58,7 +58,7 @@ object Printer {
             case inst: AddInst =>
                 output += "add " + printOp(inst.rd, inst.rn, inst.op)
             case inst: AddsInst =>
-                output += "add " + printOp(inst.rd, inst.rn, inst.op)
+                output += "adds " + printOp(inst.rd, inst.rn, inst.op)
             case inst: SubInst => 
                 output += "sub " + printOp(inst.rd, inst.rn, inst.op)
             case inst: SubsInst =>
