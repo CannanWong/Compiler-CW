@@ -138,7 +138,7 @@ object CodeGenerator {
                     currInstBlock.addInst(AddInst(sp, sp, ImmVal(4 * (argList.exprList.length - 4))))
                 } else {
                     for (c <- 0 to argList.exprList.length - 1) {
-                        currInstBlock.addInst(PopInst(FixedRegister(c)))
+                        currInstBlock.addInst(PopInst(FixedRegister(argList.exprList.length - 1 - c)))
                     }
                 }
             }
@@ -201,7 +201,7 @@ object CodeGenerator {
                     currInstBlock.addInst(AddInst(sp, sp, ImmVal(4 * (argList.exprList.length - 4))))
                 } else {
                     for (c <- 0 to argList.exprList.length - 1) {
-                        currInstBlock.addInst(PopInst(FixedRegister(c)))
+                        currInstBlock.addInst(PopInst(FixedRegister(argList.exprList.length - 1 - c)))
                     }
                 }
             }
@@ -320,7 +320,7 @@ object CodeGenerator {
      
     /*  Printing statements. */
     def translate(node: PrintNode): Unit = {
-        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PushInst(r0))
         val retOp = translate(node.expr)
         node.expr match {
             case i: IdentNode => {
@@ -340,7 +340,7 @@ object CodeGenerator {
                 printType(exprTy, retOp)
             }
         }
-        currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PopInst(r0))
     }
 
     def printType(ty: TypeIdentifier, retOp: Operand): Unit = {
@@ -365,9 +365,9 @@ object CodeGenerator {
     def translate(node: PrintlnNode): Unit = {
         translate(new PrintNode(node.expr))
 
-        currInstBlock.addInst(PushInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PushInst(r0))
         IOFunc.println()
-        currInstBlock.addInst(PopInst(r0, r1, r2, r3))
+        currInstBlock.addInst(PopInst(r0))
     }
 
     /*  If condition branching,

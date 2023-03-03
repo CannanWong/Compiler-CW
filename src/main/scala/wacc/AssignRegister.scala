@@ -118,11 +118,14 @@ object AssignRegister {
             case inst: MovInst => {
                 val reg1 = assignReg(inst.rd)
                 val op = assignOp(inst.op)
-                if (interRegs.contains(reg1) && interRegs.contains(op)) {
-                    inst.rd match {
-                        case Variable(name) => storeInst = Some(StrInst(reg1, varOpTable.get(name).get))
-                        case _ => 
+                inst.rd match {
+                    case Variable(name) => {
+                        varOpTable.get(name).get match {
+                            case i: ImmOffset => storeInst = Some(StrInst(reg1, i))
+                            case _ =>
+                        }
                     }
+                    case _ => 
                 }
                 MovInst(reg1, op)
             }
@@ -193,13 +196,13 @@ object AssignRegister {
                     case Some(im: ImmOffset) => {
                         if (!r9Used) {
                             r9Used = true
-                            newInstList += LdrInst(r9, im)
-                            r9
+                            newInstList += LdrInst(r10, im)
+                            r10
                         }
                         else {
                             r9Used = false
-                            newInstList += LdrInst(r10, im)
-                            r10
+                            newInstList += LdrInst(r9, im)
+                            r9
                         }
                     }
                     case _ => {
@@ -233,13 +236,13 @@ object AssignRegister {
             case Some(im: ImmOffset) => {
                 if (!r9Used) {
                     r9Used = true
-                    newInstList += LdrInst(r9, im)
-                    r9
+                    newInstList += LdrInst(r10, im)
+                    r10
                 }
                 else {
                     r9Used = false
-                    newInstList += LdrInst(r10, im)
-                    r10
+                    newInstList += LdrInst(r9, im)
+                    r9
                 }
             }
             case _ => {
