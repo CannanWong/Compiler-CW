@@ -547,7 +547,7 @@ object CodeGenerator {
                 r8
             }
             case DivNode(fstexpr, sndexpr) => {
-                currInstBlock.addInst(PushInst(r0, r1))
+                currInstBlock.addInst(PushInst(r0, r1, r2, r3))
                 val op1 = translate(fstexpr)
                 currInstBlock.addInst(MovInst(r0, op1))
                 val op2 = translate(sndexpr)
@@ -557,13 +557,13 @@ object CodeGenerator {
                     BranchCondInst( EQUAL, "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r0),
-                    PopInst(r0, r1)
+                    PopInst(r0, r1, r2, r3)
                 )
                 setUsed(ZeroDivErr)
                 r8
             }
             case ModNode(fstexpr, sndexpr) => {
-                currInstBlock.addInst(PushInst(r0, r1))
+                currInstBlock.addInst(PushInst(r0, r1, r2, r3))
                 val op1 = translate(fstexpr)
                 currInstBlock.addInst(MovInst(r0, op1))
                 val op2 = translate(sndexpr)
@@ -573,7 +573,7 @@ object CodeGenerator {
                     BranchCondInst( EQUAL, "_errDivZero"),
                     BranchLinkInst("__aeabi_idivmod"),
                     MovInst(r8, r1),
-                    PopInst(r0, r1)
+                    PopInst(r0, r1, r2, r3)
                 )
                 setUsed(ZeroDivErr)
                 r8
