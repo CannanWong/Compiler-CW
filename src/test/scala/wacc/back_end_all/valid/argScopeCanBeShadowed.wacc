@@ -4,7 +4,7 @@
 # true
 #
 
-#Program:
+# Program:
 
 begin
   bool f(int x) is
