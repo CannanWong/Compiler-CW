@@ -256,9 +256,11 @@ object IOFunc {
       op match {
         case op: Register => {
           CodeGenerator.currInstBlock.addInst(
+            PushInst(r0, r1, r2, r3),
             MovInst(r0, op),
             BranchLinkInst(READ_CHAR_LABEL),
-            MovInst(op, r0)
+            MovInst(op, r0),
+            PopInst(r0, r1, r2, r3)
           )
         }
         case _ => throw new IllegalArgumentException("read op is not register")
@@ -283,9 +285,11 @@ object IOFunc {
       op match {
         case op: Register => {
           CodeGenerator.currInstBlock.addInst(
+            PushInst(r0, r1, r2, r3),
             MovInst(r0, op),
             BranchLinkInst(READ_INT_LABEL),
-            MovInst(op, r0)
+            MovInst(op, r0),
+            PopInst(r0, r1, r2, r3)
           )
         }
         case _ => throw new IllegalArgumentException("read op is not register")
