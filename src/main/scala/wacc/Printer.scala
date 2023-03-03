@@ -10,7 +10,6 @@ object Printer {
             case ins: InstBlock => printBlock(ins: InstBlock)
             case con: IfBlock => printBlock(con: IfBlock)
             case whi: WhileBlock => printBlock(whi: WhileBlock)
-            // case call: CallBlock => printBlock(call: CallBlock)
             case fun: FuncBlock => printBlock(fun: FuncBlock)
             case _ => 
         }
@@ -29,7 +28,6 @@ object Printer {
     }
 
     def printBlock(ifBlock: IfBlock): Unit = {
-        // printBlock(ifBlock.cond)
         printBlock(ifBlock.nextT)
         printBlock(ifBlock.nextF)
         printBlock(ifBlock.next)
@@ -40,10 +38,6 @@ object Printer {
         printBlock(whileBlock.loop)
         printBlock(whileBlock.next)
     }
-
-    // def printBlock(callBlock: CallBlock): Unit = {
-    //     printBlock(callBlock.next)
-    // }
 
     def printBlock(funcBlock: FuncBlock): Unit = {
         output += funcBlock.directive.build()
@@ -119,7 +113,6 @@ object Printer {
                 output += s"bl${inst.condtion} " + inst.label
 
             case inst: FreeRegister =>
-
             case inst: WaccComment => output += s"@ ${inst.s}"
 
             case _ => output += "@ Unmatched instr"
@@ -147,9 +140,6 @@ object Printer {
             case treg: TempRegister =>
                 "UAR!" // Unassigned register
             case uvar: Variable => s"${uvar.name}"
-                //"UAR!"//s"${uvar.name}"  // Unassigned register
-            // case _ =>
-            //     throw new IllegalArgumentException(s"${op} is not legal arguement")
         }
     }
 

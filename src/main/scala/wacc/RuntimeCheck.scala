@@ -5,11 +5,11 @@ import wacc.CodeGenerator._
 
 /* returns function for reoprting runtime errors */
 object RuntimeCheck {
-  /* messages */
-  val zeroDivMsg = "fatal error: division or modulo by zero"
-  val nullPointerMsg = "fatal error: null pair dereferenced or freed"
-  val overflowMsg = "fatal error: integer overflow or underflow occurred"
-  val boundsCheckMsg = "fatal error: array index %d out of bounds"
+    /* messages */
+    val zeroDivMsg = "fatal error: division or modulo by zero"
+    val nullPointerMsg = "fatal error: null pair dereferenced or freed"
+    val overflowMsg = "fatal error: integer overflow or underflow occurred"
+    val boundsCheckMsg = "fatal error: array index %d out of bounds"
 
   /* returns the runtime error message return function corresponding to the label parameter*/
   def runtimeErrorMsg(label: String): FuncBlock = {

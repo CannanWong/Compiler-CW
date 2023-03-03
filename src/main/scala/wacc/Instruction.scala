@@ -42,11 +42,14 @@ case class WaccComment(s: String) extends Instruction
 sealed trait Operand
 sealed trait Register extends Operand
 case class TempRegister() extends Register {
+    // Automatically assign the next number
     var num = ControlFlowGraph.nextTempRegNum
     ControlFlowGraph.nextTempRegNum += 1
 }
+
 case class FixedRegister(num: Int) extends Register
 case class Variable(name: String) extends Register
+
 //NEW: address of the label
 case class LabelAddress(address: String) extends Operand
 case class ImmVal(num: Int) extends Operand

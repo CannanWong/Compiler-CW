@@ -3,7 +3,6 @@ package wacc
 import wacc.Constants._
 import wacc.Constants.StdFuncsEnum._
 
-
 object StandardFuncs {
     var usedFuncs = new Array[Boolean](StdFuncsEnum.maxId)
 
@@ -19,7 +18,6 @@ object StandardFuncs {
             case _ => 
         }
         usedFuncs(func.id) = true
-        
     }
     /* returns the standard function inicated by func ENUM parameter */
     def getFunction(func: StdFuncsEnum): FuncBlock = {
