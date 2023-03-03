@@ -91,8 +91,13 @@ object AssignmentTranslations {
     }
 
     def getOffset(expr: ExprNode): Int = {
-        expr.typeVal() match {
-            case CharIdentifier() => 1
+        val exprTy = expr match {
+            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
+            case _ => expr.typeVal()
+        }
+        exprTy match {
+            case Some(CharIdentifier()) => 1
             case _ => 4
         }
     }
@@ -129,9 +134,27 @@ object AssignmentTranslations {
         currInstBlock.addInst(
             CmpInst(pos, ImmVal(0)),
             BranchLinkCondInst("Eq", "_errNull"),
-            LdrInst(r8, ImmOffset(pos, pairOffset)),
-            lvalue.typeVal() match {
-                case CharIdentifier() => LdrsbInst(r8, ImmOffset(r8, 0))
+            LdrInst(r8, ImmOffset(pos, pairOffset))
+        )
+        val exprTy = lvalue match {
+            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
+            case f: FstNode => {
+                f.lvalue match {
+                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+                    case _ => f.lvalue.typeVal()
+                }
+            }
+            case s: SndNode => {
+                s.lvalue match {
+                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+                    case _ => s.lvalue.typeVal()
+                }
+            }
+        }
+        currInstBlock.addInst(
+            exprTy match {
+                case Some(CharIdentifier()) => LdrsbInst(r8, ImmOffset(r8, 0))
                 case _ => LdrInst(r8, ImmOffset(r8, 0))
             }
         )
@@ -153,8 +176,26 @@ object AssignmentTranslations {
             BranchLinkCondInst("Eq", "_errNull"),
             LdrInst(r8, ImmOffset(pos, pairOffset)),
             MovInst(r9, r8),
-            MovInst(r8, op),
-            lvalue.typeVal() match {
+            MovInst(r8, op)
+        )
+        val exprTy = lvalue match {
+            case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+            case a: ArrayElemNode => SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName)
+            case f: FstNode => {
+                f.lvalue match {
+                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+                    case _ => f.lvalue.typeVal()
+                }
+            }
+            case s: SndNode => {
+                s.lvalue match {
+                    case i: IdentNode => SemanticChecker.symbolTable.lookUpVarNewName(i.newName)
+                    case _ => s.lvalue.typeVal()
+                }
+            }
+        }
+        currInstBlock.addInst(
+            exprTy match {
                 case CharIdentifier() => StrbInst(r8, ImmOffset(r9, 0))
                 case _ => StrInst(r8, ImmOffset(r9, 0))
             }
