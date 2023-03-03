@@ -39,7 +39,7 @@ case class StrIdentifier() extends TypeIdentifier {
   override def typeEquals(id: TypeIdentifier): Boolean = {
   id match {
       case StrIdentifier() => true
-      case AnyIdentifier() => true
+      case AnyIdentifier() => true 
       case _ => false
     }
   }
