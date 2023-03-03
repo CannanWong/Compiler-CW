@@ -118,14 +118,11 @@ object AssignRegister {
             case inst: MovInst => {
                 val reg1 = assignReg(inst.rd)
                 val op = assignOp(inst.op)
-                inst.rd match {
-                    case Variable(name) => {
-                        varOpTable.get(name).get match {
-                            case i: ImmOffset => storeInst = Some(StrInst(reg1, i))
-                            case _ =>
-                        }
+                if (interRegs.contains(reg1) && interRegs.contains(op)) {
+                    inst.rd match {
+                        case Variable(name) => storeInst = Some(StrInst(reg1, varOpTable.get(name).get))
+                        case _ => 
                     }
-                    case _ => 
                 }
                 MovInst(reg1, op)
             }
