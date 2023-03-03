@@ -2,6 +2,8 @@ package wacc
 
 import scala.collection.mutable.ListBuffer
 
+/* Constructor class for the directives used in Assembly ARM programs */
+
 abstract class Directive() {
   var GLOBAL_MAIN = false
   var name = ""
@@ -20,6 +22,12 @@ abstract class Directive() {
     ret.toString()
   }
 }
+
+/**
+  * constructor class for creating text directive of the program
+  * text section is a part of the program's memory that contains the executable
+  * instructions, and the text directives are used to add or modify these instructions.
+ */
 
 case class DataDirectiveStat() extends Directive {
   def addToPrintDataSubsection(msg: String) : Unit = {
@@ -40,7 +48,7 @@ case class DataDirectiveStat() extends Directive {
                 s"${retLabel}:\n" +
                 s"  .asciz \"${rawText}\"\n"
     addToPrintDataSubsection(content.toString())
-    // returns label string for text added to .data directive
+    /* returns label string for text added to .data directive */
     retLabel    
   }
 

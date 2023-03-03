@@ -3,6 +3,7 @@ package wacc
 import wacc.FixedRegister
 import wacc.ImmVal
 
+/* registers */
 object  Constants {
   val r0 = FixedRegister(0)
   val r1 = FixedRegister(1)
@@ -21,20 +22,24 @@ object  Constants {
   val lr = FixedRegister(14)
   val pc = FixedRegister(15)
 
+  /* true and false immediate value */
   val immTrue = ImmVal(1)
   val immFalse = ImmVal(0)
 
-  // TODO: maybe constants not negative
+  /* data offset */
   val ARRAY_LENGTH_OFFSET: Int = -4
   val INT_SIZE = -4
   val BYTE_SIZE = -1
   
+  /* returns offset of data type of the opposite offset direction */
   def data_offset(dataType :Int): Int = {
     dataType * -1
   }
 
+  /* highest bit of TYPR INT*/
   val INT_HIGHEST_BIT = 31
 
+  /* enum for standard function */
   object StdFuncsEnum extends Enumeration {
     type StdFuncsEnum = Value
 
@@ -49,6 +54,7 @@ object  Constants {
     val FreeP = Value(8, FREE_PAIR_LABEL)
   }
 
+  /* text label for standard functions */
   val ZERO_DIVISION_LABEL = "_errDivZero"
   val NULL_POINTER_LABEL = "_errNull"
   val OVERFLOW_LABEL = "_errOverflow"
@@ -69,7 +75,7 @@ object  Constants {
   val OVERFLOW = "vs"
   val NO_OVERFLOW = "vc"
 
-
+/* charracter set of leagal escape characters in Wacc*/
   val ESCAPE_CHAR_LIST = 
     List[String]("\"", "\n", "\'", "\r", "\f", "\t", "\b", "\u0000", "\\")
 }
