@@ -199,13 +199,10 @@ object CodeGenerator {
         }
     }
 
-    /* read null check */
-
-
     /*  Reading into memory. */
     def translate(node: ReadNode): Unit = {
         var retOp: Register = new TempRegister()
-        val exprTy = node.lvalue match {
+        node.lvalue match {
             case i: IdentNode => {
                 retOp = Variable(i.newName)
                 SemanticChecker.symbolTable.lookUpVarNewName(i.newName).get
@@ -213,8 +210,7 @@ object CodeGenerator {
             case a: ArrayElemNode => {
                 retOp = Variable(a.ident.newName)
                 SemanticChecker.symbolTable.lookUpVarNewName(a.ident.newName).get
-            }
-                
+            }   
             case f: FstNode => {
                 f.lvalue match {
                     case i: IdentNode => {
@@ -223,11 +219,10 @@ object CodeGenerator {
 
                         /* null check */
                         currInstBlock.addInst(
-                            MovInst(TempRegister(), ImmVal(0)),
-                            CmpInst(TempRegister(), ImmVal(0)),
+                            CmpInst(retOp, ImmVal(0)),
                             BranchLinkCondInst(LESS_OR_EQUAL, NULL_POINTER_LABEL)
                         )
-                        StandardFuncs.setUsed(NullErr)
+                        setUsed(NullErr)
                     }
                     case _ => f.lvalue.typeVal()
                 }
@@ -240,26 +235,20 @@ object CodeGenerator {
 
                         /* null check */
                         currInstBlock.addInst(
-                            MovInst(TempRegister(), ImmVal(0)),
-                            CmpInst(TempRegister(), ImmVal(0)),
+                            CmpInst(retOp, ImmVal(0)),
                             BranchLinkCondInst(LESS_OR_EQUAL, NULL_POINTER_LABEL)
                         )
-                        StandardFuncs.setUsed(NullErr)
+                        setUsed(NullErr)
                     }
                     case _ => s.lvalue.typeVal()
                 }
             }
         }
 
-        exprTy match {
+        node.lvalue.typeVal() match {
             case CharIdentifier() => IOFunc.readChar(retOp)
             case IntIdentifier() => IOFunc.readInt(retOp)
             case _ => throw new IllegalArgumentException("error: reading non char / int")
-            // case _ => {
-            //     val tempreg1 = TempRegister()
-            //     currInstBlock.addInst(MovInst(tempreg1, ImmVal(1)))
-            //     IOFunc.readInt(tempreg1)
-            // }
         }
     }
     /*  Freeing addresses allocated in the memory. 

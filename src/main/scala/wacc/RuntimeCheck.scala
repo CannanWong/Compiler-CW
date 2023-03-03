@@ -1,7 +1,6 @@
 package wacc
 
 import wacc.Constants._
-import java.util.ResourceBundle.Control
 import wacc.CodeGenerator._
 
 object RuntimeCheck {
