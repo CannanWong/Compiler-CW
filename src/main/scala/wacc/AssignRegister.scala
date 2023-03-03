@@ -30,6 +30,9 @@ object AssignRegister {
 
     def assignBlock(funcBlock: FuncBlock): Unit = {
         resetRegQueue()
+        if (funcBlock.GLOBAL_MAIN) {
+            regQueue = Queue(7, 6, 5, 4)
+        }
         val paramReg: Queue[Int] = Queue(0, 1, 2, 3)
         val paramQueue: Queue[ParamNode] = Queue(funcBlock.paramList: _*)
         // Add the first 4 parameters mapping to r0-r3
@@ -43,9 +46,10 @@ object AssignRegister {
         }
         // Starting from the last parameter
         val revParamQueue: Queue[ParamNode] = paramQueue.reverse
+        currFPOffset = 36
         while (!revParamQueue.isEmpty) {
-            currFPOffset += 4
             varOpTable.addOne(revParamQueue.dequeue().ident.newName, ImmOffset(fp, currFPOffset))
+            currFPOffset += 4
         }
         currFPOffset = 0
         assignBlock(funcBlock.body)
@@ -195,7 +199,7 @@ object AssignRegister {
                         }
                         // No available registers
                         else {
-                            newInstList += SubInst(sp, sp, ImmVal(-4))
+                            newInstList += SubInst(sp, sp, ImmVal(4))
                             currFPOffset -= 4
                             val op = ImmOffset(fp, currFPOffset)
                             varOpTable.addOne(v.name, op)
@@ -235,7 +239,7 @@ object AssignRegister {
                 }
                 // No more available registers
                 else {
-                    newInstList += SubInst(sp, sp, ImmVal(-4))
+                    newInstList += SubInst(sp, sp, ImmVal(4))
                     currFPOffset -= 4
                     val op = ImmOffset(fp, currFPOffset)
                     tempRegTable.addOne(tReg.num, op)
