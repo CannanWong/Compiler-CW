@@ -18,9 +18,6 @@ case class IntIdentifier() extends TypeIdentifier {
     id match {
       case IntIdentifier() => true
       case AnyIdentifier() => true
-      // case VarIdentifier(varId) => {
-      //   this.typeEquals(varId)
-      // }
       case _ => false
     }
   }
@@ -32,9 +29,6 @@ case class BoolIdentifier() extends TypeIdentifier {
       id match {
       case BoolIdentifier() => true
       case AnyIdentifier() => true
-      // case VarIdentifier(varId) => {
-      //   this.typeEquals(varId)
-      // }
       case _ => false
     }
   }
@@ -45,10 +39,7 @@ case class StrIdentifier() extends TypeIdentifier {
   override def typeEquals(id: TypeIdentifier): Boolean = {
   id match {
       case StrIdentifier() => true
-      case AnyIdentifier() => true 
-      // case VarIdentifier(varId) => {
-      //   this.typeEquals(varId)
-      // }
+      case AnyIdentifier() => true
       case _ => false
     }
   }
@@ -60,21 +51,11 @@ case class CharIdentifier() extends TypeIdentifier {
   id match {
       case CharIdentifier() => true
       case AnyIdentifier() => true
-      // case VarIdentifier(varId) => {
-      //   this.typeEquals(varId)
-      // }
       case _ => false
     }
   }
   override def toString(): String = "char"
 }
-
-// case class VarIdentifier(ty: TypeIdentifier) extends TypeIdentifier {
-//   override def typeEquals(id: TypeIdentifier): Boolean = {
-//     ty.typeEquals(id)
-//   }
-//   override def toString(): String = ty.toString()
-// }
 
 case class FuncIdentifier(paramtype: List[TypeIdentifier], returntype: TypeIdentifier) extends TypeIdentifier {
   override def typeEquals(id: TypeIdentifier): Boolean = {
@@ -87,7 +68,6 @@ case class FuncIdentifier(paramtype: List[TypeIdentifier], returntype: TypeIdent
                               .fold(true)((x, y) => x && y)
         paramstypeValid && returntype.typeEquals(retType)
       }
-      // case VarIdentifier(varId) => this.typeEquals(varId)
       case _ => false
     }
   }
@@ -101,7 +81,6 @@ case class ArrayIdentifier(baseTy: TypeIdentifier, dim: Int) extends TypeIdentif
       case ArrayIdentifier(tyId, d) => {
         baseTy.typeEquals(tyId) && d == dim
       }
-      // case VarIdentifier(varId) => this.typeEquals(varId)
       case a: AnyIdentifier => true
       case _ => false
     }
@@ -124,7 +103,6 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
       }
       case a: AnyIdentifier => true
       case n: NullIdentifier => true
-      // case VarIdentifier(varId) => this.typeEquals(varId)
       case _ => false
     }
   }
@@ -139,7 +117,6 @@ case class NullIdentifier() extends TypeIdentifier {
     id match {
       case a: AnyIdentifier => true
       case p: PairIdentifier => true
-      // case VarIdentifier(varId) => this.typeEquals(varId)
       case _ => false
     }
   }

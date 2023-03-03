@@ -22,5 +22,4 @@ object Error {
     def printErr() = {
         errors.foreach(println)
     }
-    
 }

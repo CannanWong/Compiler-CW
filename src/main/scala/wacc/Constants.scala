@@ -3,7 +3,7 @@ package wacc
 import wacc.FixedRegister
 import wacc.ImmVal
 
-object  Constants {
+object Constants {
   val r0 = FixedRegister(0)
   val r1 = FixedRegister(1)
   val r2 = FixedRegister(2)
@@ -68,7 +68,6 @@ object  Constants {
   val LESS_OR_EQUAL = "le"
   val OVERFLOW = "vs"
   val NO_OVERFLOW = "vc"
-
 
   val ESCAPE_CHAR_LIST = 
     List[String]("\"", "\n", "\'", "\r", "\f", "\t", "\b", "\u0000", "\\")

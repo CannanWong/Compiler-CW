@@ -3,53 +3,6 @@ package wacc
 import wacc.Constants._
 import wacc.Constants.StdFuncsEnum._
 
-// abstract class StandardFuncs(name: String) {
-//     import StandardFuncs._
-//     protected var used = false
-//     def setUsed: Unit = {
-//         used = true
-//     }
-//     def getUsed = used
-//     def getFunc: FuncBlock = getFunction(name)
-
-// }
-
-
-// case object ZeroDivision extends StandardFuncs(ZERO_DIVISION_LABEL)
-// case object NullPointer extends StandardFuncs(NULL_POINTER_LABEL)
-// case object Overflow extends StandardFuncs(OVERFLOW_LABEL)
-// case object BoundsCheck extends StandardFuncs(BOUNDS_CHECK_LABEL)
-// case object ArrayStore extends StandardFuncs(ARRAY_STORE_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         BoundsCheck.setUsed
-//     }
-// }
-// case object ArrayStoreB extends StandardFuncs(ARRAY_STORE_B_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         BoundsCheck.setUsed
-//     }
-// }
-// case object ArrayLoad extends StandardFuncs(ARRAY_LOAD_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         BoundsCheck.setUsed
-//     }
-// }
-// case object ArrayLoadB extends StandardFuncs(ARRAY_LOAD_B_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         BoundsCheck.setUsed
-//     }
-// }
-// case object FreePair extends StandardFuncs(FREE_PAIR_LABEL) {
-//     override def setUsed: Unit = {
-//         this.used = true
-//         NullPointer.setUsed
-//     }
-// }
-
 object StandardFuncs {
     var usedFuncs = new Array[Boolean](StdFuncsEnum.maxId)
 
@@ -64,7 +17,6 @@ object StandardFuncs {
             case _ => 
         }
         usedFuncs(func.id) = true
-        
     }
 
     def getFunction(func: StdFuncsEnum): FuncBlock = {
@@ -130,7 +82,6 @@ object StandardFuncs {
             case ZeroDivErr | NullErr | OverflowErr | BoundsErr => {
                 RuntimeCheck.runtimeErrorMsg(func.toString())
             }
-            // case _ => throw new IllegalArgumentException(s"standard function ${name} does not exist")
         }
     }
 }
