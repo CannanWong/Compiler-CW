@@ -4,7 +4,7 @@ import wacc.FixedRegister
 import wacc.ImmVal
 
 /* registers */
-object  Constants {
+object Constants {
   val r0 = FixedRegister(0)
   val r1 = FixedRegister(1)
   val r2 = FixedRegister(2)

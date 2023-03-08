@@ -5,7 +5,8 @@ import wacc.Constants._
 
 object AssignRegister {
     var newInstList: ListBuffer[Instruction] = ListBuffer.empty
-    var regQueue: Queue[Int] = Queue(7, 6, 5, 4, 3, 2, 1, 0)    // Storing available registers: R7-R0
+    // Storing available registers: R7-R0
+    var regQueue: Queue[FixedRegister] = Queue(r7, r6, r5, r4, r3, r2, r1, r0)
 
     // When no registers are available  
     var storeInst: Option[StrInst] = None           // To add instuction to store on stack
@@ -18,7 +19,7 @@ object AssignRegister {
     val interRegs = List(r8, r9, r10)
 
     def resetRegQueue(): Unit = {
-        regQueue = Queue(7, 6, 5, 4, 3, 2, 1, 0)
+        regQueue = Queue(r7, r6, r5, r4, r3, r2, r1, r0)
     }
 
     // Update the CFG in IR1 recursively and replace variables and temporary registers
@@ -33,14 +34,14 @@ object AssignRegister {
         resetRegQueue()
         // Only use r7-r4 if in main
         if (funcBlock.GLOBAL_MAIN) {
-            regQueue = Queue(7, 6, 5, 4)
+            regQueue = Queue(r7, r6, r5, r4)
         }
-        val paramReg: Queue[Int] = Queue(0, 1, 2, 3)
+        val paramReg: Queue[FixedRegister] = Queue(r0, r1, r2, r3)
         val paramQueue: Queue[ParamNode] = Queue(funcBlock.paramList: _*)
         // Add the first 4 parameters mapping to r0-r3
         for (i <- 1 to 4) {
             if (!paramQueue.isEmpty) {
-                varOpTable.addOne(paramQueue.dequeue().ident.newName, FixedRegister(paramReg.dequeue()))
+                varOpTable.addOne(paramQueue.dequeue().ident.newName, paramReg.dequeue())
                 val revRegQueue = regQueue.reverse
                 revRegQueue.dequeue()
                 regQueue = revRegQueue.reverse
@@ -157,7 +158,7 @@ object AssignRegister {
                 inst.r match {
                     case t: TempRegister => {
                         tempRegTable.get(t.num) match {
-                            case Some(f: FixedRegister) => regQueue.enqueue(f.num)
+                            case Some(f: FixedRegister) => regQueue.enqueue(f)
                             case _ =>
                         }
                         inst
@@ -205,7 +206,7 @@ object AssignRegister {
                     case _ => {
                         // Get fixed register
                         if (!regQueue.isEmpty) {
-                            val fReg = FixedRegister(regQueue.dequeue())
+                            val fReg = regQueue.dequeue()
                             varOpTable.addOne(v.name, fReg)
                             fReg
                         }
@@ -245,7 +246,7 @@ object AssignRegister {
             case _ => {
                 // Get fixed register
                 if (!regQueue.isEmpty) {
-                    val fReg = FixedRegister(regQueue.dequeue())
+                    val fReg = regQueue.dequeue()
                     tempRegTable.addOne(tReg.num, fReg)
                     fReg
                 }
