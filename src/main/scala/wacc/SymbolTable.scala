@@ -29,12 +29,12 @@ class SymbolTable {
     }
 
     // Add function to symbol table
-    def addFunc(name: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier): String = {
-        val funcName = "f" + nextFuncNameNum.toString + "!" + name
-        val identifier = new FuncIdentifier(name, paramtype, returntype)
-        map.addOne(funcName, identifier)
+    def addFunc(oldName: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier): String = {
+        val newName = "f" + nextFuncNameNum.toString + "!" + oldName
+        val identifier = new FuncIdentifier(oldName, paramtype, returntype)
+        map.addOne(newName, identifier)
         nextFuncNameNum += 1
-        funcName
+        newName
     }
 
     // Look up variable or array from symbol table in same or higher scopes

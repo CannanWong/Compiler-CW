@@ -76,7 +76,6 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
     def addToSymbolTable(): Unit = {
         ty.semanticCheck()
 
-        
         val paramtypeList = ListBuffer[TypeIdentifier]()
         for (param <- paramList.paramList) {
             paramtypeList += param.ty.typeVal()
@@ -151,10 +150,10 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         lvalue.semanticCheck()
         rvalue.semanticCheck()
         lvalue match {
-            case IdentNode(id) => {
-                val func = SemanticChecker.symbolTable.lookUpFunc(id)
+            case i: IdentNode => {
+                val func = SemanticChecker.symbolTable.lookUpFunc(i.newName)
                 func match {
-                    case Some(funcIdent) => Error.addSemErr(s"function ${id} cannot be assigned with any values\n")
+                    case Some(FuncIdentifier(_,_,_)) => Error.addSemErr(s"function ${i.newName} cannot be assigned with any values\n")
                     case _ => 
                 }
             }
@@ -162,10 +161,10 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         }
 
         rvalue match {
-            case IdentNode(id) => {
-                val func = SemanticChecker.symbolTable.lookUpFunc(id)
+            case i: IdentNode => {
+                val func = SemanticChecker.symbolTable.lookUpFunc(i.newName)
                 func match {
-                    case Some(funcIdent) => Error.addSemErr(s"function ${id} cannot be assigned with any values\n")
+                    case Some(FuncIdentifier(_,_,_)) => Error.addSemErr(s"function ${i.name} cannot be assigned as values\n")
                     case _ =>
                 }
             }
@@ -342,6 +341,8 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
                 if (!isFunction) {
                     newName = SemanticChecker.symbolTable.getVarName(name)
                 }
+
+                /*  // ! To be deleted
                 else {    
                     val funcIdentifier = SemanticChecker.symbolTable.lookUpFunc(name)
                     funcIdentifier match {
@@ -349,6 +350,7 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
                         case _ =>
                     }
                 }
+                */
             }
         }
 
