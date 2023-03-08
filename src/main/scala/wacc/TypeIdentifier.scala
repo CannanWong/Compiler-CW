@@ -57,10 +57,10 @@ case class CharIdentifier() extends TypeIdentifier {
   override def toString(): String = "char"
 }
 
-case class FuncIdentifier(paramtype: List[TypeIdentifier], returntype: TypeIdentifier) extends TypeIdentifier {
+case class FuncIdentifier(old_name: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier) extends TypeIdentifier {
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
-      case FuncIdentifier(plist, retType) => {
+      case FuncIdentifier(_, plist, retType) => {
         val paramstypeValid = (paramtype.length == plist.length) &&
                               paramtype
                               .zip(plist)
