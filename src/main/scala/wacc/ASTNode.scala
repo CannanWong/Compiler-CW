@@ -117,6 +117,10 @@ case class SkipNode() extends StatNode
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
+        rvalue match {
+            case c: CallNode => c.returnType = Some(ty.typeVal())
+            case _ =>
+        }
         rvalue.semanticCheck()
         
         // Check if variable name is already declared in the same scope
@@ -148,6 +152,10 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
 case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode {
     override def semanticCheck(): Unit = { 
         lvalue.semanticCheck()
+        rvalue match {
+            case c: CallNode => c.returnType = Some(lvalue.typeVal())
+            case _ =>
+        }
         rvalue.semanticCheck()
         lvalue match {
             case i: IdentNode => {
@@ -510,31 +518,22 @@ case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode 
 
 case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
     var newName: Option[String] = Option.empty
-    override def typeVal() = {
-        newName match {
-            case Some(newName) => {
-                ident.newName = newName
-                SemanticChecker.symbolTable.lookUpFunc(newName) match {
-                    case Some(FuncIdentifier(_,_,returntype)) => returntype
-                    case _ => AnyIdentifier()
-                }
-            }
-            case _ => AnyIdentifier()
-        }
+    var returnType: Option[TypeIdentifier] = Option.empty
+    override def typeVal() = returnType match {
+        case Some(ty) => ty
+        case _ => AnyIdentifier()
     }
 
     override def semanticCheck(): Unit = {
         argList.semanticCheck()
 
         val exprTypes: List[TypeIdentifier] = argList.exprList.map(expr => expr.typeVal())
-        newName = SemanticChecker.symbolTable.getFuncNewName(ident.name, exprTypes, AnyIdentifier())
+        newName = SemanticChecker.symbolTable.getFuncNewName(ident.name, exprTypes, typeVal())
         newName match {
             case None => Error.addSemErr("Function name \"" + ident.name + 
-                                            "\" is not defined or parameter types do not match")
-            case _ =>  
+                                            "\" is not defined or parameter/return type(s) do not match")
+            case Some(name) => ident.newName = name
         }
-
-        typeVal()
     }
 }
 

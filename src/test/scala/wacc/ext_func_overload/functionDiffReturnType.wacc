@@ -1,0 +1,54 @@
+# Extension: fuunction overloading
+# Same function name with different type of parameters
+
+# Output:
+# 0
+# a
+# true
+# abc
+# cba
+# 1
+# 2
+#
+
+# Program:
+
+begin
+  int f() is
+    return 0
+  end
+  char f() is
+    return 'a'
+  end
+  bool f() is
+    return true
+  end
+  string f() is
+    return "abc"
+  end
+  char[] f() is
+    char [] a = ['c','b','a'] ;
+    return a
+  end
+  pair(int, int) f() is
+    pair(int, int) a = newpair(1, 2) ;
+    return a
+  end
+  int a = call f() ;
+  char b = call f() ;
+  bool c = call f() ;
+  char d = call f() ;
+  string e = call f() ;
+  char[] f = call f() ;
+  pair(int, int) g = call f() ;
+  int h = fst g ;
+  int i = snd g ;
+  println a ;
+  println b ;
+  println c ;
+  println d ;
+  println e ;
+  println f ;
+  println h ;
+  println i
+end
