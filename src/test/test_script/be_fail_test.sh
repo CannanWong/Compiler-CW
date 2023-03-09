@@ -30,7 +30,7 @@ do
 
     # Check program output
     if [ "$output" == "$expected_output" ]
-        then : # echo "Output correct"
+        then : 
     else
         echo -e "Output: \n$output" 
         echo -e "Expected: \n$expected_output"
@@ -39,7 +39,7 @@ do
 
     # Check exit code
     if [ "$exit" == "$expected_exit" ]
-        then : # echo "Exit code correct"
+        then : 
     else
         echo -e "Exited $exit instead of $expected_exit"
         pass=0
@@ -47,7 +47,6 @@ do
 
     if [ $pass -eq 1 ]
         then 
-        # echo -e "Test $file passed"
         ((passcount=passcount+1))
     else
         echo -e "Test $file failed!"

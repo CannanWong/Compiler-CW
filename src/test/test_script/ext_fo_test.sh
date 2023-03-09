@@ -2,10 +2,9 @@ echo -e "Tests:\n"
 allpass=1
 passcount=0
 failcount=0
-validcount=221
 
 shopt -s globstar
-for file in src/test/scala/wacc/back_end_all/valid/**/*.wacc
+for file in src/test/scala/wacc/ext_func_overload/**/*.wacc
 do
     expected_exit=0
     expected_output=""
@@ -30,17 +29,18 @@ do
 
     # Check program output
     if [ "$output" == "$expected_output" ]
-        then : # echo "Output correct"
+        then :
     else
-        # echo -e "Outputted $output instead of $expected_output"
+        echo -e "Output: \n$output" 
+        echo -e "Expected: \n$expected_output"
         pass=0
     fi
 
     # Check exit code
     if [ "$exit" == "$expected_exit" ]
-        then : # echo "Exit code correct"
+        then :
     else
-        # echo -e "Exited $exit instead of $expected_exit"
+        echo -e "Exited $exit instead of $expected_exit"
         pass=0
     fi
 
@@ -54,10 +54,6 @@ do
         allpass=0
     fi
 done
-
-echo -e -n "Current progress: "
-echo "scale=2;100*$passcount/$validcount" | bc | tr '\n' ' '
-echo -e "% of tests in wacc_example/valid passed"
 
 if [ $allpass -eq 1 ]
     then 

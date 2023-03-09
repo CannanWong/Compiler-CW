@@ -40,8 +40,8 @@ begin
   string d = call f() ;
   char[] e = call f() ;
   pair(int, int) f = call f() ;
-  int g = fst g ;
-  int h = snd g ;
+  int g = fst f ;
+  int h = snd f ;
   println a ;
   println b ;
   println c ;
