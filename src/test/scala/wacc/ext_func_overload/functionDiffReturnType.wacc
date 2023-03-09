@@ -37,18 +37,16 @@ begin
   int a = call f() ;
   char b = call f() ;
   bool c = call f() ;
-  char d = call f() ;
-  string e = call f() ;
-  char[] f = call f() ;
-  pair(int, int) g = call f() ;
-  int h = fst g ;
-  int i = snd g ;
+  string d = call f() ;
+  char[] e = call f() ;
+  pair(int, int) f = call f() ;
+  int g = fst g ;
+  int h = snd g ;
   println a ;
   println b ;
   println c ;
   println d ;
   println e ;
-  println f ;
-  println h ;
-  println i
+  println g ;
+  println h 
 end
