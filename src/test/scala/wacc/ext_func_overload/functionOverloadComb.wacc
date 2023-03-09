@@ -1,0 +1,56 @@
+# Extension: fuunction overloading
+# A combination of different number of parameters, 
+# parameter types and return types
+
+# Output:
+# 0
+# a
+# true
+# abc
+# cba
+# 1
+# 2
+#
+
+# Exit:
+# 0
+
+# Program:
+
+begin
+  int f() is
+    return 0
+  end
+  char f(int x) is
+    return 'a'
+  end
+  bool f(bool x) is
+    return x
+  end
+  string f(int x, char y, bool z) is
+    return "abc"
+  end
+  char[] f(int x, char y) is
+    char [] a = [y,'b','a'] ;
+    return a
+  end
+  pair(int, int) f(int x, bool z) is
+    pair(int, int) a = newpair(x, 2) ;
+    return a
+  end
+  int a = call f() ;
+  char b = call f(1) ;
+  bool c = call f(true) ;
+  string d = call f(1, 'c', true) ;
+  char[] e = call f(1, 'c') ;
+  pair(int, int) f = call f(1, true) ;
+  int g = fst f ;
+  int h = snd f ;
+  println a ;
+  println b ;
+  println c ;
+  println d ;
+  println e ;
+  println g ;
+  println h 
+end

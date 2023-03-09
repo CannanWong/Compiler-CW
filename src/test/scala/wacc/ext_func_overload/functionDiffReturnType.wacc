@@ -1,5 +1,5 @@
 # Extension: fuunction overloading
-# Same function name with different type of parameters
+# Same function name with different return types
 
 # Output:
 # 0
@@ -10,6 +10,9 @@
 # 1
 # 2
 #
+
+# Exit:
+# 0
 
 # Program:
 
