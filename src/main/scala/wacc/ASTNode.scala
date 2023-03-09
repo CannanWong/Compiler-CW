@@ -23,31 +23,7 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, 
                     stat: StatNode) extends ASTNode {
-    def addToSymbolTable(): Unit = {
-        ty.semanticCheck()
-
-        // Check if function name is used
-        val funcNameUsed = SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
-            case Some(n) => {
-                Error.addSemErr(s"Function \"${ident.name}\" is defined more than once")
-                true
-            }
-            case _ => false
-        }
-
-        val paramtypeList = ListBuffer[TypeIdentifier]()
-        for (param <- paramList.paramList) {
-            paramtypeList += param.ty.typeVal()
-        }
-
-        // Add to symbol table
-        if (!funcNameUsed) {
-            SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
-            ident.newName = "f!" + ident.name
-        }
-    }
     override def semanticCheck(): Unit = {
-
         ident.isFunction = true
         
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
@@ -96,6 +72,26 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
             case _ =>
         }
     }
+
+    def addToSymbolTable(): Unit = {
+        ty.semanticCheck()
+
+        val paramtypeList = ListBuffer[TypeIdentifier]()
+        for (param <- paramList.paramList) {
+            paramtypeList += param.ty.typeVal()
+        }
+
+        // Check if function name is used
+        SemanticChecker.symbolTable.getFuncNewName(ident.name, paramtypeList.toList, ty.typeVal()) match {
+            case Some(newName) => {
+                Error.addSemErr(s"Function \"${ident.name}\" is defined more than once with the same parameter and return types")
+            }
+            // Add to symbol table
+            case _ => {
+                ident.newName = SemanticChecker.symbolTable.addFunc(ident.name, paramtypeList.toList, ty.typeVal())
+            }
+        }
+    }
 }
 
 
@@ -121,6 +117,10 @@ case class SkipNode() extends StatNode
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
     override def semanticCheck(): Unit = {AnyIdentifier
         ty.semanticCheck()
+        rvalue match {
+            case c: CallNode => c.returnType = Some(ty.typeVal())
+            case _ =>
+        }
         rvalue.semanticCheck()
         
         // Check if variable name is already declared in the same scope
@@ -165,13 +165,17 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
 case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends StatNode {
     override def semanticCheck(): Unit = { 
         lvalue.semanticCheck()
+        rvalue match {
+            case c: CallNode => c.returnType = Some(lvalue.typeVal())
+            case _ =>
+        }
         rvalue.semanticCheck()
         SemanticChecker.debugMessage += s"assigning ${rvalue.typeVal()} to ${lvalue.typeVal()}"
         lvalue match {
-            case IdentNode(id) => {
-                val func = SemanticChecker.symbolTable.lookUpFunc(id)
+            case i: IdentNode => {
+                val func = SemanticChecker.symbolTable.lookUpFunc(i.newName)
                 func match {
-                    case Some(funcIdent) => Error.addSemErr(s"function ${id} cannot be assigned with any values\n")
+                    case Some(FuncIdentifier(_,_,_)) => Error.addSemErr(s"function ${i.newName} cannot be assigned with any values\n")
                     case _ => 
                 }
             }
@@ -179,10 +183,10 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         }
 
         rvalue match {
-            case IdentNode(id) => {
-                val func = SemanticChecker.symbolTable.lookUpFunc(id)
+            case i: IdentNode => {
+                val func = SemanticChecker.symbolTable.lookUpFunc(i.newName)
                 func match {
-                    case Some(funcIdent) => Error.addSemErr(s"function ${id} cannot be assigned with any values\n")
+                    case Some(FuncIdentifier(_,_,_)) => Error.addSemErr(s"function ${i.name} cannot be assigned as values\n")
                     case _ =>
                 }
             }
@@ -360,13 +364,6 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
             case _ => {
                 if (!isFunction) {
                     newName = SemanticChecker.symbolTable.getVarName(name)
-                }
-                else {    
-                    val funcIdentifier = SemanticChecker.symbolTable.lookUpFunc(name)
-                    funcIdentifier match {
-                        case Some(_) => newName = "f!" + name
-                        case _ =>
-                    }
                 }
             }
         }
@@ -582,58 +579,22 @@ case class NewPairNode(fstExpr: ExprNode, sndExpr: ExprNode) extends RValueNode 
 }
 
 case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
-    override def typeVal() = {
-        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
-            case Some(FuncIdentifier(_,returntype)) => returntype
-            /* semantic error: func does not exist in symbol table */
-            case _ => new AnyIdentifier
-        }
+    var newName: Option[String] = Option.empty
+    var returnType: Option[TypeIdentifier] = Option.empty
+    override def typeVal() = returnType match {
+        case Some(ty) => ty
+        case _ => AnyIdentifier()
     }
 
     override def semanticCheck(): Unit = {
         argList.semanticCheck()
 
-        SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
-            // Check if arg list is of correct type and number
-            case Some(FuncIdentifier(paramtype,_)) => {
-                if (argList.exprList.length != paramtype.length) {
-                        Error.addSemErr(
-                            "function argument number is different from function parameter number")
-                    }
-                else {
-                    // Check for tyoe mismatch in function call 
-                    val argBuilder = new StringBuilder()
-                    val provBuilder = new StringBuilder()
-                    val typeCompList = argList.exprList
-                                        .map(x => {
-                                            val ty = x.typeVal()
-                                            // argBuilder builds paramList for error message
-                                            if (argBuilder.isEmpty) {argBuilder.++=(s"${ty}")}
-                                            else {argBuilder.++=(s", ${ty}")}
-                                            // type string gets returned to the list
-                                            ty                                           
-                                    }).zip(
-                                        paramtype
-                                        .map(x => {
-                                        // provBuilder builds paramList for error message
-                                        if (provBuilder.isEmpty) {provBuilder.++=(s"${x}")}
-                                        else {provBuilder.++=(s", ${x}")}
-                                        // type string gets returned to the list
-                                        x 
-                                    }))
-                    val typeValid = typeCompList
-                            .map{case(func: TypeIdentifier, prov: TypeIdentifier) => func.typeEquals(prov)}
-                            .fold(true)((x, y) => x && y)
-                            
-                    if (!typeValid) {
-                        Error.addSemErr(
-                            s"function arguement type error: expected: (${argBuilder.toString()})" +
-                            s"provided: (${provBuilder.toString()})")
-                    }
-                }
-            }
-            case _ =>  Error.addSemErr(
-                        "Function name \"" + ident.name + "\" is not defined")
+        val exprTypes: List[TypeIdentifier] = argList.exprList.map(expr => expr.typeVal())
+        newName = SemanticChecker.symbolTable.getFuncNewName(ident.name, exprTypes, typeVal())
+        newName match {
+            case None => Error.addSemErr("Function name \"" + ident.name + 
+                                            "\" is not defined or parameter/return type(s) do not match")
+            case Some(name) => ident.newName = name
         }
     }
 }

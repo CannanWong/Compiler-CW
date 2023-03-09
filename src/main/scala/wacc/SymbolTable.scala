@@ -6,6 +6,7 @@ import wacc.{FuncIdentifier, ArrayIdentifier, PairIdentifier}
 class SymbolTable {
 
     val map: mutable.Map[String, TypeIdentifier] = mutable.Map()
+    var nextFuncNameNum = 1
     
     // Add variable to symbol table
     def addVar(name: String, ty: TypeIdentifier): Unit = {
@@ -28,10 +29,13 @@ class SymbolTable {
     }
 
     // Add function to symbol table
-    def addFunc(name: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier): Unit = {
-        val funcName = "f!" + name
-        val identifier = new FuncIdentifier(paramtype, returntype)
-        map.addOne(funcName, identifier)
+    def addFunc(oldName: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier): String = {
+        // Rename function
+        val newName = "f" + nextFuncNameNum.toString + "_" + oldName
+        val identifier = new FuncIdentifier(oldName, paramtype, returntype)
+        map.addOne(newName, identifier)
+        nextFuncNameNum += 1
+        newName
     }
 
     // Look up variable or array from symbol table in same or higher scopes
@@ -76,9 +80,31 @@ class SymbolTable {
     }
 
     // Look up function from symbol table
-    def lookUpFunc(name: String): Option[TypeIdentifier] = {
-        val funcName = "f!" + name
-        map.get(funcName)
+    def lookUpFunc(newName: String): Option[TypeIdentifier] = {
+        map.get(newName)
+    }
+
+    def getFuncNewName(oldName: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier): Option[String] = {
+        var newName: Option[String] = Option.empty
+        // ! To be improved (Use recursion?)
+        for (n <- 1 to (nextFuncNameNum - 1)) {
+            val funcName: String = "f" + n.toString + "_" + oldName
+            // Find renamed function
+            map.get(funcName) match {
+                case Some(FuncIdentifier(_, plist, retType)) => {
+                    val paramstypeValid = (paramtype.length == plist.length) &&
+                        paramtype
+                        .zip(plist)
+                        .map{case (a: TypeIdentifier, b: TypeIdentifier) => a.typeEquals(b)}
+                        .fold(true)((x, y) => x && y)
+                    if (paramstypeValid && returntype.typeEquals(retType)) {
+                        newName = Some(funcName)
+                    }
+                }
+                case _ =>
+            }
+        }
+        newName
     }
 
     override def toString(): String = {

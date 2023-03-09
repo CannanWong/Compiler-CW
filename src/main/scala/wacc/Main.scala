@@ -1,6 +1,6 @@
 package wacc
 
-import parsley.{Parsley, Success, Failure}
+import parsley.{Success, Failure}
 import Parser.topLevel
 
 import scala.io.Source
