@@ -30,7 +30,8 @@ class SymbolTable {
 
     // Add function to symbol table
     def addFunc(oldName: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier): String = {
-        val newName = "f" + nextFuncNameNum.toString + "!" + oldName
+        // Rename function
+        val newName = "f" + nextFuncNameNum.toString + "_" + oldName
         val identifier = new FuncIdentifier(oldName, paramtype, returntype)
         map.addOne(newName, identifier)
         nextFuncNameNum += 1
@@ -87,7 +88,8 @@ class SymbolTable {
         var newName: Option[String] = Option.empty
         // ! To be improved (Use recursion?)
         for (n <- 1 to (nextFuncNameNum - 1)) {
-            val funcName: String = "f" + n.toString + "!" + oldName
+            val funcName: String = "f" + n.toString + "_" + oldName
+            // Find renamed function
             map.get(funcName) match {
                 case Some(FuncIdentifier(_, plist, retType)) => {
                     val paramstypeValid = (paramtype.length == plist.length) &&

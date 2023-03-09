@@ -79,7 +79,7 @@ object CodeGenerator {
         translate(f.stat)
 
         // Naming all non-main functions as wacc_*ident*
-        funcBlock.name = if (funcBlock.GLOBAL_MAIN) "main" else s"wacc_${f.ident.name}"
+        funcBlock.name = if (funcBlock.GLOBAL_MAIN) "main" else f.ident.newName
         controlFlowFuncs.addOne(funcBlock.name, funcBlock)
     }
 

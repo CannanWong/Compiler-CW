@@ -133,7 +133,7 @@ object AssignmentTranslations {
             count += 1
         }
         // Branch link to the function
-        currInstBlock.addInst(BranchLinkInst(s"wacc_${ident.name}"))
+        currInstBlock.addInst(BranchLinkInst(ident.newName))
         r0
     }
 
