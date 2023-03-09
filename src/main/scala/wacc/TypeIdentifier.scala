@@ -87,10 +87,12 @@ case class ArrayIdentifier(baseTy: TypeIdentifier, dim: Int) extends TypeIdentif
   }
   override def toString(): String = {
     val sb = new StringBuilder()
-    val brackets = for (i <- 1 to dim) {
+    for (i <- 1 to dim) {
       sb.++=("[]")
     }
-    s"${baseTy.toString()}${brackets}"
+    //s"${baseTy.toString()}${brackets.toString()}"
+    s"${baseTy.toString()}${sb.toString()}"
+
 
   }
 }
@@ -99,6 +101,7 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case PairIdentifier(otherTy1, otherTy2) => {
+        SemanticChecker.debugMessage += s"ty1 ${ty1} == ${otherTy1} is ${ty1.typeEquals(otherTy1)}: && ty2 ${ty2} == ${otherTy2} "
         ty1.typeEquals(otherTy1) && ty2.typeEquals(otherTy2)
       }
       case a: AnyIdentifier => true
@@ -115,6 +118,7 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
 case class NullIdentifier() extends TypeIdentifier {
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
+      case n: NullIdentifier => true
       case a: AnyIdentifier => true
       case p: PairIdentifier => true
       case _ => false

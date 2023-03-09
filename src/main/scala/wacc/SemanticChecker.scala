@@ -1,6 +1,6 @@
 package wacc
 
-import scala.collection.mutable.Stack
+import scala.collection.mutable.{Stack, ListBuffer}
 
 import wacc.{ArrayIdentifier, PairIdentifier, NullIdentifier, AnyIdentifier}
 object SemanticChecker {
@@ -8,6 +8,7 @@ object SemanticChecker {
     var nextScope = 0
     var scopeStack = Stack[Int]()
     var insideFunc = true
+    val debugMessage = ListBuffer[String]()
 
     def check(node: ProgramNode): Unit = {
         resetSemanticChecker()
@@ -19,6 +20,7 @@ object SemanticChecker {
         symbolTable = new SymbolTable()
         scopeStack.push(0)
         nextScope = 1
+        debugMessage += "%%% DEBUG LOG %%%"
     }
 
     def tableContainsIdentifier(id :IdentNode): Boolean = {
@@ -33,17 +35,19 @@ object SemanticChecker {
 
     // for AssignIdentNode
     def typeCheck(ty1: TypeIdentifier, ty2: TypeIdentifier): Boolean = {
+        SemanticChecker.debugMessage += (s"typeCheck: lhs ${ty1}: rhs ${ty2}") 
         ty1 match {
-            case p1: PairIdentifier =>{ 
+            case p1: PairIdentifier => {
+                SemanticChecker.debugMessage += ("lhs is a pair") 
                 ty2 match {
                     case p2: PairIdentifier => {
+                        SemanticChecker.debugMessage += ("rhs is a pair") 
                         typeCheckPair(p1, p2)
                     }
                     case _ => {
                         ty2.typeEquals(p1)
                     }
-                }
-                
+                }        
             }
             case _ => {
                 ty1.typeEquals(ty2)}
@@ -52,26 +56,22 @@ object SemanticChecker {
 
 
     def typeCheckPair(lhsType: PairIdentifier, rhsType: PairIdentifier) : Boolean = {
+        SemanticChecker.debugMessage += (s"typeCheckPair: lhs ${lhsType}: rhs ${rhsType}")
         var ret = true
         val lhsFstType = lhsType.ty1
         val rhsFstType = rhsType.ty1
-        if (!lhsFstType.typeEquals(new NullIdentifier) || !rhsFstType.typeEquals(new NullIdentifier) ||
-            !lhsFstType.typeEquals(new AnyIdentifier) || !rhsFstType.typeEquals(new AnyIdentifier)) {
-            if (!lhsFstType.typeEquals(rhsFstType)) {
-                Error.addSemErr("Wrong type in pair declaration, expected " +
-                                lhsFstType + " instead of " + rhsFstType)
-                ret = false
-            }
+        if (!lhsFstType.typeEquals(rhsFstType)) {
+            Error.addSemErr("Wrong type in pair type, expected fst type to be " +
+                            lhsFstType + " instead of " + rhsFstType)
+            ret = false
         }
+        
         val lhsSndType = lhsType.ty2
         val rhsSndType = rhsType.ty2
-        if (!lhsSndType.typeEquals(new NullIdentifier) || !rhsSndType.typeEquals(new NullIdentifier) ||
-            !lhsSndType.typeEquals(new AnyIdentifier) || !rhsSndType.typeEquals(new AnyIdentifier)) {
-            if (!lhsSndType.typeEquals(rhsSndType)) {
-                Error.addSemErr("Wrong type in pair declaration, expected " +
-                                lhsSndType + " instead of " + rhsSndType)
-                ret = false
-            }
+        if (!lhsSndType.typeEquals(rhsSndType)) {
+            Error.addSemErr("Wrong type in pair type, expected snd type to be " +
+                            lhsSndType + " instead of " + rhsSndType)
+            ret = false
         }        
         ret    
     }
@@ -80,7 +80,6 @@ object SemanticChecker {
     def typeIsArray(id: TypeIdentifier): Boolean = {
         id match {
         case ar: ArrayIdentifier=> true
-        // case VarIdentifier(varId) => typeIsArray(varId)
         case a: AnyIdentifier => true
         case _ => false
         }
@@ -90,7 +89,6 @@ object SemanticChecker {
         id match {
         case p: PairIdentifier => true
         case n: NullIdentifier => true
-        // case VarIdentifier(varId) => typeIsArray(varId)
         case a: AnyIdentifier => true
         case _ => false
         }

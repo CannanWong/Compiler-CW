@@ -119,7 +119,7 @@ sealed trait StatNode extends ASTNode
 case class SkipNode() extends StatNode
 
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
-    override def semanticCheck(): Unit = {
+    override def semanticCheck(): Unit = {AnyIdentifier
         ty.semanticCheck()
         rvalue.semanticCheck()
         
@@ -129,20 +129,33 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         }
         // Add to symbol table and get type
         else {
-            ty match {
-                case b: BaseTypeNode => 
-                    SemanticChecker.symbolTable.addVar(ident.name, b.typeVal())
-                case a: ArrayTypeNode =>
-                    SemanticChecker.symbolTable.addArray(ident.name, a.arrayType, a.arrayDim)
-                case p: PairTypeNode =>
-                    SemanticChecker.symbolTable.addPair(ident.name, p.fstPET.typeVal(), p.sndPET.typeVal())
+            rvalue.typeVal() match {
+                case b: BoolIdentifier => SemanticChecker.symbolTable.addVar(ident.name, b)
+                case c: CharIdentifier => SemanticChecker.symbolTable.addVar(ident.name, c)
+                case i: IntIdentifier => SemanticChecker.symbolTable.addVar(ident.name, i)
+                case s: StrIdentifier => SemanticChecker.symbolTable.addVar(ident.name, s)                    
+                case ArrayIdentifier(baseTy, dim) => {
+                    if (baseTy.typeEquals(new AnyIdentifier)) {
+                        SemanticChecker.symbolTable.addVar(ident.name, ty.typeVal())
+                    } else {
+                        SemanticChecker.symbolTable.addArray(ident.name, baseTy, dim)
+                    }
+                    
+                    }
+                case p: PairIdentifier => SemanticChecker.symbolTable.addVar(ident.name, p)
+                case any: AnyIdentifier => SemanticChecker.symbolTable.addVar(ident.name, any)
+                case n: NullIdentifier => SemanticChecker.symbolTable.addVar(ident.name, ty.typeVal())
+                case ty => throw new IllegalArgumentException (s"type ${ty} is not a assignable rvalue element")
             }
+            // SemanticChecker.debugMessage += "new pair added: " + SemanticChecker.symbolTable.toString()
             ident.newName = SemanticChecker.currScope().toString() + "!" + ident.name
         }
 
+        /* check whether rvalue type matches that of TypeNode */
         if (!SemanticChecker.typeCheck(ty.typeVal(), rvalue.typeVal())) {
-            Error.addSemErr("definition: type mismatch: expected "+ ty.typeVal().toString() + " gets "
-                            + rvalue.typeVal().toString())
+            Error.addSemErr("definition: type mismatch: expected "+ ty.typeVal().toString()
+                        + s" for ${ident.name}, gets "
+                        + rvalue.typeVal().toString())
         }
     }        
 }
@@ -153,6 +166,7 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
     override def semanticCheck(): Unit = { 
         lvalue.semanticCheck()
         rvalue.semanticCheck()
+        SemanticChecker.debugMessage += s"assigning ${rvalue.typeVal()} to ${lvalue.typeVal()}"
         lvalue match {
             case IdentNode(id) => {
                 val func = SemanticChecker.symbolTable.lookUpFunc(id)
@@ -179,6 +193,8 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         val rhsType = rvalue.typeVal()
         if (!SemanticChecker.typeCheck(lhsType, rhsType)) {
                 Error.addSemErr(s"assignment: type mismatch: expected ${lvalue.typeVal().toString}, gets ${rvalue.typeVal().toString()}")
+        }else{
+            SemanticChecker.debugMessage += (s"lhs type: ${lvalue.typeVal()} rhs type: ${rvalue.typeVal()}")
         }
 
         val undefinedTypeAssign = lhsType match {
@@ -202,12 +218,11 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
 case class ReadNode(lvalue: LValueNode) extends StatNode {
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
-        val ty = lvalue.typeVal()
-        if ((!SemanticChecker.typeCheck(new IntIdentifier, ty) 
-            && !SemanticChecker.typeCheck(new CharIdentifier, ty))) {
-            Error.addSemErr(s"read type error: unexpected ${lvalue.typeVal()} (expected: " +
-                            "char and int)")
-
+        lvalue.typeVal() match {
+            case IntIdentifier() | CharIdentifier() =>
+            case AnyIdentifier() =>  
+            case ty => Error.addSemErr(s"read type error: unexpected ${lvalue.typeVal()}" +
+                    "(expect variable with type char or int)")
         }
     }
 }
@@ -326,13 +341,14 @@ sealed trait LValueNode extends ASTNode {
     def typeVal(): TypeIdentifier
 }
 
-case class IdentNode(name: String) extends LValueNode with ExprNode {
+case class IdentNode(name: String) extends LValueNode with ExprNode {            
     var newName: String = null
     var isFunction: Boolean = false
     override def typeVal() = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
         identifier match {
             case Some(ty) => ty
+            /* semantic error: identifier not defined */
             case None => new AnyIdentifier
         }
     }
@@ -360,23 +376,31 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
 
 // Example: a[1][b]
 case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LValueNode with ExprNode {
+    /* temporary type val before typeval is called */
     var arrayType: TypeIdentifier = new AnyIdentifier
     var arrayDim = 0
     override def typeVal() = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(ident.name)
         identifier match {
             case Some(ArrayIdentifier(baseTy: TypeIdentifier, dim: Int)) => {
+                arrayDim = dim - exprList.length
                 if (arrayDim > 0) {
                     new ArrayIdentifier(baseTy, arrayDim)
                 } else if (arrayDim == 0) {
                     baseTy
                 } else {
-                    new AnyIdentifier
+                    /* semantic error: expr list longer than dimension of array declared for var */
+                    new AnyIdentifier()                                    
                 }
             }
-            case _ => {
+            case Some(ty) => {
+                /* semantic error: non-array elem should not be assigned as arrayelem node */
                 new AnyIdentifier
+
+
             }
+            /* semantic error: variable not defined */
+            case None => new AnyIdentifier
         }
      }
 
@@ -384,22 +408,19 @@ case class ArrayElemNode(ident: IdentNode, exprList: List[ExprNode]) extends LVa
         if (SemanticChecker.tableContainsIdentifier(ident)) {
             val identifier = SemanticChecker.symbolTable.lookUpVar(ident.name)
             identifier match {
-                case (a@Some(ArrayIdentifier(baseTy: TypeIdentifier, dim: Int))) => {
-                    arrayType = baseTy
-                    arrayDim = dim
-
+                case (a@Some(ArrayIdentifier(tableBaseTy: TypeIdentifier, tableDim: Int))) => {
+                    arrayType = tableBaseTy
+                    arrayDim = tableDim
                     for (e <- exprList) {
                         arrayDim -= 1
                         e.semanticCheck()
                         if (!e.typeVal().typeEquals(new IntIdentifier)) {
                             Error.addSemErr(s"array elem index: unexpected type ${e.typeVal().toString()}, expected int")
-                        } else {
-
                         }
                     }
                     if (arrayDim < 0) {
-                        Error.addSemErr(s"array type error: unexpected type " +
-                          s"${(new ArrayIdentifier(baseTy, exprList.length)).toString()}, expected ${a.value.toString()}")
+                        Error.addSemErr(s"array dimension error: unexpected type " +
+                        s"${(new ArrayIdentifier(tableBaseTy, exprList.length)).toString()} at ${ident.name}, expected ${a.get.toString()}")   
                     }
                 }
                 case None => Error.addSemErr(s"variable \"${ident.name}\" is not in scope")
@@ -414,54 +435,104 @@ sealed trait PairElemNode extends LValueNode with RValueNode
 
 case class FstNode(lvalue: LValueNode) extends PairElemNode {
     override def typeVal() = {
-        lvalue match {
+        val ty = lvalue match {
             case IdentNode(name) => {
-                val id = SemanticChecker.symbolTable.lookUpVar(name)
-                id match {
-                    case Some(ty) => {
-                        ty match {
-                            case p: PairIdentifier => p.ty1
-                            case _ => {
-                                Error.addSemErr(s"Wrong type assigned for fst, gets ${ty.toString()}")
-                                new AnyIdentifier
-                            }
-                        }
-                    }
-                    case _ => new AnyIdentifier
-                }
+                SemanticChecker.symbolTable.lookUpVar(name) match {
+                    case Some(vartype) => vartype
+                    /* semantic error: identifier is not in th symmbol table */
+                    case None => new AnyIdentifier
+                } 
             }
-            case _ => new AnyIdentifier
+            case lval => lval.typeVal()
+        }
+
+        ty match {
+            case p: PairIdentifier => p.ty1
+            case n: NullIdentifier => n
+            case _ => {
+                /* semantic error: wrong lvalue type*/
+                new AnyIdentifier
+            }
         } 
     }
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
+
+        val ty = lvalue match {
+            case IdentNode(name) => {
+                SemanticChecker.symbolTable.lookUpVar(name) match {
+                    case Some(vartype) => vartype
+                    /* semantic error: identifier is not in th symmbol table: case caught in lval semantic check */
+                    case None => new AnyIdentifier
+                } 
+            }
+            case lval => lval.typeVal()
+        }
+
+        ty match {
+            case p: PairIdentifier => {
+                SemanticChecker.debugMessage += s"${lvalue} is ${p}"
+            }
+            case n: NullIdentifier => {
+                SemanticChecker.debugMessage += s"${lvalue} is null"
+            }
+            case _ => {
+                /* semantic error: wrong lvalue type*/
+                Error.addSemErr(s"Wrong type assigned for fst, gets ${ty.toString()}")
+            }
+        }
     }
 }
 
 case class SndNode(lvalue: LValueNode) extends PairElemNode {
     override def typeVal() = {
-        lvalue match {
+        val ty = lvalue match {
             case IdentNode(name) => {
-                val id = SemanticChecker.symbolTable.lookUpVar(name)
-                id match {
-                    case Some(ty) => {
-                        ty match {
-                            case p: PairIdentifier => p.ty2
-                            case _ => {
-                                Error.addSemErr(s"Wrong type assigned for snd, gets ${ty.toString()}")
-                                new AnyIdentifier
-                            }
-                        }
-                    }
-                    case _ => new AnyIdentifier
-                }
+                SemanticChecker.symbolTable.lookUpVar(name) match {
+                    case Some(vartype) => vartype
+                    /* semantic error: identifier is not in th symmbol table */
+                    case None => new AnyIdentifier
+                } 
             }
-            case _ => new AnyIdentifier
+            case lval => lval.typeVal()
+        }
+
+        ty match {
+            case p: PairIdentifier => p.ty2
+            case n: NullIdentifier => n
+            case _ => {
+                /* semantic error: wrong lvalue type*/
+                new AnyIdentifier
+            }
         } 
     }
 
     override def semanticCheck(): Unit = {
         lvalue.semanticCheck()
+
+        val ty = lvalue match {
+            case IdentNode(name) => {
+                SemanticChecker.symbolTable.lookUpVar(name) match {
+                    case Some(vartype) => vartype
+                    /* semantic error: identifier is not in th symmbol table: case caught in lval semantic check */
+                    case None => new AnyIdentifier
+                } 
+            }
+            case lval => lval.typeVal()
+        }
+
+        ty match {
+            case p: PairIdentifier => {
+                SemanticChecker.debugMessage += s"${lvalue} is ${p}"
+            }
+            case n: NullIdentifier => {
+                SemanticChecker.debugMessage += s"${lvalue} is null"
+            }
+            case _ => {
+                /* semantic error: wrong lvalue type*/
+                Error.addSemErr(s"Wrong type assigned for snd, gets ${ty.toString()}")
+            }
+        }
     }
 }
 
@@ -481,7 +552,8 @@ case class ArrayLiterNode(exprList: List[ExprNode]) extends RValueNode {
                 case t => new ArrayIdentifier(t, 1)
             }
         } else {
-            new AnyIdentifier
+            /* type for empty array wiil be assigned at variable definition */
+            new ArrayIdentifier(new AnyIdentifier, 1)
         }
     }
 
@@ -513,6 +585,7 @@ case class CallNode(ident: IdentNode, argList: ArgListNode) extends RValueNode {
     override def typeVal() = {
         SemanticChecker.symbolTable.lookUpFunc(ident.name) match {
             case Some(FuncIdentifier(_,returntype)) => returntype
+            /* semantic error: func does not exist in symbol table */
             case _ => new AnyIdentifier
         }
     }
@@ -586,13 +659,16 @@ case class BaseTypeNode(ty: String) extends TypeNode with PairElemTypeNode {
             case "bool" => new BoolIdentifier
             case "char" => new CharIdentifier
             case "string" => new StrIdentifier
-            case _ => new AnyIdentifier
+            /* syntactic error: int, bool, char, string are the only basic types */
+            case _ =>
+                throw new IllegalArgumentException(s"basic type: \"${ty}\" is not a legal basic type")
        }
     }
 }
 
 
 case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
+    /* temporary holder of the basetype of an array */
     var arrayType: TypeIdentifier = new AnyIdentifier
     var arrayDim = 1
 
@@ -634,8 +710,9 @@ case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) exte
     }
 }
 
-// PairElemTypeNode
+//NOTE: should not exist for full pair type
 sealed trait PairElemTypeNode extends ASTNode {
+    /* "pair" can be refering to any valid pair type */
     def typeVal(): TypeIdentifier = new PairIdentifier(new AnyIdentifier, new AnyIdentifier)
 }
 // <pair>
