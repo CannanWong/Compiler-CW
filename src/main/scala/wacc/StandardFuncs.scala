@@ -28,12 +28,12 @@ object StandardFuncs {
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
-                    MovCondInst(LESS_THAN, r1, r10),
-                    BranchLinkCondInst(LESS_THAN, BOUNDS_CHECK_LABEL),
+                    MovInst(r1, r10, condition=LessThan()),
+                    BranchInst(BOUNDS_CHECK_LABEL, link=true, condition=LessThan()),
                     LdrInst(lr, ImmOffset(r8, INT_SIZE)),
                     CmpInst(r10, lr),
-                    MovCondInst(GREATER_OR_EQUAL, r1, r10),
-                    BranchLinkCondInst(GREATER_OR_EQUAL, BOUNDS_CHECK_LABEL),
+                    MovInst(r1, r10, condition=GreaterOrEqual()),
+                    BranchInst(BOUNDS_CHECK_LABEL, link=true, condition=GreaterOrEqual()),
                     func match {
                         case ArrLdr => LdrInst(r8, ScaledOffsetLSL(r8, r10, ImmVal(2)))
                         case ArrLdrB => LdrInst(r8, RegOffset(r8, r10))
@@ -48,12 +48,12 @@ object StandardFuncs {
                 funcBlock.body.addInst(
                     PushInst(lr),
                     CmpInst(r10, ImmVal(0)),
-                    MovCondInst(LESS_THAN, r1, r10),
-                    BranchLinkCondInst(LESS_THAN, BOUNDS_CHECK_LABEL),
+                    MovInst(r1, r10, condition=LessThan()),
+                    BranchInst(BOUNDS_CHECK_LABEL, link=true, condition=LessThan()),
                     LdrInst(lr, ImmOffset(r9, INT_SIZE)),
                     CmpInst(r10, lr),
-                    MovCondInst(GREATER_OR_EQUAL, r1, r10),
-                    BranchLinkCondInst(GREATER_OR_EQUAL, BOUNDS_CHECK_LABEL),
+                    MovInst(r1, r10, condition=GreaterOrEqual()),
+                    BranchInst(BOUNDS_CHECK_LABEL, link=true, condition=GreaterOrEqual()),
                     func match {
                         case ArrStr => StrInst(r8, ScaledOffsetLSL(r9, r10, ImmVal(2)))
                         case ArrStrb => StrbInst(r8, RegOffset(r9, r10))
@@ -69,13 +69,13 @@ object StandardFuncs {
                     PushInst(lr),
                     MovInst(r8, r0),
                     CmpInst(r8, ImmVal(0)),
-                    BranchLinkCondInst(EQUAL, NULL_POINTER_LABEL),
+                    BranchInst(NULL_POINTER_LABEL, link=true, condition=Equal()),
                     LdrInst(r0, ImmOffset(r8, 0)),
-                    BranchLinkInst("free"),
+                    BranchInst("free", link=true),
                     LdrInst(r0, ImmOffset(r8, 4)),
-                    BranchLinkInst("free"),
+                    BranchInst("free", link=true),
                     MovInst(r0, r8),
-                    BranchLinkInst("free"),
+                    BranchInst("free", link=true),
                     PopInst(pc)
                 )
                 funcBlock

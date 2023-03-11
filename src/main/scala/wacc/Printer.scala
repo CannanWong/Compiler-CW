@@ -71,9 +71,9 @@ object Printer {
             case inst: CmpInst =>
                 output += "cmp " + printOp(inst.rn, inst.op)
             case inst: MovInst =>
-                output += "mov " + printOp(inst.rd, inst.op)
-            case inst: MovCondInst =>
                 output += s"mov${inst.condition} " + printOp(inst.rd, inst.op)
+            // case inst: MovCondInst =>
+            //     output += s"mov${inst.condition.cond} " + printOp(inst.rd, inst.op)
             case inst: AndInst =>
                 output += "and " + printOp(inst.rd, inst.op)
             case inst: OrInst =>
@@ -99,18 +99,23 @@ object Printer {
             case inst: PopInst => 
                 output += "pop " + printRegList(inst.regs)
 
-            case inst: BranchInst =>
-                output += "b " + inst.label
-            case inst: BranchCondInst =>
-                output += s"b${inst.condition} " + inst.label
+            case inst: BranchInst => {
+                if (inst.link) {
+                    output += s"bl${inst.condition} " + inst.label
+                } else {
+                    output += s"b${inst.condition} " + inst.label
+                }
+            }
+            // case inst: BranchCondInst =>
+            //     output += s"b${inst.condition} " + inst.label
             case inst: BranchNumInst =>
-                output += "b " + s".L${inst.num}"
-            case inst: BranchNumCondInst =>
                 output += s"b${inst.condition} " + s".L${inst.num}"
-            case inst: BranchLinkInst =>
-                output += "bl " + inst.label
-            case inst: BranchLinkCondInst =>
-                output += s"bl${inst.condtion} " + inst.label
+            // case inst: BranchNumCondInst =>
+            //     output += s"b${inst.condition} " + s".L${inst.num}"
+            // case inst: BranchLinkInst =>
+            //     output += "bl " + inst.label
+            // case inst: BranchLinkCondInst =>
+            //     output += s"bl${inst.condtion} " + inst.label
 
             case inst: FreeRegister =>
             case inst: WaccComment => output += s"@ ${inst.s}"

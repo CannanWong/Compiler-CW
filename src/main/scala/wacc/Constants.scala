@@ -66,16 +66,46 @@ object Constants {
   val FREE_PAIR_LABEL = "_freePair"
 
   /* cond code (pg. 1-43 of mannual) */
-  val NOT_EQUAL = "ne"
-  val EQUAL = "eq"
-  val LESS_THAN = "lt"
-  val GREATER_THAN = "gt"
-  val GREATER_OR_EQUAL = "ge"
-  val LESS_OR_EQUAL = "le"
-  val OVERFLOW = "vs"
-  val NO_OVERFLOW = "vc"
+
+  // val NOT_EQUAL = "ne"
+  // val EQUAL = "eq"
+  // val LESS_THAN = "lt"
+  // val GREATER_THAN = "gt"
+  // val GREATER_OR_EQUAL = "ge"
+  // val LESS_OR_EQUAL = "le"
+  // val OVERFLOW = "vs"
+  // val NO_OVERFLOW = "vc"
 
 /* charracter set of leagal escape characters in Wacc*/
   val ESCAPE_CHAR_LIST = 
     List[String]("\"", "\n", "\'", "\r", "\f", "\t", "\b", "\u0000", "\\")
+}
+
+sealed trait Condition
+case class NoCondition() extends Condition {
+  override def toString(): String = ""
+} 
+case class NotEqual() extends Condition {
+  override def toString(): String = "ne"
+}
+case class Equal() extends Condition {
+  override def toString(): String = "eq"
+}
+case class LessThan() extends Condition {
+  override def toString(): String = "lt"
+}
+case class GreaterThan() extends Condition {
+  override def toString(): String = "gt"
+}
+case class GreaterOrEqual() extends Condition {
+  override def toString(): String = "ge"
+}
+case class LessOrEqual() extends Condition {
+  override def toString(): String = "le"
+}
+case class Overflow() extends Condition {
+  override def toString(): String = "vs"
+}
+case class NoOverflow() extends Condition {
+  override def toString(): String = "vc"
 }

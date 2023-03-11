@@ -152,7 +152,7 @@ object CodeGenerator {
                         PushInst(r8),
                         MovInst(r10, translate(a.exprList(arrayNum))),
                         PopInst(r8),
-                        BranchLinkInst(ARRAY_LOAD_LABEL)
+                        BranchInst(ARRAY_LOAD_LABEL, link=true)
                     )
                     setUsed(ArrLdr)
                 }
@@ -164,8 +164,8 @@ object CodeGenerator {
                     PopInst(r9),
                     PopInst(r8),
                     a.typeVal() match {
-                        case CharIdentifier() => BranchLinkInst(ARRAY_STORE_B_LABEL)
-                        case _ => BranchLinkInst(ARRAY_STORE_LABEL)
+                        case CharIdentifier() => BranchInst(ARRAY_STORE_B_LABEL, link=true)
+                        case _ => BranchInst(ARRAY_STORE_LABEL, link=true)
                     }
                 )
                 setUsed(ArrStrb)
@@ -211,7 +211,7 @@ object CodeGenerator {
                         /* null check */
                         currInstBlock.addInst(
                             CmpInst(retOp, ImmVal(0)),
-                            BranchLinkCondInst(LESS_OR_EQUAL, NULL_POINTER_LABEL)
+                            BranchInst(NULL_POINTER_LABEL, link=true, condition=LessOrEqual())
                         )
                         setUsed(NullErr)
                     }
@@ -227,7 +227,7 @@ object CodeGenerator {
                         /* null check */
                         currInstBlock.addInst(
                             CmpInst(retOp, ImmVal(0)),
-                            BranchLinkCondInst(LESS_OR_EQUAL, NULL_POINTER_LABEL)
+                            BranchInst(NULL_POINTER_LABEL, link=true, condition=LessOrEqual())
                         )
                         setUsed(NullErr)
                     }
@@ -255,7 +255,7 @@ object CodeGenerator {
             case PairIdentifier(ty1, ty2) => {
                 currInstBlock.addInst(
                     MovInst(r0, op),
-                    BranchLinkInst(FREE_PAIR_LABEL)
+                    BranchInst(FREE_PAIR_LABEL, link=true)
                 )
                 setUsed(FreeP)
             }
@@ -264,13 +264,13 @@ object CodeGenerator {
                     // If the variable is on the stack
                     // its translated and put into r8
                     SubInst(r0, r8, ImmVal(4)),
-                    BranchLinkInst("free")
+                    BranchInst("free", link=true)
                 )
             }
             case _ => {
                 currInstBlock.addInst(
                     MovInst(r0, op),
-                    BranchLinkInst("free")
+                    BranchInst("free", link=true)
                 )
             }
         }
@@ -294,7 +294,7 @@ object CodeGenerator {
         val op = translate(node.expr)
         currInstBlock.addInst(
             MovInst(r0, op),
-            BranchLinkInst("exit")
+            BranchInst("exit", link=true)
         )
     }
      
@@ -367,7 +367,7 @@ object CodeGenerator {
             case _ => throw new UnsupportedOperationException("If condition cannot be evaluated")
         }
         /* branch to false if false */
-        currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, ifFalse.num))
+        currInstBlock.addInst(BranchNumInst(ifFalse.num, condition=NotEqual()))
         currInstBlock.next = ifBlock
         currInstBlock = ifTrue
 
@@ -407,7 +407,7 @@ object CodeGenerator {
             }
             case _ => throw new UnsupportedOperationException("While condition cannot be evaluated")
         }
-        currInstBlock.addInst(BranchNumCondInst(NOT_EQUAL, next.num))
+        currInstBlock.addInst(BranchNumInst(next.num, condition=NotEqual()))
         currInstBlock = loop
         translate(node.stat)
         currInstBlock.addInst(BranchNumInst(cond.num))
@@ -430,11 +430,11 @@ object CodeGenerator {
         =>  evaluate and add instructions for calculation,
             storing in r8 as intermediate and return. */
     def translate(node: ExprNode): Operand = {
-        def translateComparisonOperators(op1: Register, op2: Operand, cond: String, notcond: String): Register = {
+        def translateComparisonOperators(op1: Register, op2: Operand, cond: Condition, notcond: Condition): Register = {
             currInstBlock.addInst(
                 CmpInst(op1, op2),
-                MovCondInst(cond, r8, immTrue),
-                MovCondInst(notcond, r8, immFalse),
+                MovInst(r8, immTrue, condition=cond),
+                MovInst(r8, immFalse, condition=notcond),
                 FreeRegister(op1)
             )
             r8
@@ -478,8 +478,8 @@ object CodeGenerator {
                         SemanticChecker.symbolTable.lookUpVarNewName(ident.newName) match {
                             case Some(ArrayIdentifier(ty, _)) => {
                                 ty match {
-                                case CharIdentifier() => BranchLinkInst(ARRAY_LOAD_B_LABEL)
-                                case _ => BranchLinkInst(ARRAY_LOAD_LABEL)
+                                case CharIdentifier() => BranchInst(ARRAY_LOAD_B_LABEL, link=true)
+                                case _ => BranchInst(ARRAY_LOAD_LABEL, link=true)
                                 }
                             }
                             case _ => throw new UnsupportedOperationException("array type mismatched?")
@@ -501,8 +501,8 @@ object CodeGenerator {
                     case r: Register => {
                         currInstBlock.addInst(
                             CmpInst(r, ImmVal(1)),
-                            MovCondInst(NOT_EQUAL, r8, ImmVal(1)),
-                            MovCondInst( EQUAL, r8, ImmVal(0))
+                            MovInst(r8, ImmVal(1), condition=NotEqual()),
+                            MovInst(r8, ImmVal(0), condition=Equal())
                         )
                         r8
                     }
@@ -516,13 +516,13 @@ object CodeGenerator {
                         currInstBlock.addInst(
                             MovInst(r8, op), 
                             RsbsInst(r8, r8, ImmVal(0)),
-                            BranchLinkCondInst(OVERFLOW, OVERFLOW_LABEL)
+                            BranchInst(OVERFLOW_LABEL, link=true, condition=Overflow())
                         )
                     }
                     case r: Register => {
                         currInstBlock.addInst(
                             RsbsInst(r8, r, ImmVal(0)),
-                            BranchLinkCondInst(OVERFLOW, OVERFLOW_LABEL)
+                            BranchInst(OVERFLOW_LABEL, link=true, condition=Overflow())
                         )
                     }
                     case _ => throw new UnsupportedOperationException("Neg node evaluation error")
@@ -572,7 +572,7 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     SmullInst(r8, r9, reg1, reg2),
                     CmpInst(r9, ASR(r8, ImmVal(INT_HIGHEST_BIT))),
-                    BranchCondInst(NOT_EQUAL, OVERFLOW_LABEL),
+                    BranchInst(OVERFLOW_LABEL, condition=NotEqual()),
                     FreeRegister(reg1)
                 )
                 setUsed(OverflowErr)
@@ -586,8 +586,8 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst( EQUAL, ZERO_DIVISION_LABEL),
-                    BranchLinkInst("__aeabi_idivmod"),
+                    BranchInst(ZERO_DIVISION_LABEL, condition=Equal()),
+                    BranchInst("__aeabi_idivmod", link=true),
                     MovInst(r8, r0),
                     PopInst(r0, r1, r2, r3)
                 )
@@ -602,8 +602,8 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(r1, op2),
                     CmpInst(r1, ImmVal(0)),
-                    BranchCondInst( EQUAL, ZERO_DIVISION_LABEL),
-                    BranchLinkInst("__aeabi_idivmod"),
+                    BranchInst(ZERO_DIVISION_LABEL, condition=Equal()),
+                    BranchInst("__aeabi_idivmod", link=true),
                     MovInst(r8, r1),
                     PopInst(r0, r1, r2, r3)
                 )
@@ -617,7 +617,7 @@ object CodeGenerator {
                 val op2 = translate(sndexpr)
                 currInstBlock.addInst(
                     AddsInst(r8, reg, op2),
-                    BranchLinkCondInst(OVERFLOW, OVERFLOW_LABEL),
+                    BranchInst(OVERFLOW_LABEL, link=true, condition=Overflow()),
                     FreeRegister(reg)
                 )
                 setUsed(OverflowErr)
@@ -630,7 +630,7 @@ object CodeGenerator {
                 val op2 = translate(sndexpr)
                 currInstBlock.addInst(
                     SubsInst(r8, reg, op2),
-                    BranchLinkCondInst(OVERFLOW, OVERFLOW_LABEL),
+                    BranchInst(OVERFLOW_LABEL, link=true, condition=Overflow()),
                     FreeRegister(reg)
                 )
                 setUsed(OverflowErr)
@@ -641,42 +641,42 @@ object CodeGenerator {
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, GREATER_THAN, LESS_OR_EQUAL)
+                translateComparisonOperators(reg, op2, GreaterThan(), LessOrEqual())
             }
             case GTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, GREATER_OR_EQUAL, LESS_THAN)
+                translateComparisonOperators(reg, op2, GreaterOrEqual(), LessThan())
             }
             case LTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, LESS_THAN, GREATER_OR_EQUAL)
+                translateComparisonOperators(reg, op2, LessThan(), GreaterOrEqual())
             }
             case LTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, LESS_OR_EQUAL, GREATER_THAN)
+                translateComparisonOperators(reg, op2, LessOrEqual(), GreaterThan())
             }
             case EqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, EQUAL, NOT_EQUAL)
+                translateComparisonOperators(reg, op2, Equal(), NotEqual())
             }
             case IEqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
                 val reg = TempRegister()
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
-                translateComparisonOperators(reg, op2, NOT_EQUAL, EQUAL)
+                translateComparisonOperators(reg, op2, NotEqual(), Equal())
             }
             case AndNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
@@ -688,15 +688,15 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst(NOT_EQUAL, newBlock.num),
+                    BranchNumInst(newBlock.num, condition=NotEqual()),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock.next = newBlock
                 currInstBlock = newBlock
 
                 currInstBlock.addInst(
-                    MovCondInst( EQUAL, r8, immTrue),
-                    MovCondInst(NOT_EQUAL, r8, immFalse),
+                    MovInst(r8, immTrue, condition=Equal()),
+                    MovInst(r8, immFalse, condition=NotEqual()),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
@@ -712,15 +712,15 @@ object CodeGenerator {
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
                     CmpInst(reg1, immTrue), 
-                    BranchNumCondInst( EQUAL, newBlock.num),
+                    BranchNumInst(newBlock.num, condition=Equal()),
                     CmpInst(reg2, immTrue)
                 )
                 currInstBlock.next = newBlock
                 currInstBlock = newBlock
                 
                 currInstBlock.addInst(
-                    MovCondInst( EQUAL, r8, immTrue),
-                    MovCondInst(NOT_EQUAL, r8, immFalse),
+                    MovInst(r8, immTrue, condition=Equal()),
+                    MovInst(r8, immFalse, condition=NotEqual()),
                     FreeRegister(reg1),
                     FreeRegister(reg2)
                 )
