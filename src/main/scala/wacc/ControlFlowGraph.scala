@@ -1,6 +1,6 @@
 package wacc
 
-import scala.collection.mutable.ListBuffer
+import scala.collection.mutable._
 
 // keeps track of next control flow blocks in use in the program generated
 object ControlFlowGraph {
@@ -77,6 +77,11 @@ case class FuncBlock() extends ControlFlowBlock {
         GLOBAL_MAIN = true
         directive.GLOBAL_MAIN = true
     }
+}
+
+case class BasicBlockGraph() {
+    val entry = BasicBlock(List.empty)
+    val blocks: List[BasicBlock] = List(entry)
 }
 
 // Basic Block used in live variable analysis
