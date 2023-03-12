@@ -73,7 +73,7 @@ object AssignRegisterOptimised {
         case StrbChgInst(rd, op)                => genTwoOp(block, rd, op)
         case LdrInst(rd, op)                    => genTwoOp(block, rd, op)
         case LdrsbInst(rd, op)                  => genTwoOp(block, rd, op)
-        case LdrPseudoInst(rd, num)             => block.defs + rd
+        case LdrPseudoInst(rd, num)             => block.defs += rd
         case AddInst(rd, rn, op)                => genThreeOp(block, rd, rn, op)
         case AddsInst(rd, rn, op)               => genThreeOp(block, rd, rn, op)
         case SubInst(rd, rn, op)                => genThreeOp(block, rd, rn, op)
@@ -85,15 +85,15 @@ object AssignRegisterOptimised {
         case OrInst(rd, op)                     => genFlag(block, rd, op)
         case CmpInst(rn, op)                    => genFlag(block, rn, op)
         //! Not sure if this is how push and pop shd be handled
-        case p: PushInst                        => for (r <- p.regs) block.uses + r
-        case p: PopInst                         => for (r <- p.regs) block.defs + r
+        case p: PushInst                        => for (r <- p.regs) block.uses += r
+        case p: PopInst                         => for (r <- p.regs) block.defs += r
         case SmullInst(rdlo, rdhi, rm, rs)      => {
           genThreeOp(block, rdlo, rdhi, rm)
           block.uses ++= checkUses(rs)
         }
         case BranchInst(label, link, condition) => {
           if (link) {
-            block.defs + r0
+            block.defs += r0
             block.uses ++= Set(r0, r1, r2, r3)
             //TODO: would be better to check for actual register usage from func table
           }
