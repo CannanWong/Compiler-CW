@@ -9,6 +9,7 @@ object ControlFlowGraph {
     var nextWhileNum = 0
     var nextCallNum = 0
     var nextFuncNum = 0
+    var nextBasicNum = 0
     var nextTempRegNum = 1
 
 // resets the contol flow graph counter
@@ -21,7 +22,6 @@ object ControlFlowGraph {
         nextTempRegNum = 1
     }
 }
-
 sealed trait ControlFlowBlock
 
 case class InstBlock() extends ControlFlowBlock {
@@ -77,4 +77,13 @@ case class FuncBlock() extends ControlFlowBlock {
         GLOBAL_MAIN = true
         directive.GLOBAL_MAIN = true
     }
+}
+
+// Basic Block used in live variable analysis
+case class BasicBlock(insts: List[Instruction]) {
+    val id = ControlFlowGraph.nextBasicNum
+    ControlFlowGraph.nextBasicNum += 1
+    var uses: Set[Register] = Set.empty
+    var defs: Set[Register] = Set.empty
+    val succs: ListBuffer[BasicBlock] = ListBuffer.empty
 }
