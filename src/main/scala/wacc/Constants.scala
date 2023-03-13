@@ -22,6 +22,9 @@ object Constants {
   val lr = FixedRegister(14)
   val pc = FixedRegister(15)
 
+  val fixedRegs: List[FixedRegister] = 
+    List(r7, r6, r5, r4, r3, r2, r1, r0, r10, r8, r9) //? r12?
+
   /* true and false immediate value */
   val immTrue = ImmVal(1)
   val immFalse = ImmVal(0)

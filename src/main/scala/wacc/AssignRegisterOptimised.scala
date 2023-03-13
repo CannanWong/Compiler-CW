@@ -65,6 +65,20 @@ object AssignRegisterOptimised {
     }
   }
 
+  def partitionBasicBlock(insts: List[Instruction]): List[BasicBlock] = {
+    val partitions: List[BasicBlock] = List()
+    var remainder = insts
+    var nxtBlk: BasicBlock = null
+    while (!remainder.isEmpty) {
+      val block = BasicBlock(remainder.takeRight(BASIC_BLOCK_SIZE))
+      remainder = remainder.dropRight(BASIC_BLOCK_SIZE)
+      block.succs += nxtBlk
+      block :: partitions
+      nxtBlk = block
+    }
+    partitions
+  }
+
   //########################################################################//
   //                          Live Variable Analysis                        //
   //########################################################################//
@@ -109,7 +123,6 @@ object AssignRegisterOptimised {
         }
         //! Do we need anything on std functions (possibly arrStore and arrLoad)?
         case BranchNumInst(num, condition) => {
-
         }
         case FreeRegister(r) => //block.defs - r //? is this needed or shd freereg be removed from codeGenOptd?
         case WaccComment(s) => // Nothing
@@ -196,7 +209,8 @@ object AssignRegisterOptimised {
     }
 
     // add edges to the interference graph for each pair of variables that are live simultaneously
-    for ((block, variables) <- liveIn) {
+    //? not sure whether to use liveIn or liveOut here
+    for ((block, variables) <- liveOut) {
       for (v <- variables) {
         for (w <- variables if v != w) {
           ig(v) += w
@@ -207,38 +221,44 @@ object AssignRegisterOptimised {
     ig
   }
 
-  /*
-  def graphColouring(graph: Map[Register, Set[Register]], fixedRegisters: Set[FixedRegister]): Map[Register, Register] = {
-    // Step 1: Identify precolored nodes
-    val precolored = graph.keys.filter(fixedRegisters.contains).toSet
-    
-    // Step 2: Sort the uncolored nodes in decreasing order of their degree
-    val nodes = graph.keys.filterNot(precolored.contains).toList.sortBy(-graph(_).size)
-    
-    // Step 3: Initialize an empty list of used colors
-    var usedColors = Set[Register]()
-    
-    // Step 4: Color the uncolored nodes
-    val colorMap = nodes.foldLeft(Map[Register, Register]()) { (colors, node) =>
-      // Step 4a: Initialize a set of available colors
-      val availableColors = (Set(TempRegister, Variable) ++ fixedRegisters -- colors.values).diff(graph(node).map(colors))
+  //########################################################################//
+  //                         DSatur Graph Colouring                         //
+  //########################################################################//
 
-      // Step 4b: Remove neighbor colors from the available colors set
-      val neighborColors = graph(node).map(colors)
-      val remainingColors = availableColors -- neighborColors
+  def graphColouring(graph: Map[Register, Set[Register]]): Map[Register, Register] = {
+    var spilledCount = 0
+    // Identify precolored nodes
+    val precolored = graph.keys.filter(fixedRegs.contains).toSet
+    
+    // Sort the uncolored nodes in decreasing order of their degree
+    var nodes = graph.keys.filterNot(precolored.contains).toList.sortBy(-graph(_).size)
+    
+    // Initialise the color map with the precolored nodes
+    val colorMap = Map[Register, Register]() ++ precolored.map(reg => reg -> reg)
 
-      // Step 4c: Assign the smallest available color to the node
-      val color = remainingColors.headOption.getOrElse {
-        val newColor = (availableColors -- remainingColors).minBy(_.toString)
-        usedColors += newColor
-        newColor
+    // DSatur algorithm to color the partially-precoloured graph
+    while (!nodes.isEmpty) {
+      // Sort by 
+      // 1. Saturation degree
+      // 2. Total degree
+      // Placing the largest element at the front
+      val maxDSaturNode = 
+        nodes.sortBy(
+        r => (-(graph(r).filterNot(colorMap.contains)).size, 
+              -(graph(r).size))).head
+      nodes = nodes.drop(1)
+      val neighborColors = graph(maxDSaturNode).filterNot(colorMap.contains).map(r => colorMap(r))
+      val availableColors = fixedRegs.diff(neighborColors.toList)
+
+      // Simple spilling that assigns stack space permanently
+      if (availableColors.isEmpty) {
+        SpilledStackSpace(spilledCount) :: availableColors
+        spilledCount += 1
       }
 
-      // Step 4d: Add the assigned color to the color map
-      colors + (node -> color)
+      colorMap.update(maxDSaturNode, availableColors.head)
     }
 
-    // Step 5: Merge the precolored nodes with the colored nodes and return the color map
-    colorMap ++ precolored.map(reg => reg -> reg)
-  }*/
+    colorMap
+  }
 }

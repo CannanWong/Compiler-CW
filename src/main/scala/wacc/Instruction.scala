@@ -50,6 +50,8 @@ case class TempRegister() extends Register {
 case class FixedRegister(num: Int) extends Register
 case class Variable(name: String) extends Register
 
+case class SpilledStackSpace(id: Int) extends Register
+
 //NEW: address of the label
 case class LabelAddress(address: String) extends Operand
 case class ImmVal(num: Int) extends Operand
