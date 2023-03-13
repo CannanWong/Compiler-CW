@@ -208,28 +208,37 @@ object AssignRegisterOptimised {
   }
 
   /*
-  // Graph coloring for register allocation
-  def graphColoring(ig: Map[String, Set[String]], numRegs: Int): Map[String, Int] = {
-    var availableRegs = Set(0 until numRegs: _*) // set of available registers
-    var colorMap = Map.empty[String, Int] // map from variables to register numbers
+  def graphColouring(graph: Map[Register, Set[Register]], fixedRegisters: Set[FixedRegister]): Map[Register, Register] = {
+    // Step 1: Identify precolored nodes
+    val precolored = graph.keys.filter(fixedRegisters.contains).toSet
+    
+    // Step 2: Sort the uncolored nodes in decreasing order of their degree
+    val nodes = graph.keys.filterNot(precolored.contains).toList.sortBy(-graph(_).size)
+    
+    // Step 3: Initialize an empty list of used colors
+    var usedColors = Set[Register]()
+    
+    // Step 4: Color the uncolored nodes
+    val colorMap = nodes.foldLeft(Map[Register, Register]()) { (colors, node) =>
+      // Step 4a: Initialize a set of available colors
+      val availableColors = (Set(TempRegister, Variable) ++ fixedRegisters -- colors.values).diff(graph(node).map(colors))
 
-    // iterate until all variables have been assigned a register
-    while (ig.nonEmpty) {
-      // find a node with the fewest available colors
-      val node = ig.minBy(_._2.count(availableRegs.contains))._1
+      // Step 4b: Remove neighbor colors from the available colors set
+      val neighborColors = graph(node).map(colors)
+      val remainingColors = availableColors -- neighborColors
 
-      // assign the node to the lowest numbered available color
-      colorMap += (node -> availableRegs.min)
-      availableRegs -= availableRegs.min
+      // Step 4c: Assign the smallest available color to the node
+      val color = remainingColors.headOption.getOrElse {
+        val newColor = (availableColors -- remainingColors).minBy(_.toString)
+        usedColors += newColor
+        newColor
+      }
 
-      // remove the node and its edges from the interference graph
-      ig.remove(node)
-      ig.values.foreach(_.remove(node))
-
-      // add any registers that were freed up by removing the node to the available set
-      availableRegs ++= colorMap.values.filterNot(ig.contains)
+      // Step 4d: Add the assigned color to the color map
+      colors + (node -> color)
     }
 
-    colorMap
+    // Step 5: Merge the precolored nodes with the colored nodes and return the color map
+    colorMap ++ precolored.map(reg => reg -> reg)
   }*/
 }
