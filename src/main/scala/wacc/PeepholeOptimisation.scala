@@ -22,6 +22,7 @@ object PeepholeOptimisation {
 
     def optimiseBlock(funcBlock: FuncBlock): Unit = {
         optimiseBlock(funcBlock.body)
+        
     }
 
     def removeRedundant(inst: Instruction, iter: Iterator[Instruction]): Option[Instruction] = {
@@ -47,7 +48,9 @@ object PeepholeOptimisation {
                     return optimisedInsts
                 }
             }
-            case None => return optimisedInsts
+            case None => {
+                return optimisedInsts
+            }
         }
 
         // It has been checked that option is not empty and iter.hasNext is true
@@ -60,13 +63,13 @@ object PeepholeOptimisation {
                         next match {
                             case LdrInst(rd1, op1) => {
                                 if (!(rd == rd1 && op == op1)) {
-                                    optimisedInsts ++ optimiseInst(next, iter)
+                                    optimisedInsts ++= optimiseInst(next, iter)
                                 } else {
                                     optimisedInsts += inst
                                 }
                             }
                             case _ => {
-                                optimisedInsts ++ optimiseInst(next, iter)
+                                optimisedInsts ++= optimiseInst(next, iter)
                             }
                         }
                     }
@@ -99,12 +102,26 @@ object PeepholeOptimisation {
                         matchingRegs = false
                     }
                 }
-                optimisedInsts ++ pushInsts
+                optimisedInsts ++= pushInsts
                 optionNext match {
                     case Some(next) => {
-                        optimisedInsts ++ optimiseInst(next, iter)
+                        optimisedInsts ++= optimiseInst(next, iter)
                     }
                     case None =>
+                }
+            }
+            case MovInst(rd, op, cond) => {
+                optimisedInsts += inst
+                if (iter.hasNext) {
+                    val next = iter.next
+                    next match {
+                        case MovInst(rd1, op1, cond1) => {
+                            if (!(rd1 == op && op1 == rd && cond1 == cond)) {
+                                optimisedInsts ++= optimiseInst(next, iter)
+                            }
+                        }
+                        case _ => optimisedInsts ++= optimiseInst(next, iter)
+                    }
                 }
             }
             case _ => {
@@ -115,11 +132,11 @@ object PeepholeOptimisation {
     }
     
     def optimiseBlock(instBlock: InstBlock): Unit = {
-        var newInstList: ListBuffer[Instruction] = ListBuffer.empty
+        var newInstList: ListBuffer[Instruction] = new ListBuffer()
         val iter = instBlock.instList.iterator
         while (iter.hasNext) {
             var inst = iter.next
-            newInstList ++ optimiseInst(inst, iter)
+            newInstList ++= optimiseInst(inst, iter)  
         }
         instBlock.instList = newInstList
         instBlock.next match {
@@ -139,5 +156,4 @@ object PeepholeOptimisation {
         optimiseBlock(whileBlock.loop)
         optimiseBlock(whileBlock.next)
     }
-
 }

@@ -54,6 +54,7 @@ object Main {
 
             /* IR1 --> IR2: Assign registers */
             AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
+            PeepholeOptimisation.peepholeOptimise(CodeGenerator.controlFlowFuncs)
 
             val file = new File(filename)
             val bw = new BufferedWriter(new FileWriter(file))
