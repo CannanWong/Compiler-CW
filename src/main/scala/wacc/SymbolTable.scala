@@ -11,20 +11,21 @@ class SymbolTable {
     // Add variable to symbol table
     def addVar(name: String, ty: TypeIdentifier): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
+        println(ty.toString())
         map.addOne(varName, ty)
     }
 
     // Add array to symbol table
     def addArray(name: String, ty: TypeIdentifier, dim: Int): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
-        val identifier = new ArrayIdentifier(ty, dim)
+        val identifier = ArrayIdentifier(ty, dim)
         map.addOne(varName, identifier)
     }
 
     // Add pair to symbol table
     def addPair(name: String, ty1: TypeIdentifier, ty2: TypeIdentifier): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
-        val identifier = new PairIdentifier(ty1, ty2)
+        val identifier = PairIdentifier(ty1, ty2)
         map.addOne(varName, identifier)
     }
 
@@ -32,7 +33,7 @@ class SymbolTable {
     def addFunc(oldName: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier): String = {
         // Rename function
         val newName = "f" + nextFuncNameNum.toString + "_" + oldName
-        val identifier = new FuncIdentifier(oldName, paramtype, returntype)
+        val identifier = FuncIdentifier(oldName, paramtype, returntype)
         map.addOne(newName, identifier)
         nextFuncNameNum += 1
         newName
@@ -85,10 +86,10 @@ class SymbolTable {
     }
 
     def getFuncNewName(oldName: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier): Option[String] = {
-        var newName: Option[String] = Option.empty
-        // ! To be improved (Use recursion?)
-        for (n <- 1 to (nextFuncNameNum - 1)) {
-            val funcName: String = "f" + n.toString + "_" + oldName
+        var newName: Option[String] = None
+        var funcNameNum = 1
+        while (funcNameNum < nextFuncNameNum && newName.isEmpty) {
+            val funcName: String = "f" + funcNameNum.toString + "_" + oldName
             // Find renamed function
             map.get(funcName) match {
                 case Some(FuncIdentifier(_, plist, retType)) => {
@@ -97,12 +98,14 @@ class SymbolTable {
                         .zip(plist)
                         .map{case (a: TypeIdentifier, b: TypeIdentifier) => a.typeEquals(b)}
                         .fold(true)((x, y) => x && y)
+                    // Parameter and return types all match
                     if (paramstypeValid && returntype.typeEquals(retType)) {
                         newName = Some(funcName)
                     }
                 }
                 case _ =>
             }
+            funcNameNum += 1
         }
         newName
     }
@@ -115,12 +118,3 @@ class SymbolTable {
         ret
     }
 }
-
-/*
-    all variables being globally unique
-
-    renaming:
-    <scope index> + ! + variable name
-    scope index tracked using a stack
-    new scope index assignment = max + 1
-*/

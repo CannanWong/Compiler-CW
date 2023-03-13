@@ -1,6 +1,6 @@
 package wacc
 
-import scala.collection.mutable.{Stack, ListBuffer}
+import scala.collection.mutable.Stack
 
 import wacc.{ArrayIdentifier, PairIdentifier, NullIdentifier, AnyIdentifier}
 object SemanticChecker {
@@ -8,7 +8,6 @@ object SemanticChecker {
     var nextScope = 0
     var scopeStack = Stack[Int]()
     var insideFunc = true
-    val debugMessage = ListBuffer[String]()
 
     def check(node: ProgramNode): Unit = {
         resetSemanticChecker()
@@ -20,7 +19,6 @@ object SemanticChecker {
         symbolTable = new SymbolTable()
         scopeStack.push(0)
         nextScope = 1
-        debugMessage += "%%% DEBUG LOG %%%"
     }
 
     def tableContainsIdentifier(id :IdentNode): Boolean = {
@@ -35,13 +33,10 @@ object SemanticChecker {
 
     // for AssignIdentNode
     def typeCheck(ty1: TypeIdentifier, ty2: TypeIdentifier): Boolean = {
-        SemanticChecker.debugMessage += (s"typeCheck: lhs ${ty1}: rhs ${ty2}") 
         ty1 match {
             case p1: PairIdentifier => {
-                SemanticChecker.debugMessage += ("lhs is a pair") 
                 ty2 match {
                     case p2: PairIdentifier => {
-                        SemanticChecker.debugMessage += ("rhs is a pair") 
                         typeCheckPair(p1, p2)
                     }
                     case _ => {
@@ -56,7 +51,6 @@ object SemanticChecker {
 
 
     def typeCheckPair(lhsType: PairIdentifier, rhsType: PairIdentifier) : Boolean = {
-        SemanticChecker.debugMessage += (s"typeCheckPair: lhs ${lhsType}: rhs ${rhsType}")
         var ret = true
         val lhsFstType = lhsType.ty1
         val rhsFstType = rhsType.ty1
