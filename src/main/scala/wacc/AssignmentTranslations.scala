@@ -35,9 +35,11 @@ object AssignmentTranslations {
 
         // Calling malloc to get the address storing the array
         currInstBlock.addInst(
+            PushInst(r0, r1, r2, r3),
             MovInst(r0, ImmVal(4 + allocSize * exprs.length)),
             BranchInst("malloc", link=true),
             MovInst(r10, r0),
+            PopInst(r0, r1, r2, r3),
 
         // Storing the size of the array on the first 4 bytes / word
             AddInst(r10, r10, ImmVal(4)),
@@ -65,24 +67,32 @@ object AssignmentTranslations {
         val sndOffset = getOffset(sndExpr)
         currInstBlock.addInst(
             // Alloc for first element
+            PushInst(r0, r1, r2, r3),
             MovInst(r0, ImmVal(fstOffset)),
             BranchInst("malloc", link=true),
             MovInst(r10, r0),
+            PopInst(r0, r1, r2, r3),
+
             MovInst(r8, translate(fstExpr)),
             saveVal(fstOffset),
             PushInst(r10),
 
+            PushInst(r0, r1, r2, r3),
             MovInst(r0, ImmVal(sndOffset)),
             BranchInst("malloc", link=true),
             MovInst(r10, r0),
+            PopInst(r0, r1, r2, r3), 
+
             MovInst(r8, translate(sndExpr)),
             saveVal(sndOffset),
             PushInst(r10),
 
             // Alloc for pointers pointing to both elements
+            PushInst(r0, r1, r2, r3),
             MovInst(r0, ImmVal(8)),
             BranchInst("malloc", link=true),
             MovInst(r10, r0),
+            PopInst(r0, r1, r2, r3),
             
             // Popping the addresses from the stack and storing them
             PopInst(r8),
