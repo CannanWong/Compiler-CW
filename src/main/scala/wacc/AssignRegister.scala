@@ -125,9 +125,9 @@ object AssignRegister {
                         case _ => 
                     }
                 }
-                MovInst(reg1, op)
+                MovInst(reg1, op, inst.condition)
             }
-            case inst: MovCondInst => MovCondInst(inst.condition, assignReg(inst.rd), assignOp(inst.op))
+            // case inst: MovCondInst => MovCondInst(inst.condition, assignReg(inst.rd), assignOp(inst.op))
             case inst: AndInst => AndInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: OrInst => OrInst(assignReg(inst.rd), assignOp(inst.op))
             

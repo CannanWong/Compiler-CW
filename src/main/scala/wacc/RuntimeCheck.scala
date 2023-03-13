@@ -28,9 +28,9 @@ object RuntimeCheck {
         func.name = label
         func.body.addInst(
           LdrInst(r0, LabelAddress(text)),
-          BranchLinkInst(IOFunc.PRINT_STR_LABEL),
+          BranchInst(IOFunc.PRINT_STR_LABEL, link=true),
           MovInst(r0, ImmVal(255)),
-          BranchLinkInst("exit")
+          BranchInst("exit", link=true)
         )
         CodeGenerator.controlFlowFuncs.addOne(label, func)
         currInstBlock = prevBlock

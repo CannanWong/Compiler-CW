@@ -17,9 +17,9 @@ object IOFunc {
   	/* instructions for read int function */
     def printEnd(): List[Instruction] = {
       	List (
-        	BranchLinkInst("printf"),
+        	BranchInst("printf", link=true),
         	MovInst(r0, ImmVal(0)),
-        	BranchLinkInst("fflush"),
+        	BranchInst("fflush", link=true),
         	PopInst(pc)
       	)
     }
@@ -32,7 +32,7 @@ object IOFunc {
         	StrChgInst(r0, ImmOffset(sp, INT_SIZE)),
 			MovInst(r1, sp),
 			LdrInst(r0, LabelAddress(labelStr)),
-			BranchLinkInst("scanf"),
+			BranchInst("scanf", link=true),
 			LdrInst(r0, ImmOffset(sp, 0)),
 			AddInst(sp, sp, ImmVal(data_offset(INT_SIZE))),
 			PopInst(pc)
@@ -47,7 +47,7 @@ object IOFunc {
 			StrbChgInst(r0, ImmOffset(sp, BYTE_SIZE)),
 			MovInst(r1, sp),
 			LdrInst(r0, LabelAddress(labelStr)),
-			BranchLinkInst("scanf"),
+			BranchInst("scanf", link=true),
 			LdrsbInst(r0, ImmOffset(sp, 0)),
 			AddInst(sp, sp, ImmVal(data_offset(BYTE_SIZE))),
 			PopInst(pc)
@@ -58,7 +58,7 @@ object IOFunc {
 		/* caller instruction */
 		CodeGenerator.currInstBlock.addInst(
 			MovInst(r0, op),
-			BranchLinkInst(PRINT_INT_LABEL)
+			BranchInst(PRINT_INT_LABEL, link=true)
       	)
 
 		/* callee instruction */
@@ -79,7 +79,7 @@ object IOFunc {
 		/* caller instruction */
 		CodeGenerator.currInstBlock.addInst(
 			MovInst(r0, op),
-			BranchLinkInst(PRINT_PTR_LABEL)
+			BranchInst(PRINT_PTR_LABEL, link=true)
 		)
 
 		/* callee instruction */
@@ -99,7 +99,7 @@ object IOFunc {
     def printString(op: Operand): FuncBlock = {
 		CodeGenerator.currInstBlock.addInst(
 			MovInst(r0, op),
-			BranchLinkInst(PRINT_STR_LABEL)
+			BranchInst(PRINT_STR_LABEL, link=true)
 		)
 
 		/* callee instruction */
@@ -124,7 +124,7 @@ object IOFunc {
 		/* caller instruction */
 		CodeGenerator.currInstBlock.addInst(
 			MovInst(r0, op),
-			BranchLinkInst(PRINT_CHAR_LABEL)
+			BranchInst(PRINT_CHAR_LABEL, link=true)
 		)
 
 		/* callee instruction */
@@ -144,7 +144,7 @@ object IOFunc {
 		/* caller instruction */
 		CodeGenerator.currInstBlock.addInst(
 			MovInst(r0, op),
-			BranchLinkInst(PRINT_BOOL_LABEL)
+			BranchInst(PRINT_BOOL_LABEL, link=true)
 		)
 
 		/* callee instruction */
@@ -164,7 +164,7 @@ object IOFunc {
 		printBoolFunc.body.addInst(
 			PushInst(lr),
 			CmpInst(r0, ImmVal(0)),
-			BranchNumCondInst(NOT_EQUAL, ifFalse.num)
+			BranchNumInst(ifFalse.num, condition=NotEqual())
 		)
 		ifTrue.addInst(
 			LdrInst(r2, LabelAddress(falseTxt)),
@@ -182,7 +182,7 @@ object IOFunc {
 
     def println(): Unit = {
 		CodeGenerator.currInstBlock.addInst(
-			BranchLinkInst(PRINTLN_LABEL)
+			BranchInst(PRINTLN_LABEL, link=true)
 		)
 		/* callee instruction */
 		val printlnFunc = FuncBlock()
@@ -192,9 +192,9 @@ object IOFunc {
 		printlnFunc.body.addInst(
 			PushInst(lr),
 			LdrInst(r0, LabelAddress(text)),
-			BranchLinkInst("puts"),
+			BranchInst("puts", link=true),
 			MovInst(r0, ImmVal(0)),
-			BranchLinkInst("fflush"),
+			BranchInst("fflush", link=true),
 			PopInst(pc)
 		)
 		CodeGenerator.controlFlowFuncs.addOne(PRINTLN_LABEL, printlnFunc)
@@ -207,7 +207,7 @@ object IOFunc {
 			CodeGenerator.currInstBlock.addInst(
 				PushInst(r0, r1, r2, r3),
 				MovInst(r0, op),
-				BranchLinkInst(READ_CHAR_LABEL),
+				BranchInst(READ_CHAR_LABEL, link=true),
 				MovInst(op, r0),
 				PopInst(r0, r1, r2, r3)
 			)
@@ -230,7 +230,7 @@ object IOFunc {
 			CodeGenerator.currInstBlock.addInst(
 				PushInst(r0, r1, r2, r3),
 				MovInst(r0, op),
-				BranchLinkInst(READ_INT_LABEL),
+				BranchInst(READ_INT_LABEL, link=true),
 				MovInst(op, r0),
 				PopInst(r0, r1, r2, r3)
 			)

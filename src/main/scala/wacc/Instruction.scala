@@ -13,8 +13,8 @@ case class MulInst(rd: Register, rm: Register, op: Operand) extends Instruction
 case class SmullInst(rdlo: Register, rdhi: Register, rm: Register, rs: Register) extends Instruction
 
 case class CmpInst(rn: Register, op: Operand) extends Instruction
-case class MovInst(rd: Register, op: Operand) extends Instruction
-case class MovCondInst(condition: String, rd: Register, op: Operand) extends Instruction
+case class MovInst(rd: Register, op: Operand, condition: Condition = NoCondition()) extends Instruction
+// case class MovCondInst(condition: String, rd: Register, op: Operand) extends Instruction
 case class AndInst(rd: Register, op: Operand) extends Instruction
 case class OrInst(rd: Register, op: Operand) extends Instruction
 
@@ -28,12 +28,12 @@ case class StrbChgInst(rd: Register, op: Operand) extends Instruction
 case class PushInst(regs: Register*) extends Instruction
 case class PopInst(regs: Register*) extends Instruction
 
-case class BranchInst(label: String) extends Instruction
-case class BranchCondInst(condition: String, label: String) extends Instruction
-case class BranchNumInst(num: Int) extends Instruction
-case class BranchNumCondInst(condition: String, num: Int) extends Instruction
-case class BranchLinkInst(label: String) extends Instruction
-case class BranchLinkCondInst(condtion: String, label: String) extends Instruction
+case class BranchInst(label: String, link: Boolean = false, condition: Condition = NoCondition()) extends Instruction
+// case class BranchCondInst(condition: String, label: String) extends Instruction
+case class BranchNumInst(num: Int, condition: Condition = NoCondition()) extends Instruction
+// case class BranchNumCondInst(condition: String, num: Int) extends Instruction
+// case class BranchLinkInst(label: String) extends Instruction
+// case class BranchLinkCondInst(condtion: String, label: String) extends Instruction
 
 // Useful for assigning registers, not actual arm instruction
 case class FreeRegister(r: Register) extends Instruction

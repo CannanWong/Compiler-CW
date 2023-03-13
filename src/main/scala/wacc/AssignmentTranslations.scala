@@ -36,7 +36,7 @@ object AssignmentTranslations {
         // Calling malloc to get the address storing the array
         currInstBlock.addInst(
             MovInst(r0, ImmVal(4 + allocSize * exprs.length)),
-            BranchLinkInst("malloc"),
+            BranchInst("malloc", link=true),
             MovInst(r10, r0),
 
         // Storing the size of the array on the first 4 bytes / word
@@ -66,14 +66,14 @@ object AssignmentTranslations {
         currInstBlock.addInst(
             // Alloc for first element
             MovInst(r0, ImmVal(fstOffset)),
-            BranchLinkInst("malloc"),
+            BranchInst("malloc", link=true),
             MovInst(r10, r0),
             MovInst(r8, translate(fstExpr)),
             saveVal(fstOffset),
             PushInst(r10),
 
             MovInst(r0, ImmVal(sndOffset)),
-            BranchLinkInst("malloc"),
+            BranchInst("malloc", link=true),
             MovInst(r10, r0),
             MovInst(r8, translate(sndExpr)),
             saveVal(sndOffset),
@@ -81,7 +81,7 @@ object AssignmentTranslations {
 
             // Alloc for pointers pointing to both elements
             MovInst(r0, ImmVal(8)),
-            BranchLinkInst("malloc"),
+            BranchInst("malloc", link=true),
             MovInst(r10, r0),
             
             // Popping the addresses from the stack and storing them
@@ -133,7 +133,7 @@ object AssignmentTranslations {
             count += 1
         }
         // Branch link to the function
-        currInstBlock.addInst(BranchLinkInst(ident.newName))
+        currInstBlock.addInst(BranchInst(ident.newName, link=true))
         r0
     }
 
@@ -148,7 +148,7 @@ object AssignmentTranslations {
         }   
         currInstBlock.addInst(
             CmpInst(pos, ImmVal(0)),
-            BranchLinkCondInst("Eq", "_errNull"),
+            BranchInst(NULL_POINTER_LABEL, link=true, condition=Equal()),
             LdrInst(r8, ImmOffset(pos, pairOffset))
         )
         // Find type of lvalue
@@ -189,7 +189,7 @@ object AssignmentTranslations {
         }
         currInstBlock.addInst(
             CmpInst(pos, ImmVal(0)),
-            BranchLinkCondInst("Eq", "_errNull"),
+            BranchInst(NULL_POINTER_LABEL, link=true, condition=Equal()),
             LdrInst(r8, ImmOffset(pos, pairOffset)),
             MovInst(r9, r8),
             MovInst(r8, op)
