@@ -9,6 +9,10 @@ object AssignRegisterOptimised {
   // Basic Block Graphs are generated per funcBlock inside the complete CFG
   val basicBlockGraphs = LinkedHashMap[String, BasicBlockGraph]()
 
+  //########################################################################//
+  //                              CFG -> BBG                                //
+  //########################################################################//
+
   // Formatting CFG into monomorphic Basic Block Flow-Graph
   def formatCFG(cfg: LinkedHashMap[String, FuncBlock]): Unit = {
     // Doing for every separate CFG function blocks, including main body as MAIN function
@@ -60,6 +64,10 @@ object AssignRegisterOptimised {
       basicBlockGraphs.addOne((name, bbg))
     }
   }
+
+  //########################################################################//
+  //                          Live Variable Analysis                        //
+  //########################################################################//
 
   def genUseDefs(block: BasicBlock): Unit = {
     for (i <- block.insts) {
@@ -123,6 +131,7 @@ object AssignRegisterOptimised {
     block.uses ++= checkUses(rn) ++ checkUses(op)
   }
 
+  //? Shd check if variable is corresponding to array/pair type?
   def checkUses(op: Operand): Set[Register] = {
     op match {
       case r: Register => Set(r)
@@ -167,4 +176,60 @@ object AssignRegisterOptimised {
     }
     (liveIn, liveOut)
   }
+
+  //########################################################################//
+  //                          Inteference Graph                             //
+  //########################################################################//
+
+  // Interference graph generation
+  def generateInterferenceGraph(
+    liveIn: Map[BasicBlock, Set[Register]],
+    liveOut: Map[BasicBlock, Set[Register]]):
+    Map[Register, Set[Register]] = {
+    val ig = Map.empty[Register, Set[Register]]
+
+    // add nodes to the interference graph for each variable that is live at any point
+    for ((block, variables) <- (liveIn.keySet ++ liveOut.keySet).map(block => (block, liveIn.getOrElse(block, Set.empty) ++ liveOut.getOrElse(block, Set.empty)))) {
+      for (v <- variables) {
+        ig.getOrElseUpdate(v, Set.empty[Register])
+      }
+    }
+
+    // add edges to the interference graph for each pair of variables that are live simultaneously
+    for ((block, variables) <- liveIn) {
+      for (v <- variables) {
+        for (w <- variables if v != w) {
+          ig(v) += w
+          ig(w) += v
+        }
+      }
+    }
+    ig
+  }
+
+  /*
+  // Graph coloring for register allocation
+  def graphColoring(ig: Map[String, Set[String]], numRegs: Int): Map[String, Int] = {
+    var availableRegs = Set(0 until numRegs: _*) // set of available registers
+    var colorMap = Map.empty[String, Int] // map from variables to register numbers
+
+    // iterate until all variables have been assigned a register
+    while (ig.nonEmpty) {
+      // find a node with the fewest available colors
+      val node = ig.minBy(_._2.count(availableRegs.contains))._1
+
+      // assign the node to the lowest numbered available color
+      colorMap += (node -> availableRegs.min)
+      availableRegs -= availableRegs.min
+
+      // remove the node and its edges from the interference graph
+      ig.remove(node)
+      ig.values.foreach(_.remove(node))
+
+      // add any registers that were freed up by removing the node to the available set
+      availableRegs ++= colorMap.values.filterNot(ig.contains)
+    }
+
+    colorMap
+  }*/
 }
