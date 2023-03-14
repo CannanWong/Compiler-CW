@@ -2,11 +2,13 @@ package wacc
 
 sealed trait TypeIdentifier {
   def typeEquals(id: TypeIdentifier): Boolean
+  def isFullType():Boolean
   override def toString(): String = "NO TYPE"
 }
 
 // when ident node not in symbol table
 case class AnyIdentifier() extends TypeIdentifier {
+  override def isFullType() = false
   override def typeEquals(id: TypeIdentifier): Boolean = {
     true
   }
@@ -14,6 +16,7 @@ case class AnyIdentifier() extends TypeIdentifier {
 }
 
 case class IntIdentifier() extends TypeIdentifier {
+  override def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case IntIdentifier() => true
@@ -25,6 +28,7 @@ case class IntIdentifier() extends TypeIdentifier {
 }
 
 case class BoolIdentifier() extends TypeIdentifier {
+  override def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
       id match {
       case BoolIdentifier() => true
@@ -36,6 +40,7 @@ case class BoolIdentifier() extends TypeIdentifier {
 }
 
 case class StrIdentifier() extends TypeIdentifier {
+  override def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
   id match {
       case StrIdentifier() => true
@@ -47,6 +52,7 @@ case class StrIdentifier() extends TypeIdentifier {
 }
 
 case class CharIdentifier() extends TypeIdentifier {
+  override def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
   id match {
       case CharIdentifier() => true
@@ -58,6 +64,8 @@ case class CharIdentifier() extends TypeIdentifier {
 }
 
 case class FuncIdentifier(old_name: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier) extends TypeIdentifier {
+  override def isFullType() = true
+
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case FuncIdentifier(_, plist, retType) => {
@@ -76,6 +84,8 @@ case class FuncIdentifier(old_name: String, paramtype: List[TypeIdentifier], ret
 }
  
 case class ArrayIdentifier(baseTy: TypeIdentifier, dim: Int) extends TypeIdentifier {
+  override def isFullType() = baseTy.isFullType()
+
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case ArrayIdentifier(tyId, d) => {
@@ -90,14 +100,13 @@ case class ArrayIdentifier(baseTy: TypeIdentifier, dim: Int) extends TypeIdentif
     for (i <- 1 to dim) {
       sb.++=("[]")
     }
-    //s"${baseTy.toString()}${brackets.toString()}"
     s"${baseTy.toString()}${sb.toString()}"
-
-
   }
 }
 
 case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends TypeIdentifier {
+  override def isFullType() = ty1.isFullType() && ty2.isFullType()
+
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case PairIdentifier(otherTy1, otherTy2) => {
@@ -115,6 +124,7 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
 }
 
 case class NullIdentifier() extends TypeIdentifier {
+  def isFullType() = false
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case n: NullIdentifier => true

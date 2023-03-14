@@ -7,21 +7,11 @@ class SymbolTable {
 
     val map: mutable.Map[String, TypeIdentifier] = mutable.Map()
     var nextFuncNameNum = 1
-    
-    def anonTypeCheck(ty: TypeIdentifier): Unit = {
-        ty match {
-            case AnyIdentifier() | ArrayIdentifier(AnyIdentifier(), _) |
-                    PairIdentifier(AnyIdentifier(), AnyIdentifier()) => Error.addSemErr(
-                        "bad type: Assigning to unknown type"
-                    )
-            case _ =>
-        }
-    }
+
    
     // Add variable to symbol table
     def addVar(name: String, ty: TypeIdentifier): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
-        anonTypeCheck(ty)
         map.addOne(varName, ty)
     }
 
@@ -29,7 +19,6 @@ class SymbolTable {
     def addArray(name: String, ty: TypeIdentifier, dim: Int): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
         val identifier = new ArrayIdentifier(ty, dim)
-        anonTypeCheck(ty)
         map.addOne(varName, identifier)
     }
 
@@ -37,8 +26,6 @@ class SymbolTable {
     def addPair(name: String, ty1: TypeIdentifier, ty2: TypeIdentifier): Unit = {
         val varName = SemanticChecker.currScope().toString() + "!" + name
         val identifier = new PairIdentifier(ty1, ty2)
-        anonTypeCheck(ty1)
-        anonTypeCheck(ty2)
         map.addOne(varName, identifier)
     }
     // Add function to symbol table

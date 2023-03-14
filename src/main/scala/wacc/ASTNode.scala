@@ -118,7 +118,7 @@ sealed trait StatNode extends ASTNode
 case class SkipNode() extends StatNode
 
 case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) extends StatNode {
-    override def semanticCheck(): Unit = {AnyIdentifier
+    override def semanticCheck(): Unit = {
         ty.semanticCheck()
         rvalue match {
             case c: CallNode => c.returnType = Some(ty.typeVal())
@@ -132,22 +132,19 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         }
         // Add to symbol table and get type
         else {
-            rvalue.typeVal() match {
-                case b: BoolIdentifier => SemanticChecker.symbolTable.addVar(ident.name, b)
-                case c: CharIdentifier => SemanticChecker.symbolTable.addVar(ident.name, c)
-                case i: IntIdentifier => SemanticChecker.symbolTable.addVar(ident.name, i)
-                case s: StrIdentifier => SemanticChecker.symbolTable.addVar(ident.name, s)                    
-                case a: ArrayIdentifier => {
-                    if (a.baseTy.typeEquals(AnyIdentifier())) {
-                        SemanticChecker.symbolTable.addVar(ident.name, ty.typeVal())
-                    } else {
-                        SemanticChecker.symbolTable.addArray(ident.name, a.baseTy, a.dim)
-                    }
-                }
-                case p: PairIdentifier => SemanticChecker.symbolTable.addVar(ident.name, p)
-                case any: AnyIdentifier => SemanticChecker.symbolTable.addVar(ident.name, any)
+            val rValTy = rvalue.typeVal()
+            
+            // check if abstact type is decalred
+            if (!(rValTy.isFullType() && ty.typeVal().isFullType())) {
+                Error.addSemErr(
+                    s"abstract type error: \"${ident.name}\" is declared as an abstract type \"${ty.typeStrVal()}\""
+                    )
+            }
+
+            rValTy match {
+                case any: AnyIdentifier => SemanticChecker.symbolTable.addVar(ident.name, ty.typeVal())
                 case n: NullIdentifier => SemanticChecker.symbolTable.addVar(ident.name, ty.typeVal())
-                case ty => throw new IllegalArgumentException(s"type ${ty} is not a assignable rvalue element")
+                case t => SemanticChecker.symbolTable.addVar(ident.name, t)
             }
             ident.newName = SemanticChecker.currScope().toString() + "!" + ident.name
         }
@@ -178,21 +175,6 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
                 Error.addSemErr(s"assignment: type mismatch: expected ${lvalue.typeVal().toString}, " +
                                 s"gets ${rvalue.typeVal().toString()}")
         }
-
-        // !
-        // val undefinedTypeAssign = lhsType match {
-        //     case a: AnyIdentifier => {
-        //         rhsType match {
-        //             case a: AnyIdentifier => true
-        //             case _ => false
-        //         }
-        //     }
-        //     case _ => false
-        // }
-
-        // if (undefinedTypeAssign) {
-        //     Error.addSemErr("unidentified type for both LHS RHS type assignment\n")
-        // }
     }
 }
 
@@ -534,6 +516,7 @@ case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
 
 sealed trait TypeNode extends ASTNode {
     def typeVal(): TypeIdentifier = AnyIdentifier()
+    def typeStrVal(): String = typeVal().toString()
 }
 
 // Including int, char, string, bool
@@ -588,20 +571,24 @@ case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) exte
         PairIdentifier(fstPET.typeVal(), sndPET.typeVal())
     }
 
+    override def typeStrVal(): String = {
+        s"pair(${fstPET.typeStrVal()}, ${sndPET.typeStrVal()})"
+    }
+
     override def semanticCheck(): Unit = {
         fstPET.semanticCheck()
         sndPET.semanticCheck()
     }
 }
 
-sealed trait PairElemTypeNode extends ASTNode {
-    /* "pair" can be refering to any valid pair type */
-    def typeVal(): TypeIdentifier = PairIdentifier(AnyIdentifier(), AnyIdentifier())
+sealed trait PairElemTypeNode extends TypeNode {
+    def typeVal(): TypeIdentifier
 }
 
-// Example: 'pair'
+/* "pair" can be refering to any valid pair type */
 case class PETPairNode() extends PairElemTypeNode {
-    override def typeVal(): TypeIdentifier = super[PairElemTypeNode].typeVal()
+    override def typeVal(): TypeIdentifier = PairIdentifier(AnyIdentifier(), AnyIdentifier())
+    override def typeStrVal(): String = "pair"
 }
 
 case class IntLiterNode(n: Int) extends ExprNode {

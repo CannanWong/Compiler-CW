@@ -19,7 +19,7 @@ object Main {
                 SemanticChecker.check(x)
                 if (!Error.exitWithSemanticErr()) {
                     println("No syntax or semantic error")
-                    
+
                     /* AST --> IR1: Control Flow Graph */
                     CodeGenerator.translateAST(x)
 
@@ -29,6 +29,7 @@ object Main {
                 else {
                     println("#semantic_error#\n")
                     Error.printErr()
+                    println(x)
                     sys.exit(200)
                 }
             }
