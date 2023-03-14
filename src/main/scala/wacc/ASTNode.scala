@@ -133,19 +133,17 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         // Add to symbol table and get type
         else {
             val rValTy = rvalue.typeVal()
-            
             // check if abstact type is decalred
-            if (!(rValTy.isFullType() && ty.typeVal().isFullType())) {
+            if (!rValTy.isFullType() && !ty.typeVal().isFullType()) {
                 Error.addSemErr(
-                    s"abstract type error: \"${ident.name}\" is declared as an abstract type \"${ty.typeStrVal()}\""
+                    s"abstract type error: \"${ident.name}\" is declared as an abstract type " +
+                      s"${ty.typeStrVal()} for abstract value with type ${rValTy}"
                     )
             }
 
-            rValTy match {
-                case any: AnyIdentifier => SemanticChecker.symbolTable.addVar(ident.name, ty.typeVal())
-                case n: NullIdentifier => SemanticChecker.symbolTable.addVar(ident.name, ty.typeVal())
-                case t => SemanticChecker.symbolTable.addVar(ident.name, t)
-            }
+            val storedType = if (!rValTy.isFullType()) rValTy else ty.typeVal()  
+            SemanticChecker.symbolTable.addVar(ident.name, storedType)
+
             ident.newName = SemanticChecker.currScope().toString() + "!" + ident.name
         }
 
@@ -329,8 +327,7 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
     override def semanticCheck(): Unit = {
         val identifier = SemanticChecker.symbolTable.lookUpVar(name)
         identifier match {
-            case None => Error.addSemErr(s"${identifier.toString()} variable \"${name}\" is not in scope " +
-              s"or not defined\n")
+            case None => Error.addSemErr(s"variable \"${name}\" is not in scope or not defined")
             case _ => {
                 if (!isFunction) {
                     newName = SemanticChecker.symbolTable.getVarName(name)

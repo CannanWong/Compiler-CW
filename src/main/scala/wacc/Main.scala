@@ -29,7 +29,6 @@ object Main {
                 else {
                     println("#semantic_error#\n")
                     Error.printErr()
-                    println(x)
                     sys.exit(200)
                 }
             }
