@@ -101,7 +101,6 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case PairIdentifier(otherTy1, otherTy2) => {
-        SemanticChecker.debugMessage += s"ty1 ${ty1} == ${otherTy1} is ${ty1.typeEquals(otherTy1)}: && ty2 ${ty2} == ${otherTy2} "
         ty1.typeEquals(otherTy1) && ty2.typeEquals(otherTy2)
       }
       case a: AnyIdentifier => true
