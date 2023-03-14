@@ -111,7 +111,7 @@ object AssignRegisterOptimised {
         case AndInst(rd, op)                    => genFlag(block, rd, op)
         case OrInst(rd, op)                     => genFlag(block, rd, op)
         case CmpInst(rn, op)                    => genFlag(block, rn, op)
-        //! Not sure if this is how push and pop shd be handled
+        //? Not sure if this is how push and pop shd be handled
         case p: PushInst                        => for (r <- p.regs) block.uses += r
         case p: PopInst                         => for (r <- p.regs) block.defs += r
         case SmullInst(rdlo, rdhi, rm, rs)      => {
@@ -119,17 +119,15 @@ object AssignRegisterOptimised {
           block.uses ++= checkUses(rs)
         }
         case BranchInst(label, link, condition) => {
+          // If link is false, it means the program is going to end anyway
           if (link) {
             block.defs += r0
             block.uses ++= Set(r0, r1, r2, r3)
             //TODO: would be better to check for actual register usage from func table
           }
-          //other branchs shd be condition or loop and can be ignored
         }
         //! Do we need anything on std functions (possibly arrStore and arrLoad)?
-        case BranchNumInst(num, condition) => {
-
-        }
+        case BranchNumInst(num, condition) => // This is branching to main function body labels so shd contain no uses and defs
         case FreeRegister(r) => //block.defs - r //? is this needed or shd freereg be removed from codeGenOptd?
         case WaccComment(s) => // Nothing
       }
