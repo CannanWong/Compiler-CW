@@ -24,35 +24,39 @@ object AssignRegisterOptimised {
       do {
         curCFGBlk match {
           case i: InstBlock => {
-            val instBasicBlk = BasicBlock(i.instList.toList)
-            lstBasicBlk.succs.addOne(instBasicBlk)
-            lstBasicBlk = instBasicBlk
+            val instBasicBlks = partitionBasicBlock(i.instList.toList)
+            lstBasicBlk.succs.addOne(instBasicBlks.last)
+            lstBasicBlk = instBasicBlks.head
             curCFGBlk = i.next
-            instBasicBlk :: bbg.blocks
+            instBasicBlks ::: bbg.blocks
           }
           case i: IfBlock => {
-            val trueBlk = BasicBlock(i.nextT.instList.toList)
-            val falseBlk = BasicBlock(i.nextF.instList.toList)
+            val trueBlks = partitionBasicBlock(i.nextT.instList.toList)
+            val falseBlks = partitionBasicBlock(i.nextF.instList.toList)
             //dummy block for connection
             val nextDummy = BasicBlock(List.empty)
-            lstBasicBlk.succs.addAll(List(trueBlk, falseBlk))
-            trueBlk.succs.addOne(nextDummy)
-            falseBlk.succs.addOne(nextDummy)
+            lstBasicBlk.succs.addAll(List(trueBlks.last, falseBlks.last))
+            trueBlks.head.succs.addOne(nextDummy)
+            falseBlks.head.succs.addOne(nextDummy)
             lstBasicBlk = nextDummy
             curCFGBlk = i.next
-            List(nextDummy, falseBlk, trueBlk) ::: bbg.blocks
+            trueBlks ::: bbg.blocks
+            falseBlks ::: bbg.blocks
+            nextDummy :: bbg.blocks
           }
           case w: WhileBlock => {
-            val condBlk = BasicBlock(w.cond.instList.toList)
-            val loopBlk = BasicBlock(w.loop.instList.toList)
+            val condBlks = partitionBasicBlock(w.cond.instList.toList)
+            val loopBlks = partitionBasicBlock(w.loop.instList.toList)
             //dummy block for connection
             val nextDummy = BasicBlock(List.empty)
-            lstBasicBlk.succs.addOne(condBlk)
-            condBlk.succs.addAll(List(loopBlk, nextDummy))
-            loopBlk.succs.addOne(condBlk)
+            lstBasicBlk.succs.addOne(condBlks.last)
+            condBlks.head.succs.addAll(List(loopBlks.last, nextDummy))
+            loopBlks.head.succs.addOne(condBlks.last)
             lstBasicBlk = nextDummy
             curCFGBlk = w.next
-            List(nextDummy, loopBlk, condBlk) ::: bbg.blocks
+            condBlks ::: bbg.blocks
+            loopBlks ::: bbg.blocks
+            nextDummy :: bbg.blocks
           }
           case f: FuncBlock => {
             throw new IllegalStateException(
@@ -69,9 +73,10 @@ object AssignRegisterOptimised {
     val partitions: List[BasicBlock] = List()
     var remainder = insts
     var nxtBlk: BasicBlock = null
+    // Partition is also done in reverse (prepend so reversed at the end)
     while (!remainder.isEmpty) {
-      val block = BasicBlock(remainder.takeRight(BASIC_BLOCK_SIZE))
-      remainder = remainder.dropRight(BASIC_BLOCK_SIZE)
+      val block = BasicBlock(remainder.take(BASIC_BLOCK_SIZE))
+      remainder = remainder.drop(BASIC_BLOCK_SIZE)
       block.succs += nxtBlk
       block :: partitions
       nxtBlk = block
@@ -123,6 +128,7 @@ object AssignRegisterOptimised {
         }
         //! Do we need anything on std functions (possibly arrStore and arrLoad)?
         case BranchNumInst(num, condition) => {
+
         }
         case FreeRegister(r) => //block.defs - r //? is this needed or shd freereg be removed from codeGenOptd?
         case WaccComment(s) => // Nothing
