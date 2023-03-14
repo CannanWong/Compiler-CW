@@ -2,19 +2,19 @@ package wacc
 
 import scala.collection.mutable._
 import Constants._
+import javax.management.InstanceNotFoundException
 
 object AssignRegisterOptimised {
   val BASIC_BLOCK_SIZE = 4
-
-  // Basic Block Graphs are generated per funcBlock inside the complete CFG
-  val basicBlockGraphs = LinkedHashMap[String, BasicBlockGraph]()
+  val ARG_OFFSET = 4
 
   //########################################################################//
   //                              CFG -> BBG                                //
   //########################################################################//
 
   // Formatting CFG into monomorphic Basic Block Flow-Graph
-  def formatCFG(cfg: LinkedHashMap[String, FuncBlock]): Unit = {
+  def formatCFG(cfg: LinkedHashMap[String, FuncBlock]): LinkedHashMap[String, BasicBlockGraph] = {
+    val basicBlockGraphs = LinkedHashMap[String, BasicBlockGraph]()
     // Doing for every separate CFG function blocks, including main body as MAIN function
     for ((name, block) <- cfg.toList) {
       val bbg = BasicBlockGraph()
@@ -67,6 +67,7 @@ object AssignRegisterOptimised {
       } while (curCFGBlk != null)
       basicBlockGraphs.addOne((name, bbg))
     }
+    basicBlockGraphs
   }
 
   def partitionBasicBlock(insts: List[Instruction]): List[BasicBlock] = {
@@ -121,7 +122,7 @@ object AssignRegisterOptimised {
         case BranchInst(label, link, condition) => {
           // If link is false, it means the program is going to end anyway
           if (link) {
-            block.defs += r0
+            block.defs ++= Set(r0, r1)
             block.uses ++= Set(r0, r1, r2, r3)
             //TODO: would be better to check for actual register usage from func table
           }
@@ -155,10 +156,15 @@ object AssignRegisterOptimised {
       case _ => Set()
     }
   }
-  def liveVariableAnalysis(): (Map[BasicBlock, Set[Register]], Map[BasicBlock, Set[Register]]) = {
-    val liveIn = Map.empty[BasicBlock, Set[Register]]
-    val liveOut = Map.empty[BasicBlock, Set[Register]]
+  def liveVariableAnalysis(
+    basicBlockGraphs: LinkedHashMap[String, BasicBlockGraph]): 
+      Map[String, (Map[BasicBlock, Set[Register]], Map[BasicBlock, Set[Register]])] = {
+    val liveRangeMap = 
+      Map[String, 
+      (Map[BasicBlock, Set[Register]], Map[BasicBlock, Set[Register]])]()
     for ((name, bbg) <- basicBlockGraphs) {
+      val liveIn = Map.empty[BasicBlock, Set[Register]]
+      val liveOut = Map.empty[BasicBlock, Set[Register]]
       // initialize liveOut for all blocks to empty set
       bbg.blocks.foreach{ 
         block => {
@@ -190,8 +196,9 @@ object AssignRegisterOptimised {
           }
         }
       }
+      liveRangeMap.addOne(name, (liveIn, liveOut))
     }
-    (liveIn, liveOut)
+    liveRangeMap
   }
 
   //########################################################################//
@@ -199,7 +206,7 @@ object AssignRegisterOptimised {
   //########################################################################//
 
   // Interference graph generation
-  def generateInterferenceGraph(
+  def genIG(
     liveIn: Map[BasicBlock, Set[Register]],
     liveOut: Map[BasicBlock, Set[Register]]):
     Map[Register, Set[Register]] = {
@@ -229,7 +236,7 @@ object AssignRegisterOptimised {
   //                         DSatur Graph Colouring                         //
   //########################################################################//
 
-  def graphColouring(graph: Map[Register, Set[Register]]): Map[Register, Register] = {
+  def colouring(graph: Map[Register, Set[Register]], funcArgs: Map[Register, Register]): Map[Register, Register] = {
     var spilledCount = 0
     // Identify precolored nodes
     val precolored = graph.keys.filter(fixedRegs.contains).toSet
@@ -238,7 +245,7 @@ object AssignRegisterOptimised {
     var nodes = graph.keys.filterNot(precolored.contains).toList.sortBy(-graph(_).size)
     
     // Initialise the color map with the precolored nodes
-    val colorMap = Map[Register, Register]() ++ precolored.map(reg => reg -> reg)
+    val colorMap = Map[Register, Register]() ++ precolored.map(reg => reg -> reg) ++ funcArgs
 
     // DSatur algorithm to color the partially-precoloured graph
     while (!nodes.isEmpty) {
@@ -265,4 +272,41 @@ object AssignRegisterOptimised {
 
     colorMap
   }
+
+  //########################################################################//
+  //                   Main Register Colouring Function                     //
+  //########################################################################//
+  def regColouringAlloc(cfg: LinkedHashMap[String, FuncBlock]): 
+    Map[String, Map[Register, Register]] = {
+    val regMap = Map[String, Map[Register, Register]]()
+    
+    // Basic Block Graphs are generated per funcBlock inside the complete CFG
+    val basicBlockGraphs = formatCFG(cfg)
+    val liveRanges = liveVariableAnalysis(basicBlockGraphs)
+    for ((name, (liveIn, liveOut)) <- liveRanges) {
+      val inteferenceGraph = genIG(liveIn, liveOut)
+      val funcArgs = Map[Register, Register]()
+      if (name != "main") {
+        cfg.get(name).fold(throw new InstanceNotFoundException("funcblock not found"))(
+          block => {
+            var argCount = 0
+            for (arg <- block.paramList) {
+              if (argCount < 4) {
+                funcArgs.addOne(Variable(arg.ident.newName), FixedRegister(argCount))
+              }
+              else {
+                funcArgs.addOne(Variable(arg.ident.newName), ArgStackSpace(argCount - ARG_OFFSET))
+              }
+              argCount += 1
+            }
+          })
+      }
+      regMap.addOne(name, colouring(inteferenceGraph, funcArgs))
+    }
+    regMap
+  }
+
+  //########################################################################//
+  //                 Register Allocation Helper Functions                   //
+  //########################################################################//
 }
