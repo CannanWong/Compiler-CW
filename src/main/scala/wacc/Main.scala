@@ -17,6 +17,7 @@ object Main {
             // Parsing successful
             case Success(x) => {
                 SemanticChecker.check(x)
+                
                 if (!Error.exitWithSemanticErr()) {
                     println("No syntax or semantic error")
 
