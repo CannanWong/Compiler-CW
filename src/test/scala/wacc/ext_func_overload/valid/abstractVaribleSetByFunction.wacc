@@ -1,4 +1,4 @@
-# Extension: full pair type
+# Extension: function overloading
 # Variables declared with abstract pair type can be set by 
 # function call after being set a full pair type
 

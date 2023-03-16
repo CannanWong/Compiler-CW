@@ -1,15 +1,35 @@
-# reassign a nested pair type of pair(pair(int, char), char)
+# Extension: full pair type
+# Reassign a nested pair type of pair(pair(int, char), char)
 
 # Output:
+# 1
+# a
+# true
+# 2
+# b
+# false
+#
 
 # Program:
 
 begin
-  pair(int, char) p = newpair(10, 'a');
-  # type of q should be pair(pair(int, char), char)
-  pair(pair(int, char), char) q = newpair(p, 'b');
-  pair(int, char) a = newpair(5, 'p');
-  # type of q should be pair(pair(int, char), char)
-  pair(pair, char) b = newpair(a, 'q');
-  q = b
+  pair(int, char) a = newpair(1, 'a') ;
+  # type of b should be pair(pair(int, char), bool) ;
+  pair(pair(int, char), bool) b = newpair(a, true) ;
+  pair(int, char) c = newpair(2, 'b') ; 
+  # type of d should be pair(pair(int, char), bool) ;
+  pair(pair, bool) d = newpair(c, false) ;
+  int x = fst fst b ;
+  char y = snd fst b ;
+  bool z = snd b ;
+  println x ;
+  println y ;
+  println z ;
+  b = d ;
+  x = fst fst b ;
+  y = snd fst b ;
+  z = snd b ;
+  println x ;
+  println y ;
+  println z
 end

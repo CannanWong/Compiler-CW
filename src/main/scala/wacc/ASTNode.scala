@@ -158,7 +158,7 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
             case CallNode(callident, argList) => {
                 if (ty.typeVal().isRepacable()) {
                      Error.addSemErr(s"Function return type unknown, cannot assign result from function " +
-                       s"call to ${callident.name} to \"${ident.name}\" of abstract type ${ty.typeStrVal()}")
+                       s"call ${callident.name} to \"${ident.name}\" of abstract type ${ty.typeStrVal()}")
                 }
             }
             case _ => {
