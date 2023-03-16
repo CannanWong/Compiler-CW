@@ -1,4 +1,4 @@
-# Extension: fuunction overloading
+# Extension: function overloading
 # Same function name with different return types
 
 # Output:
@@ -9,6 +9,9 @@
 # cba
 # 1
 # 2
+# 1
+# a
+# true
 #
 
 # Exit:
@@ -37,6 +40,11 @@ begin
     pair(int, int) a = newpair(1, 2) ;
     return a
   end
+  pair(int, pair(char, bool)) f() is
+    pair(char, bool) a = newpair('a', true) ;
+    pair(int, pair) b = newpair(1, a) ;
+    return b
+  end
   int a = call f() ;
   char b = call f() ;
   bool c = call f() ;
@@ -45,11 +53,18 @@ begin
   pair(int, int) f = call f() ;
   int g = fst f ;
   int h = snd f ;
+  pair(int, pair(char, bool)) i = call f() ;
+  int j = fst i ;
+  char k = fst snd i ;
+  bool l = snd snd i ;
   println a ;
   println b ;
   println c ;
   println d ;
   println e ;
   println g ;
-  println h 
+  println h ;
+  println j ;
+  println k ;
+  println l
 end

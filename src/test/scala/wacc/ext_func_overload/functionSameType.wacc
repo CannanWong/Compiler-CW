@@ -1,4 +1,5 @@
-# attempted redefinition of function
+# Extension: function overloading
+# Attempted redefinition of function
 
 # Output:
 # #semantic_error#

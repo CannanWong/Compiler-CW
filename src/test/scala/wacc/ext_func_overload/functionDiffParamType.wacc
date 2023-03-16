@@ -1,4 +1,4 @@
-# Extension: fuunction overloading
+# Extension: function overloading
 # Same function name with different parameter types
 
 # Output:
@@ -9,6 +9,7 @@
 # 4
 # 5
 # 6
+# 7
 #
 
 # Exit:
@@ -38,6 +39,9 @@ begin
   int f(pair(int, int) a) is
     return 6
   end
+  int f(pair(int, pair(char, bool)) a) is
+    return 7
+  end
   int x = call f() ;
   println x ;
   x = call f(1) ;
@@ -53,5 +57,9 @@ begin
   println x ;
   pair(int, int) b = newpair(1, 1) ;
   x = call f(b) ;
+  println x ;
+  pair(char, bool) c = newpair('a', true) ;
+  pair(int, pair) d = newpair(1, c) ;
+  x = call f(d) ;
   println x
 end

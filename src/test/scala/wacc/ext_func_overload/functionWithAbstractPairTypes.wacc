@@ -1,0 +1,40 @@
+# Extension: function overloading
+# Due to function overloading, function declaration cannot contain 
+# abstract pair types in parameter types or return type. LHS type 
+# of function call also cannot contain abstract pair types, and 
+# arguments cannot contain null.
+
+# Output:
+#
+
+# Exit:
+# 200
+
+# Program:
+begin
+  # No semantic error
+  pair(int, pair(char, bool)) f(pair(int, pair(char, bool)) x) is
+    return x
+  end
+  # Semantic error: Function return type cannot be abstract
+  pair(int, pair) f2(pair(int, pair(char, bool)) x) is
+    return x
+  end
+  # Semantic error: Function parameter type cannot be abstract
+  pair(int, pair(char, bool)) f3(pair(int, pair) x) is
+    return x
+  end
+  pair(char, bool) a = newpair('a', true) ;
+  pair(int, pair) b = newpair(1, a) ;
+  pair(int, pair) c = newpair(1, null) ;
+  # No semantic error
+  pair(int, pair(char, bool)) d = call f(b) ;
+  # Semantic error: LHS type of function call cannot be abstract
+  pair(int, pair) e = call f(a) ;
+  # No semantic error
+  b = call f(a) ;
+  # Semantic error: Function call arguments cannot contain null
+  d = call f(c) ;
+  # Semantic error: Function call arguments cannot contain null
+  d = call f(null)
+end
