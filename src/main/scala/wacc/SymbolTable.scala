@@ -3,7 +3,6 @@ package wacc
 import scala.collection.mutable
 
 import wacc.{FuncIdentifier, ArrayIdentifier, PairIdentifier}
-import java.util.Optional
 class SymbolTable {
 
     val map: mutable.Map[String, TypeIdentifier] = mutable.Map()
