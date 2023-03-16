@@ -1,7 +1,8 @@
-# nested pair extractions are legal as long as the left hand-side type is known
+# Extension: full pair type
+# Nested pair extractions are legal as long as the left hand-side type is known
 
 # Output:
-# 3
+# 2
 
 # Program:
 

@@ -8,6 +8,7 @@ for file in src/test/scala/wacc/ext_func_overload/**/*.wacc
 do
     expected_exit=0
     expected_output=""
+    # Get expected exit and expected output from wacc comments
     exit_line=$(grep -A1 "# Exit" $file)
     if [ -n "$exit_line" ]
         then
@@ -20,7 +21,7 @@ do
     fi
 
     pass=1
-
+    # Run program and get exit and output
     if [ $expected_exit -eq 0 ]
         then
         timeout 10s ./compile $file > /dev/null
@@ -37,7 +38,7 @@ do
             pass=0
         fi
     else
-        timeout 10s ./compile $file > /dev/null
+        output=$(timeout 10s ./compile $file)
         exit=$?
     fi
 
@@ -53,6 +54,12 @@ do
         then 
         echo -e "Test $file passed"
         ((passcount=passcount+1))
+        # Print error messages if semantic error
+        if [ $expected_exit -eq 200 ]
+            then
+            echo -e "Semantic error messages:"
+            echo -e "$output\n"
+        fi
     else
         echo -e "Test $file failed!"
         ((failcount=failcount+1))

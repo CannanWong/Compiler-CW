@@ -46,7 +46,7 @@ object Main {
                     WriteToFile.write(filename)
                 }
                 else {
-                    println("#semantic_error#\n")
+                    println("#semantic_error#")
                     Error.printErr()
                     sys.exit(200)
                 }

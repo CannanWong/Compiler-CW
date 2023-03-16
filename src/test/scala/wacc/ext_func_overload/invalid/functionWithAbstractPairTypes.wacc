@@ -5,14 +5,13 @@
 # arguments cannot contain null.
 
 # Output:
-#
+# #semantic_error#
 
 # Exit:
 # 200
 
 # Program:
 begin
-  # No semantic error
   pair(int, pair(char, bool)) f(pair(int, pair(char, bool)) x) is
     return x
   end
@@ -27,14 +26,10 @@ begin
   pair(char, bool) a = newpair('a', true) ;
   pair(int, pair) b = newpair(1, a) ;
   pair(int, pair) c = newpair(1, null) ;
-  # No semantic error
-  pair(int, pair(char, bool)) d = call f(b) ;
   # Semantic error: LHS type of function call cannot be abstract
-  pair(int, pair) e = call f(a) ;
-  # No semantic error
-  b = call f(a) ;
+  pair(int, pair) e = call f(b) ;
   # Semantic error: Function call arguments cannot contain null
-  d = call f(c) ;
+  pair(int, pair(char, bool)) d = call f(c) ;
   # Semantic error: Function call arguments cannot contain null
   d = call f(null)
 end
