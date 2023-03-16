@@ -42,7 +42,7 @@ object PeepholeOptimisation {
         val newInstList: ListBuffer[Instruction] = new ListBuffer()
         val iter = instBlock.instList.iterator
         while (iter.hasNext) {
-            val inst = iter.next
+            val inst = iter.next()
             newInstList ++= optimiseInst(inst, iter)  
         }
         instBlock.instList = newInstList
@@ -58,7 +58,7 @@ object PeepholeOptimisation {
             case MovInst(rd, op, _) => {
                 if (rd == op) {
                     if (iter.hasNext) {
-                        removeRedundant(iter.next, iter)
+                        removeRedundant(iter.next(), iter)
                     } else None
                 } else Some(inst)
             }
@@ -70,7 +70,7 @@ object PeepholeOptimisation {
        returning a list of optimised instructions */
     def optimiseInst(instruction: Instruction, iter: Iterator[Instruction]): ListBuffer[Instruction] = {
         var optimisedInsts: ListBuffer[Instruction] = new ListBuffer()
-        var option = removeRedundant(instruction, iter)
+        val option = removeRedundant(instruction, iter)
         option match {
             case Some(inst) => {
                 if (!iter.hasNext) {
@@ -90,7 +90,7 @@ object PeepholeOptimisation {
                for the same register and address */
             case StrInst(rd, op) => {
                 optimisedInsts += inst
-                removeRedundant(iter.next, iter) match {
+                removeRedundant(iter.next(), iter) match {
                     case Some(next) => {
                         next match {
                             case LdrInst(rd1, op1) => {
@@ -155,12 +155,12 @@ object PeepholeOptimisation {
                the compare instruction is removed, if the ImmVal is 0, it will branch directly to the error label, otherwise it will not*/
             case MovInst(FixedRegister(1), op, _) => {
                 optimisedInsts += inst
-                var next = iter.next
+                var next = iter.next()
                 next match {
                     case CmpInst(FixedRegister(1), ImmVal(0)) => {
                         optimisedInsts += next
                         if (iter.hasNext) {
-                            next = iter.next
+                            next = iter.next()
                             next match {
                                 case BranchInst(ZERO_DIVISION_LABEL, _, Equal()) => {
                                     op match {
@@ -189,7 +189,7 @@ object PeepholeOptimisation {
             case MovInst(rd, op, cond) => {
                 optimisedInsts += inst
                 if (iter.hasNext) {
-                    val next = iter.next
+                    val next = iter.next()
                     next match {
                         case MovInst(rd1, op1, cond1) => {
                             if (!(rd1 == op && op1 == rd && cond1 == cond)) {

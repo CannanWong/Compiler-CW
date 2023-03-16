@@ -3,11 +3,15 @@ package wacc
 sealed trait TypeIdentifier {
   def typeEquals(id: TypeIdentifier): Boolean
   def isFullType():Boolean
+  def isRepacable():Boolean = false
+  def concretenessIndex: Int
   override def toString(): String = "NO TYPE"
 }
 
 // when ident node not in symbol table
 case class AnyIdentifier() extends TypeIdentifier {
+  override def isRepacable():Boolean = true
+  def concretenessIndex = 1
   override def isFullType() = false
   override def typeEquals(id: TypeIdentifier): Boolean = {
     true
@@ -16,6 +20,7 @@ case class AnyIdentifier() extends TypeIdentifier {
 }
 
 case class IntIdentifier() extends TypeIdentifier {
+  def concretenessIndex = 1
   override def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
@@ -28,6 +33,7 @@ case class IntIdentifier() extends TypeIdentifier {
 }
 
 case class BoolIdentifier() extends TypeIdentifier {
+  def concretenessIndex = 1
   override def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
       id match {
@@ -40,6 +46,7 @@ case class BoolIdentifier() extends TypeIdentifier {
 }
 
 case class StrIdentifier() extends TypeIdentifier {
+  def concretenessIndex = 1
   override def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
   id match {
@@ -52,6 +59,7 @@ case class StrIdentifier() extends TypeIdentifier {
 }
 
 case class CharIdentifier() extends TypeIdentifier {
+  def concretenessIndex = 1
   override def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
   id match {
@@ -64,6 +72,7 @@ case class CharIdentifier() extends TypeIdentifier {
 }
 
 case class FuncIdentifier(old_name: String, paramtype: List[TypeIdentifier], returntype: TypeIdentifier) extends TypeIdentifier {
+  def concretenessIndex = 0
   override def isFullType() = true
 
   override def typeEquals(id: TypeIdentifier): Boolean = {
@@ -84,7 +93,9 @@ case class FuncIdentifier(old_name: String, paramtype: List[TypeIdentifier], ret
 }
  
 case class ArrayIdentifier(baseTy: TypeIdentifier, dim: Int) extends TypeIdentifier {
+  def concretenessIndex = baseTy.concretenessIndex
   override def isFullType() = baseTy.isFullType()
+  override def isRepacable(): Boolean = baseTy.isRepacable()
 
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
@@ -105,7 +116,9 @@ case class ArrayIdentifier(baseTy: TypeIdentifier, dim: Int) extends TypeIdentif
 }
 
 case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends TypeIdentifier {
+  def concretenessIndex = ty1.concretenessIndex + ty2.concretenessIndex
   override def isFullType() = ty1.isFullType() && ty2.isFullType()
+  override def isRepacable() = ty1.isRepacable() || ty2.isRepacable()
 
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
@@ -115,6 +128,7 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
       case a: AnyIdentifier => true
       case n: NullIdentifier => true
       case _ => false
+
     }
   }
 
@@ -124,7 +138,9 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
 }
 
 case class NullIdentifier() extends TypeIdentifier {
-  def isFullType() = false
+  def concretenessIndex = 1
+  override def isRepacable() = true
+  def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case n: NullIdentifier => true

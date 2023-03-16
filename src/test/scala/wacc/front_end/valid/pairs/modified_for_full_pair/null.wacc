@@ -1,0 +1,24 @@
+# null pair assignment
+
+# Output:
+# (nil)
+# (nil)
+#
+
+# Program:
+
+begin
+  pair(int, int) int_null_pair = null;
+  pair(pair, pair) p = newpair(int_null_pair, int_null_pair) ;
+  println p ;
+  p = null ;
+  println p
+end
+
+# test before full pair implementation 
+# begin
+#   pair(pair, pair) p = null ;
+#   println p ;
+#   p = null ;
+#   println p
+# end

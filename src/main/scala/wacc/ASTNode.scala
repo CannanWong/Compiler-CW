@@ -125,31 +125,32 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
             case _ =>
         }
         rvalue.semanticCheck()
-        
+
+        val rValTyval = rvalue.typeVal()
+        val tyTyval = ty.typeVal()        
         // Check if variable name is already declared in the same scope
         if (SemanticChecker.symbolTable.checkVarDefined(ident.name)){
             Error.addSemErr(s"Variable name \"${ident.name}\" is already used in the same scope")
         }
         // Add to symbol table and get type
         else {
-            val rValTy = rvalue.typeVal()
             // check if abstact type is decalred
-            if (!rValTy.isFullType() && !ty.typeVal().isFullType()) {
+            if (!rValTyval.isFullType() && !tyTyval.isFullType()) {
                 Error.addSemErr(
                     s"abstract type error: \"${ident.name}\" is declared as an abstract type " +
-                      s"${ty.typeStrVal()} for abstract value with type ${rValTy}"
+                      s"${ty.typeStrVal()} for abstract value with type ${rValTyval}"
                     )
             }
 
-            val storedType = if (!rValTy.isFullType()) rValTy else ty.typeVal()  
+            val storedType = if (tyTyval.isFullType()) tyTyval else rValTyval  
             SemanticChecker.symbolTable.addVar(ident.name, storedType)
 
             ident.newName = SemanticChecker.currScope().toString() + "!" + ident.name
         }
 
         /* check whether rvalue type matches that of TypeNode */
-        if (!SemanticChecker.typeCheck(ty.typeVal(), rvalue.typeVal())) {
-            Error.addSemErr("definition: type mismatch: expected "+ ty.typeVal().toString()
+        if (!SemanticChecker.typeCheck(tyTyval, rValTyval)) {
+            Error.addSemErr("definition: type mismatch: expected "+ tyTyval.toString()
                         + s" for ${ident.name}, gets "
                         + rvalue.typeVal().toString())
         }
@@ -172,6 +173,10 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         if (!SemanticChecker.typeCheck(lhsType, rhsType)) {
                 Error.addSemErr(s"assignment: type mismatch: expected ${lvalue.typeVal().toString}, " +
                                 s"gets ${rvalue.typeVal().toString()}")
+        }else {
+            //lvalue will update type if type if type is known from assignment
+            val newLvalueType = SemanticChecker.getNewType(lhsType, rhsType)
+            SemanticChecker.replaceType(lvalue, newLvalueType)
         }
     }
 }
@@ -542,6 +547,9 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
 
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
+        if (ty.typeVal().isRepacable()) {
+            Error.addSemErr("array type cannot be abstact type")
+        }
         arrayType = getType(ty).typeVal()
         arrayDim = countDimension(ty)
     }
@@ -563,7 +571,7 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
 }
 
 // Example: Pair(bool, int[])
-case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) extends TypeNode {
+case class PairTypeNode(fstPET: PairElemTypeNode, sndPET: PairElemTypeNode) extends PairElemTypeNode with TypeNode {
     override def typeVal(): TypeIdentifier = {
         PairIdentifier(fstPET.typeVal(), sndPET.typeVal())
     }

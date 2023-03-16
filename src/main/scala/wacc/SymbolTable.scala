@@ -109,6 +109,11 @@ class SymbolTable {
         newName
     }
 
+
+    def replaceType(name: String, ty: TypeIdentifier): Unit = {
+        map.put(getVarName(name), ty)
+    }
+    
     override def toString(): String = {
         var ret = ""
         map.foreachEntry((name:String, ty:TypeIdentifier) =>{
