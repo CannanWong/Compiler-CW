@@ -3,9 +3,10 @@ package wacc
 import scala.collection.mutable._
 import Constants._
 import javax.management.InstanceNotFoundException
+import ControlFlowGraph.nextBBNum
 
 object AssignRegisterOptimised {
-  val BASIC_BLOCK_SIZE = 1
+  val BASIC_BLOCK_SIZE = 2
   val ARG_OFFSET = 4
 
   //########################################################################//
@@ -34,7 +35,7 @@ object AssignRegisterOptimised {
             val trueBlks = partitionBasicBlock(i.nextT.instList.toList)
             val falseBlks = partitionBasicBlock(i.nextF.instList.toList)
             //dummy block for connection
-            val nextDummy = BasicBlock(List.empty)
+            val nextDummy = BasicBlock(nextBBNum(), List.empty)
             lstBasicBlk.succs.addAll(List(trueBlks.head, falseBlks.head))
             trueBlks.last.succs.addOne(nextDummy)
             falseBlks.last.succs.addOne(nextDummy)
@@ -48,7 +49,7 @@ object AssignRegisterOptimised {
             val condBlks = partitionBasicBlock(w.cond.instList.toList)
             val loopBlks = partitionBasicBlock(w.loop.instList.toList)
             //dummy block for connection
-            val nextDummy = BasicBlock(List.empty)
+            val nextDummy = BasicBlock(nextBBNum(), List.empty)
             lstBasicBlk.succs.addOne(condBlks.head)
             condBlks.last.succs.addAll(List(loopBlks.head, nextDummy))
             loopBlks.last.succs.addOne(condBlks.head)
@@ -76,7 +77,7 @@ object AssignRegisterOptimised {
     var lstBlk: BasicBlock = null
     // Partition is also done in reverse
     while (!remainder.isEmpty) {
-      val block = BasicBlock(remainder.take(BASIC_BLOCK_SIZE))
+      val block = BasicBlock(nextBBNum(), remainder.take(BASIC_BLOCK_SIZE))
       remainder = remainder.drop(BASIC_BLOCK_SIZE)
       if (lstBlk != null) {
         lstBlk.succs += block
@@ -173,51 +174,39 @@ object AssignRegisterOptimised {
           genUseDefs(block)
           liveIn += (block -> Set.empty)
           liveOut += (block -> Set.empty)
-          println(f"${block.id}%2d: insts: ${block.insts}%-40s succs: ${block.succs}%-40s def: ${block.defs}%-20s use: ${block.uses}%-20s")
+          //println(f"${block.id}%2d: insts: ${block.insts}%-40s succs: ${block.succs}%-40s def: ${block.defs}%-20s use: ${block.uses}%-20s")
         }
       }
-      //println(liveIn)
+      //println("######################################################################################################")
 
       // iterate until a fixed point is reached
       var changed = true
-      var count = 0
-      while (changed && count <= 3) {
+      while (changed) {
         changed = false
-        count += 1
-        println(s"Iteration $count:")
         
         // iterate over blocks, which shd be in reverse order when inserted
         for (block <- bbg.blocks.reverse) {
           val newLiveOut: Set[Register] = Set.empty[Register]
           //println(block.succs)
+          
           // calculate new liveOut set
           for (succ <- block.succs) {
             newLiveOut ++= liveIn(succ)
           }
           // calculate new liveIn set
-          val newLiveIn: Set[Register] = block.uses ++ (newLiveOut.diff(block.defs))
-
+          val newLiveIn: Set[Register] = block.uses ++ (liveOut(block).diff(block.defs))
           // update liveIn and liveOut sets for this block
           if (newLiveIn != liveIn(block) || newLiveOut != liveOut(block)) {
-            liveIn += (block -> newLiveIn)
-            liveOut += (block -> newLiveOut)
+            liveIn.update(block, newLiveIn)
+            liveOut.update(block, newLiveOut)
             changed = true
           }
         }
-        println("liveIn:")
-        liveIn.foreach(r => {
-            print(s"${r._1.id}:  ")
-            println(r._2)
-        })
-        println("#################################################")
-        println("liveOut:")
-        liveOut.foreach(r => {
-            print(s"${r._1.id}:  ")
-            println(r._2)
-        })
-        println("#################################################")
+          
+        
       }
       liveRangeMap.addOne(name, (liveIn, liveOut))
+      //printLiveInOut(liveIn, liveOut)
     }
     liveRangeMap
   }
@@ -232,9 +221,10 @@ object AssignRegisterOptimised {
     liveOut: Map[BasicBlock, Set[Register]]):
     Map[Register, Set[Register]] = {
     val ig = Map.empty[Register, Set[Register]]
-
+    val lives = (liveIn.keySet ++ liveOut.keySet)
+      .map(block => (block, liveIn.getOrElse(block, Set.empty) ++ liveOut.getOrElse(block, Set.empty)))
     // add nodes to the interference graph for each variable that is live at any point
-    for ((block, variables) <- (liveIn.keySet ++ liveOut.keySet).map(block => (block, liveIn.getOrElse(block, Set.empty) ++ liveOut.getOrElse(block, Set.empty)))) {
+    for ((block, variables) <- lives) {
       for (v <- variables) {
         ig.getOrElseUpdate(v, Set.empty[Register])
       }
@@ -301,30 +291,6 @@ object AssignRegisterOptimised {
     colorMap
   }
 
-  def colouringTest(): Unit = {
-    val testGraph1 = Map[Register, Set[Register]]((Variable("a"), Set(Variable("a"), Variable("b"), Variable("c"), Variable("d"))),(Variable("b"), Set(Variable("b"), Variable("a"), Variable("c"), Variable("d"), Variable("e"))),(Variable("c"), Set(Variable("b"), Variable("c"), Variable("a"), Variable("d"), Variable("e"))),(Variable("d"), Set(Variable("a"), Variable("d"), Variable("c"), Variable("b"), Variable("e"))),(Variable("e"), Set(Variable("d"), Variable("e"), Variable("c"), Variable("b"))))
-    val allVarSet = Set[Register]( Variable("a1"),  Variable("a2"),  Variable("a3"),  Variable("a4"),  Variable("a5"),  Variable("a6"),  Variable("a7"),  Variable("a8"),  Variable("a9"),  Variable("b1"),  Variable("b2"),  Variable("b3"),  Variable("b4"),  Variable("b5"),  Variable("b6"),  Variable("b7"),  Variable("b8"),  Variable("b9"),  Variable("c1"),  Variable("c2"),  Variable("c3") )
-    val testGraph2 = Map[Register, Set[Register]]((Variable("a1"), allVarSet), (Variable("a2"), allVarSet), (Variable("a3"), allVarSet), (Variable("a4"), allVarSet), (Variable("a5"), allVarSet), (Variable("a6"), allVarSet), (Variable("a7"), allVarSet), (Variable("a8"), allVarSet), (Variable("a9"), allVarSet), (Variable("b1"), allVarSet), (Variable("b2"), allVarSet), (Variable("b3"), allVarSet), (Variable("b4"), allVarSet), (Variable("b5"), allVarSet), (Variable("b6"), allVarSet), (Variable("b7"), allVarSet), (Variable("b8"), allVarSet), (Variable("b9"), allVarSet), (Variable("c1"), allVarSet), (Variable("c2"), allVarSet), (Variable("c3"), allVarSet))
-    val testGraph3 = Map[Register, Set[Register]](
-        (Variable("a"), Set(FixedRegister(4), Variable("a"), Variable("b"), Variable("c"), Variable("d"), FixedRegister(8))),
-        (Variable("b"), Set(FixedRegister(8), FixedRegister(4), Variable("b"), Variable("a"), Variable("c"), Variable("d"), Variable("e"), FixedRegister(6))),
-        (Variable("c"), Set(FixedRegister(4), Variable("b"), Variable("c"), Variable("a"), Variable("d"), Variable("e"), FixedRegister(6))),
-        (Variable("d"), Set(FixedRegister(8), FixedRegister(4), Variable("a"), Variable("d"), Variable("c"), Variable("b"), Variable("e"))),
-        (Variable("e"), Set(FixedRegister(4), Variable("d"), Variable("e"), Variable("c"), Variable("b"), FixedRegister(6))),
-        /**/(Variable("args1"), Set(Variable("a"), Variable("b"), Variable("c"))),
-        (FixedRegister(8), Set(Variable("a"), Variable("b"), Variable("d"))),
-        (FixedRegister(6), Set(Variable("c"), Variable("b"), Variable("e"))),
-        (FixedRegister(4), Set(Variable("a"), Variable("b"), Variable("c"), Variable("d"), Variable("e")))
-    )
-    var colorMapping = colouring(testGraph1, Map[Register, Register]())
-    println(colorMapping)
-    colorMapping = colouring(testGraph2, Map[Register, Register]())
-    println(colorMapping)
-    colorMapping = colouring(testGraph3, Map[Register, Register](
-        (Variable("args1"), FixedRegister(7))))
-    println(colorMapping)
-  }
-
   //########################################################################//
   //                   Main Register Colouring Function                     //
   //########################################################################//
@@ -361,6 +327,46 @@ object AssignRegisterOptimised {
   
 
   //########################################################################//
-  //                 Register Allocation Helper Functions                   //
+  //                        Helper / Test Functions                         //
   //########################################################################//
+
+  def printLiveInOut(liveIn: Map[BasicBlock, Set[Register]], 
+    liveOut: Map[BasicBlock, Set[Register]]): Unit = {
+      println("liveIn:")
+      liveIn.foreach(r => {
+          print(s"${r._1.id}:  ")
+          println(r._2)
+      })
+      println("#################################################")
+      println("liveOut:")
+      liveOut.foreach(r => {
+          print(s"${r._1.id}:  ")
+          println(r._2)
+      })
+      println("#################################################")
+  }
+
+  def colouringTest(): Unit = {
+    val testGraph1 = Map[Register, Set[Register]]((Variable("a"), Set(Variable("a"), Variable("b"), Variable("c"), Variable("d"))),(Variable("b"), Set(Variable("b"), Variable("a"), Variable("c"), Variable("d"), Variable("e"))),(Variable("c"), Set(Variable("b"), Variable("c"), Variable("a"), Variable("d"), Variable("e"))),(Variable("d"), Set(Variable("a"), Variable("d"), Variable("c"), Variable("b"), Variable("e"))),(Variable("e"), Set(Variable("d"), Variable("e"), Variable("c"), Variable("b"))))
+    val allVarSet = Set[Register]( Variable("a1"),  Variable("a2"),  Variable("a3"),  Variable("a4"),  Variable("a5"),  Variable("a6"),  Variable("a7"),  Variable("a8"),  Variable("a9"),  Variable("b1"),  Variable("b2"),  Variable("b3"),  Variable("b4"),  Variable("b5"),  Variable("b6"),  Variable("b7"),  Variable("b8"),  Variable("b9"),  Variable("c1"),  Variable("c2"),  Variable("c3") )
+    val testGraph2 = Map[Register, Set[Register]]((Variable("a1"), allVarSet), (Variable("a2"), allVarSet), (Variable("a3"), allVarSet), (Variable("a4"), allVarSet), (Variable("a5"), allVarSet), (Variable("a6"), allVarSet), (Variable("a7"), allVarSet), (Variable("a8"), allVarSet), (Variable("a9"), allVarSet), (Variable("b1"), allVarSet), (Variable("b2"), allVarSet), (Variable("b3"), allVarSet), (Variable("b4"), allVarSet), (Variable("b5"), allVarSet), (Variable("b6"), allVarSet), (Variable("b7"), allVarSet), (Variable("b8"), allVarSet), (Variable("b9"), allVarSet), (Variable("c1"), allVarSet), (Variable("c2"), allVarSet), (Variable("c3"), allVarSet))
+    val testGraph3 = Map[Register, Set[Register]](
+        (Variable("a"), Set(FixedRegister(4), Variable("a"), Variable("b"), Variable("c"), Variable("d"), FixedRegister(8))),
+        (Variable("b"), Set(FixedRegister(8), FixedRegister(4), Variable("b"), Variable("a"), Variable("c"), Variable("d"), Variable("e"), FixedRegister(6))),
+        (Variable("c"), Set(FixedRegister(4), Variable("b"), Variable("c"), Variable("a"), Variable("d"), Variable("e"), FixedRegister(6))),
+        (Variable("d"), Set(FixedRegister(8), FixedRegister(4), Variable("a"), Variable("d"), Variable("c"), Variable("b"), Variable("e"))),
+        (Variable("e"), Set(FixedRegister(4), Variable("d"), Variable("e"), Variable("c"), Variable("b"), FixedRegister(6))),
+        /**/(Variable("args1"), Set(Variable("a"), Variable("b"), Variable("c"))),
+        (FixedRegister(8), Set(Variable("a"), Variable("b"), Variable("d"))),
+        (FixedRegister(6), Set(Variable("c"), Variable("b"), Variable("e"))),
+        (FixedRegister(4), Set(Variable("a"), Variable("b"), Variable("c"), Variable("d"), Variable("e")))
+    )
+    var colorMapping = colouring(testGraph1, Map[Register, Register]())
+    println(colorMapping)
+    colorMapping = colouring(testGraph2, Map[Register, Register]())
+    println(colorMapping)
+    colorMapping = colouring(testGraph3, Map[Register, Register](
+        (Variable("args1"), FixedRegister(7))))
+    println(colorMapping)
+  }
 }

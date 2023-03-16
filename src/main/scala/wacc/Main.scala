@@ -14,7 +14,10 @@ import ControlFlowGraph.nextTRNum
 
 object Main {
     def main(args: Array[String]): Unit = {
-        
+        val debug = false
+        if (debug) {
+            lvaTest()
+        } else {
         val fileContents = Source.fromFile(args(0)).getLines().mkString("\n")
         
         topLevel.parse(fileContents) match {
@@ -45,7 +48,7 @@ object Main {
                 sys.exit(100)
             }
         }
-        //lvaTest()
+        }
     }
     def lvaTest(): Unit = {
         val t0 = Variable("t0")
@@ -87,23 +90,15 @@ object Main {
         val bbgs = formatCFG(cfg)
         println("#################################################")
         println("Blocks: ")
-        bbgs("main").blocks.foreach(b => println(b.insts))
+        bbgs("main").blocks.foreach(b => if (!b.insts.isEmpty) println(b.insts))
         //bbgs("main").blocks.foreach(b => println(b.succs))
         println("#################################################")
         val liveRangeMap = liveVariableAnalysis(bbgs)
         val (liveIn, liveOut) = liveRangeMap("main")
-        println("liveIn:")
-        liveIn.foreach(r => {
-            print(s"${r._1.id}:  ")
-            println(r._2)
-        })
-        println("#################################################")
-        println("liveOut:")
-        liveOut.foreach(r => {
-            print(s"${r._1.id}:  ")
-            println(r._2)
-        })
-        println("#################################################")
+        val inteferenceGraph = genIG(liveIn, liveOut)
+        val colorMap = colouring(inteferenceGraph, Map[Register, Register]())
+        println(inteferenceGraph)
+        println(colorMap)
     }
 
     object WriteToFile {
