@@ -21,7 +21,7 @@ object RuntimeCheck {
           case _ => throw new IllegalArgumentException(s"error type ${label} does not exist")
         }
         /* Call function */
-        val func = new FuncBlock()
+        val func = FuncBlock()
         val prevBlock = currInstBlock
         currInstBlock = func.body
         val text = func.directive.addTextLabelToData(msg, label)

@@ -11,7 +11,7 @@ class PrintTranslateTest extends AnyFlatSpec with TimeLimitedTests {
   // Define a 60-second time limit for the test case
   override def timeLimit = Span(100, Seconds)
 
-  val printIntNode = new PrintNode(new IntLiterNode(12))
+  val printIntNode = PrintNode(IntLiterNode(12))
 
   "instruction translate print of type int" should "not be empty" in {
     assert(printIntNode != null)

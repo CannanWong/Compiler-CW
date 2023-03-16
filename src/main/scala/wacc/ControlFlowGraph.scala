@@ -55,18 +55,18 @@ case class InstBlock() extends ControlFlowBlock {
 case class IfBlock() extends ControlFlowBlock {
     // index of the if block
     val num: Int = ControlFlowGraph.nextIfNum
-    var nextT: InstBlock = new InstBlock()
-    var nextF: InstBlock = new InstBlock()
-    var next: InstBlock = new InstBlock()
+    var nextT: InstBlock = InstBlock()
+    var nextF: InstBlock = InstBlock()
+    var next: InstBlock = InstBlock()
     ControlFlowGraph.nextIfNum += 1
 }
 
 case class WhileBlock() extends ControlFlowBlock {
     // index of the while block
     val num: Int = ControlFlowGraph.nextWhileNum
-    var cond: InstBlock = new InstBlock()
-    var loop: InstBlock = new InstBlock()
-    var next: InstBlock = new InstBlock()
+    var cond: InstBlock = InstBlock()
+    var loop: InstBlock = InstBlock()
+    var next: InstBlock = InstBlock()
     ControlFlowGraph.nextWhileNum += 1
 }
 
@@ -75,12 +75,12 @@ case class FuncBlock() extends ControlFlowBlock {
     var GLOBAL_MAIN = false
     // index of the function block
     val num: Int = ControlFlowGraph.nextFuncNum
-    var body: InstBlock = new InstBlock()
+    var body: InstBlock = InstBlock()
     var currBlock: InstBlock = body
     var name: String = ""
     var paramList: List[ParamNode] = List.empty
     // directive of the function to provide additional information to the assembler
-    var directive: DataDirectiveStat = new DataDirectiveStat()
+    var directive: DataDirectiveStat = DataDirectiveStat()
     ControlFlowGraph.nextFuncNum += 1
 
     def setGlobalMain(): Unit = {

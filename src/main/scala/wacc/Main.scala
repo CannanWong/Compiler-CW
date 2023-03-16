@@ -24,13 +24,32 @@ object Main {
             // Parsing successful
             case Success(x) => {
                 SemanticChecker.check(x)
+                
                 if (!Error.exitWithSemanticErr()) {
                     println("No syntax or semantic error")
-                    
+
                     /* AST --> IR1: Control Flow Graph */
                     CodeGenerator.translateAST(x)
 
                     val filename = WriteToFile.fileName(args(0))
+
+                     /* IR1 --> IR2: Assign registers */
+                    AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
+                    
+
+                    // Check optimisation flag
+                    if (args.length > 1) {
+                        val optimiseFlag = args(1).charAt(1)
+                        optimiseFlag match {
+                            case 'p' => {
+                                PeepholeOptimisation.peepholeOptimise(CodeGenerator.controlFlowFuncs)
+                                println("Peephole optimisation")
+                            }
+                            case _ => throw new IllegalArgumentException("Unrecognised flag")
+                        }
+                    }
+
+
                     WriteToFile.write(filename)
                 }
                 else {

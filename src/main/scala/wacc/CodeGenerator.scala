@@ -337,7 +337,7 @@ object CodeGenerator {
 
     /*  Print empty line. */
     def translate(node: PrintlnNode): Unit = {
-        translate(new PrintNode(node.expr))
+        translate(PrintNode(node.expr))
 
         currInstBlock.addInst(PushInst(r0, r1, r2, r3))
         IOFunc.println()

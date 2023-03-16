@@ -1,6 +1,6 @@
 package wacc
 
-import scala.collection.mutable.{Stack, ListBuffer}
+import scala.collection.mutable.Stack
 
 import wacc.{ArrayIdentifier, PairIdentifier, NullIdentifier, AnyIdentifier}
 object SemanticChecker {
@@ -8,7 +8,6 @@ object SemanticChecker {
     var nextScope = 0
     var scopeStack = Stack[Int]()
     var insideFunc = true
-    val debugMessage = ListBuffer[String]()
 
     def check(node: ProgramNode): Unit = {
         resetSemanticChecker()
@@ -20,7 +19,6 @@ object SemanticChecker {
         symbolTable = new SymbolTable()
         scopeStack.push(0)
         nextScope = 1
-        debugMessage += "%%% DEBUG LOG %%%"
     }
 
     def tableContainsIdentifier(id :IdentNode): Boolean = {
@@ -35,13 +33,10 @@ object SemanticChecker {
 
     // for AssignIdentNode
     def typeCheck(ty1: TypeIdentifier, ty2: TypeIdentifier): Boolean = {
-        SemanticChecker.debugMessage += (s"typeCheck: lhs ${ty1}: rhs ${ty2}") 
         ty1 match {
             case p1: PairIdentifier => {
-                SemanticChecker.debugMessage += ("lhs is a pair") 
                 ty2 match {
                     case p2: PairIdentifier => {
-                        SemanticChecker.debugMessage += ("rhs is a pair") 
                         typeCheckPair(p1, p2)
                     }
                     case _ => {
@@ -56,7 +51,6 @@ object SemanticChecker {
 
 
     def typeCheckPair(lhsType: PairIdentifier, rhsType: PairIdentifier) : Boolean = {
-        SemanticChecker.debugMessage += (s"typeCheckPair: lhs ${lhsType}: rhs ${rhsType}")
         var ret = true
         val lhsFstType = lhsType.ty1
         val rhsFstType = rhsType.ty1
@@ -96,5 +90,80 @@ object SemanticChecker {
 
     def currScope(): Int = {
         return scopeStack.top
+    }
+
+    def getNewType(lhsTy: TypeIdentifier, rhsTy: TypeIdentifier): TypeIdentifier = {
+        if (!typeCheck(lhsTy, rhsTy)) {
+            throw new IllegalArgumentException(s"lhs ${lhsTy} type is not replacable by rhs type ${rhsTy}")
+        } else if (lhsTy.isRepacable()) {
+            /*  type of lhs is not complete and can be replaced if a more complete type exists on rhs.
+                if lhs typenode idx > rhs typenode index, replace node */
+            lhsTy match {
+                case n: NullIdentifier 
+                    => if (rhsTy.concretenessIndex > n.concretenessIndex) rhsTy else lhsTy
+                case PairIdentifier(ty1, ty2) => {
+                    rhsTy match {
+                        case PairIdentifier(rty1, rty2) => {
+                            // replace ty1
+                            val newTy1 = 
+                                if (ty1.concretenessIndex < rty1.concretenessIndex) {
+                                    rty1
+                                } else {
+                                    getNewType(ty1, rty1)
+                                }
+                            
+                            // replace ty2
+                            val newTy2 = 
+                                if (ty2.concretenessIndex < rty2.concretenessIndex) {     
+                                    rty2
+                                } else {
+                                    getNewType(ty2, rty2)
+                                }
+                                
+                            val pty = PairIdentifier(newTy1, newTy2)
+                            pty
+                        }
+                        case NullIdentifier() => lhsTy
+                        case _ 
+                        // attempts to repalce pair with non-pair type
+                            => throw new IllegalArgumentException(s"lhs ${lhsTy} type is not " +
+                              s"replacable by rhs type ${rhsTy}")
+                    }
+                }
+                case ArrayIdentifier(base, dim) => {
+                    rhsTy match {
+                        case ArrayIdentifier(rBase, _) => {
+                            // replace base
+                            val newBaseTy = 
+                                if (base.concretenessIndex < rBase.concretenessIndex) {
+                                    rBase
+                                } else {
+                                    getNewType(base, rBase)
+                                }
+                            ArrayIdentifier(newBaseTy, dim)
+                        }
+                        case _
+                        // attempts to repalce array with non-array type
+                            => throw new IllegalArgumentException(s"lhs ${lhsTy} type is not " +
+                              s"replacable by rhs type ${rhsTy}")
+                    }
+                }
+                // returns original lhs type if no type replacement occurs
+                case t => lhsTy
+            } 
+        }else {
+            // returns original lhs type if no type replacement occurs
+            lhsTy
+        }      
+        
+    }
+
+    def replaceType (lvalue: LValueNode, newTy: TypeIdentifier): Unit = {
+        lvalue match {
+            case IdentNode(name) => symbolTable.replaceType(name, newTy)
+            case a: ArrayElemNode => /* semantic error: array type cannot be abstract */
+            case FstNode(lval) => replaceType(lval, PairIdentifier( newTy, SndNode(lval).typeVal()))
+            case SndNode(lval) => replaceType(lval, PairIdentifier(FstNode(lval).typeVal(), newTy))
+        }
     }
 }

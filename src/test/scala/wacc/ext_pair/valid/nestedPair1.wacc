@@ -7,7 +7,7 @@
 begin
   pair(int, char) p = newpair(10, 'a');
   # type of q should be pair(pair(int, char), char)
-  pair(pair, char) q = newpair(p, 'b');
+  pair(pair(int, char), char) q = newpair(p, 'b');
   pair(int, char) a = newpair(5, 'p');
   # type of q should be pair(pair(int, char), char)
   pair(pair, char) b = newpair(a, 'q');

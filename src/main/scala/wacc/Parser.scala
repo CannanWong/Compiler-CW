@@ -172,7 +172,7 @@ object Parser {
             ("pair(" ~> pairElemType <~ ",", pairElemType <~ ")")).label("pair type")
 
     lazy val pairElemType: Parsley[PairElemTypeNode] =
-        (attempt(arrayType) <|> baseType <|> "pair" #> PETPairNode()).label("pair element type")
+        (attempt(arrayType) <|> attempt(pairType) <|> baseType <|> "pair" #> PETPairNode()).label("pair element type")
 
     lazy val pairLiter: Parsley[PairLiterNode] =
         ("null" #> PairLiterNode()).label("pair literal (null)")
