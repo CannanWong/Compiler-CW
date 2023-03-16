@@ -8,9 +8,12 @@ import wacc.Constants._
 import wacc.IOFunc.PRINT_STR_LABEL
 import java.io._ 
 
+import scala.collection.mutable._
+import AssignRegisterOptimised._
+
 object Main {
     def main(args: Array[String]): Unit = {
-
+        /*
         val fileContents = Source.fromFile(args(0)).getLines().mkString("\n")
         
         topLevel.parse(fileContents) match {
@@ -40,7 +43,8 @@ object Main {
                 Error.printErr()
                 sys.exit(100)
             }
-        }
+        }*/
+        
     }
 
 

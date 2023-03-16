@@ -239,13 +239,14 @@ object AssignRegisterOptimised {
   def colouring(graph: Map[Register, Set[Register]], funcArgs: Map[Register, Register]): Map[Register, Register] = {
     var spilledCount = 0
     // Identify precolored nodes
-    val precolored = graph.keys.filter(fixedRegs.contains).toSet
+    val precolored = graph.keys.filter(
+      r => fixedRegs.contains(r) || funcArgs.contains(r)).toSet
     
     // Sort the uncolored nodes in decreasing order of their degree
     var nodes = graph.keys.filterNot(precolored.contains).toList.sortBy(-graph(_).size)
     
     // Initialise the color map with the precolored nodes
-    val colorMap = Map[Register, Register]() ++ precolored.map(reg => reg -> reg) ++ funcArgs
+    val colorMap = Map[Register, Register]() ++= precolored.map(reg => reg -> reg) ++= funcArgs
 
     // DSatur algorithm to color the partially-precoloured graph
     while (!nodes.isEmpty) {
@@ -266,18 +267,41 @@ object AssignRegisterOptimised {
 
       val availableColors: ListBuffer[Register] =
         ListBuffer().addAll(fixedRegs
-          .filterNot(funcArgs.contains)
+          .filterNot(r => funcArgs.values.exists(_ == r))
           .filterNot(neighborColors.contains))
 
       // Simple spilling that assigns stack space permanently
       if (availableColors.isEmpty) {
         availableColors.addOne(SpilledStackSpace(spilledCount))
         spilledCount += 1
-        println(availableColors)
       }
       colorMap.update(maxDSaturNode, availableColors.head)
     }
     colorMap
+  }
+
+  def colouringTest(): Unit = {
+    val testGraph1 = Map[Register, Set[Register]]((Variable("a"), Set(Variable("a"), Variable("b"), Variable("c"), Variable("d"))),(Variable("b"), Set(Variable("b"), Variable("a"), Variable("c"), Variable("d"), Variable("e"))),(Variable("c"), Set(Variable("b"), Variable("c"), Variable("a"), Variable("d"), Variable("e"))),(Variable("d"), Set(Variable("a"), Variable("d"), Variable("c"), Variable("b"), Variable("e"))),(Variable("e"), Set(Variable("d"), Variable("e"), Variable("c"), Variable("b"))))
+    val allVarSet = Set[Register]( Variable("a1"),  Variable("a2"),  Variable("a3"),  Variable("a4"),  Variable("a5"),  Variable("a6"),  Variable("a7"),  Variable("a8"),  Variable("a9"),  Variable("b1"),  Variable("b2"),  Variable("b3"),  Variable("b4"),  Variable("b5"),  Variable("b6"),  Variable("b7"),  Variable("b8"),  Variable("b9"),  Variable("c1"),  Variable("c2"),  Variable("c3") )
+    val testGraph2 = Map[Register, Set[Register]]((Variable("a1"), allVarSet), (Variable("a2"), allVarSet), (Variable("a3"), allVarSet), (Variable("a4"), allVarSet), (Variable("a5"), allVarSet), (Variable("a6"), allVarSet), (Variable("a7"), allVarSet), (Variable("a8"), allVarSet), (Variable("a9"), allVarSet), (Variable("b1"), allVarSet), (Variable("b2"), allVarSet), (Variable("b3"), allVarSet), (Variable("b4"), allVarSet), (Variable("b5"), allVarSet), (Variable("b6"), allVarSet), (Variable("b7"), allVarSet), (Variable("b8"), allVarSet), (Variable("b9"), allVarSet), (Variable("c1"), allVarSet), (Variable("c2"), allVarSet), (Variable("c3"), allVarSet))
+    val testGraph3 = Map[Register, Set[Register]](
+        (Variable("a"), Set(FixedRegister(4), Variable("a"), Variable("b"), Variable("c"), Variable("d"), FixedRegister(8))),
+        (Variable("b"), Set(FixedRegister(8), FixedRegister(4), Variable("b"), Variable("a"), Variable("c"), Variable("d"), Variable("e"), FixedRegister(6))),
+        (Variable("c"), Set(FixedRegister(4), Variable("b"), Variable("c"), Variable("a"), Variable("d"), Variable("e"), FixedRegister(6))),
+        (Variable("d"), Set(FixedRegister(8), FixedRegister(4), Variable("a"), Variable("d"), Variable("c"), Variable("b"), Variable("e"))),
+        (Variable("e"), Set(FixedRegister(4), Variable("d"), Variable("e"), Variable("c"), Variable("b"), FixedRegister(6))),
+        /**/(Variable("args1"), Set(Variable("a"), Variable("b"), Variable("c"))),
+        (FixedRegister(8), Set(Variable("a"), Variable("b"), Variable("d"))),
+        (FixedRegister(6), Set(Variable("c"), Variable("b"), Variable("e"))),
+        (FixedRegister(4), Set(Variable("a"), Variable("b"), Variable("c"), Variable("d"), Variable("e")))
+    )
+    var colorMapping = colouring(testGraph1, Map[Register, Register]())
+    println(colorMapping)
+    colorMapping = colouring(testGraph2, Map[Register, Register]())
+    println(colorMapping)
+    colorMapping = colouring(testGraph3, Map[Register, Register](
+        (Variable("args1"), FixedRegister(7))))
+    println(colorMapping)
   }
 
   //########################################################################//
@@ -313,17 +337,8 @@ object AssignRegisterOptimised {
     }
     regMap
   }
-
-  /* Testing code for graph colouring
-  val testGraph1 = Map[Register, Set[Register]]((Variable("a"), Set(Variable("a"), Variable("b"), Variable("c"), Variable("d"))),(Variable("b"), Set(Variable("b"), Variable("a"), Variable("c"), Variable("d"), Variable("e"))),(Variable("c"), Set(Variable("b"), Variable("c"), Variable("a"), Variable("d"), Variable("e"))),(Variable("d"), Set(Variable("a"), Variable("d"), Variable("c"), Variable("b"), Variable("e"))),(Variable("e"), Set(Variable("d"), Variable("e"), Variable("c"), Variable("b"))))
-  val allVarSet = Set[Register]( Variable("a1"),  Variable("a2"),  Variable("a3"),  Variable("a4"),  Variable("a5"),  Variable("a6"),  Variable("a7"),  Variable("a8"),  Variable("a9"),  Variable("b1"),  Variable("b2"),  Variable("b3"),  Variable("b4"),  Variable("b5"),  Variable("b6"),  Variable("b7"),  Variable("b8"),  Variable("b9"),  Variable("c1"),  Variable("c2"),  Variable("c3") )
-  val testGraph2 = Map[Register, Set[Register]]((Variable("a1"), allVarSet), (Variable("a2"), allVarSet), (Variable("a3"), allVarSet), (Variable("a4"), allVarSet), (Variable("a5"), allVarSet), (Variable("a6"), allVarSet), (Variable("a7"), allVarSet), (Variable("a8"), allVarSet), (Variable("a9"), allVarSet), (Variable("b1"), allVarSet), (Variable("b2"), allVarSet), (Variable("b3"), allVarSet), (Variable("b4"), allVarSet), (Variable("b5"), allVarSet), (Variable("b6"), allVarSet), (Variable("b7"), allVarSet), (Variable("b8"), allVarSet), (Variable("b9"), allVarSet), (Variable("c1"), allVarSet), (Variable("c2"), allVarSet), (Variable("c3"), allVarSet))
-  var colorMapping = colouring(testGraph1, Map[Register, Register]())
-  println(colorMapping)
-  colorMapping = colouring(testGraph2, Map[Register, Register]())
-  println(colorMapping)
-  */
   
+
   //########################################################################//
   //                 Register Allocation Helper Functions                   //
   //########################################################################//
