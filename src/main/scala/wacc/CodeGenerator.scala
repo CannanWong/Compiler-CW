@@ -5,6 +5,7 @@ import wacc.Constants._
 import wacc.Constants.StdFuncsEnum._
 import wacc.AssignmentTranslations._
 import StandardFuncs._
+import ControlFlowGraph.nextTRNum
 
 object CodeGenerator {
     /* .data directive in mainFunc stores all string declarations */
@@ -192,7 +193,7 @@ object CodeGenerator {
 
     /*  Reading into memory. */
     def translate(node: ReadNode): Unit = {
-        var retOp: Register = new TempRegister()
+        var retOp: Register = TempRegister(nextTRNum())
         node.lvalue match {
             case i: IdentNode => {
                 retOp = Variable(i.newName)
@@ -460,7 +461,7 @@ object CodeGenerator {
 
                 val label = stringDef(newStr)
                 val loadlabelAddrInstr = LabelAddress(label)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(LdrInst(reg, loadlabelAddrInstr))
                 reg
             }            
@@ -556,7 +557,7 @@ object CodeGenerator {
             }
             case MulNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg1 = TempRegister()
+                val reg1 = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
                 var reg2: Register = r9
@@ -612,7 +613,7 @@ object CodeGenerator {
             }
             case AddNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 currInstBlock.addInst(
@@ -625,7 +626,7 @@ object CodeGenerator {
             }
             case SubNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 currInstBlock.addInst(
@@ -638,52 +639,52 @@ object CodeGenerator {
             }
             case GTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, GreaterThan(), LessOrEqual())
             }
             case GTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, GreaterOrEqual(), LessThan())
             }
             case LTNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, LessThan(), GreaterOrEqual())
             }
             case LTENode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, LessOrEqual(), GreaterThan())
             }
             case EqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, Equal(), NotEqual())
             }
             case IEqNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg = TempRegister()
+                val reg = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg, op1))
                 val op2 = translate(sndexpr)
                 translateComparisonOperators(reg, op2, NotEqual(), Equal())
             }
             case AndNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg1 = TempRegister()
+                val reg1 = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
-                val reg2 = TempRegister()
+                val reg2 = TempRegister(nextTRNum())
                 val newBlock = InstBlock()
                 currInstBlock.addInst(
                     MovInst(reg2, op2),
@@ -704,10 +705,10 @@ object CodeGenerator {
             }
             case OrNode(fstexpr, sndexpr) => {
                 val op1 = translate(fstexpr)
-                val reg1 = TempRegister()
+                val reg1 = TempRegister(nextTRNum())
                 currInstBlock.addInst(MovInst(reg1, op1))
                 val op2 = translate(sndexpr)
-                val reg2 = TempRegister()
+                val reg2 = TempRegister(nextTRNum())
                 val newBlock = InstBlock()
                 currInstBlock.addInst(
                     MovInst(reg2, op2),

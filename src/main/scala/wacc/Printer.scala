@@ -142,8 +142,8 @@ object Printer {
                 s"${printOp(soff.rn)}, ${printOp(soff.rm)}, lsl ${printOp(soff.shift)}"
             case roff: RegOffset =>
                 s"${printOp(roff.rm)}, ${printOp(roff.rn)}"
-            case treg: TempRegister =>
-                "UAR!" // Unassigned register
+            case treg: TempRegister => s"t${treg.num}"
+                //"UAR!" // Unassigned register
             case uvar: Variable => s"${uvar.name}"
         }
     }

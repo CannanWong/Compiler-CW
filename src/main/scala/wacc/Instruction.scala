@@ -41,21 +41,26 @@ case class WaccComment(s: String) extends Instruction
 
 sealed trait Operand
 sealed trait Register extends Operand
-case class TempRegister() extends Register {
+case class TempRegister(num: Int) extends Register {
     // Automatically assign the next number
-    var num = ControlFlowGraph.nextTempRegNum
-    ControlFlowGraph.nextTempRegNum += 1
+    override def toString() = s"TR$num"
 }
 
-case class FixedRegister(num: Int) extends Register
-case class Variable(name: String) extends Register
+case class FixedRegister(num: Int) extends Register {
+    override def toString = s"FR$num"
+}
+case class Variable(name: String) extends Register {
+    override def toString() = s"V$name"
+}
 
 case class SpilledStackSpace(id: Int) extends Register
 case class ArgStackSpace(id: Int) extends Register
 
 //NEW: address of the label
 case class LabelAddress(address: String) extends Operand
-case class ImmVal(num: Int) extends Operand
+case class ImmVal(num: Int) extends Operand {
+    override def toString = s"$num"
+}
 case class ASR(r: Register, bits: ImmVal) extends Operand
 case class ImmOffset(r: Register, offset: Int) extends Operand
 case class RegOffset(rm: Register, rn: Register) extends Operand

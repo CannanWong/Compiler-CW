@@ -1,0 +1,16 @@
+# factorial program
+
+# Input:
+
+# Output:
+
+# Program:
+
+begin
+  int a = 1;
+  int n = 1;
+  while n <= 10 do
+    a = a * n
+    n = n + 1
+  done
+end

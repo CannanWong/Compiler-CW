@@ -5,7 +5,7 @@ import Constants._
 import javax.management.InstanceNotFoundException
 
 object AssignRegisterOptimised {
-  val BASIC_BLOCK_SIZE = 4
+  val BASIC_BLOCK_SIZE = 1
   val ARG_OFFSET = 4
 
   //########################################################################//
@@ -25,38 +25,38 @@ object AssignRegisterOptimised {
         curCFGBlk match {
           case i: InstBlock => {
             val instBasicBlks = partitionBasicBlock(i.instList.toList)
-            lstBasicBlk.succs.addOne(instBasicBlks.last)
-            lstBasicBlk = instBasicBlks.head
+            lstBasicBlk.succs.addOne(instBasicBlks.head)
+            lstBasicBlk = instBasicBlks.last
             curCFGBlk = i.next
-            instBasicBlks ::: bbg.blocks
+            bbg.blocks.addAll(instBasicBlks)
           }
           case i: IfBlock => {
             val trueBlks = partitionBasicBlock(i.nextT.instList.toList)
             val falseBlks = partitionBasicBlock(i.nextF.instList.toList)
             //dummy block for connection
             val nextDummy = BasicBlock(List.empty)
-            lstBasicBlk.succs.addAll(List(trueBlks.last, falseBlks.last))
-            trueBlks.head.succs.addOne(nextDummy)
-            falseBlks.head.succs.addOne(nextDummy)
+            lstBasicBlk.succs.addAll(List(trueBlks.head, falseBlks.head))
+            trueBlks.last.succs.addOne(nextDummy)
+            falseBlks.last.succs.addOne(nextDummy)
             lstBasicBlk = nextDummy
             curCFGBlk = i.next
-            trueBlks ::: bbg.blocks
-            falseBlks ::: bbg.blocks
-            nextDummy :: bbg.blocks
+            bbg.blocks.addAll(trueBlks)
+            bbg.blocks.addAll(falseBlks)
+            bbg.blocks.addOne(nextDummy)
           }
           case w: WhileBlock => {
             val condBlks = partitionBasicBlock(w.cond.instList.toList)
             val loopBlks = partitionBasicBlock(w.loop.instList.toList)
             //dummy block for connection
             val nextDummy = BasicBlock(List.empty)
-            lstBasicBlk.succs.addOne(condBlks.last)
-            condBlks.head.succs.addAll(List(loopBlks.last, nextDummy))
-            loopBlks.head.succs.addOne(condBlks.last)
+            lstBasicBlk.succs.addOne(condBlks.head)
+            condBlks.last.succs.addAll(List(loopBlks.head, nextDummy))
+            loopBlks.last.succs.addOne(condBlks.head)
             lstBasicBlk = nextDummy
             curCFGBlk = w.next
-            condBlks ::: bbg.blocks
-            loopBlks ::: bbg.blocks
-            nextDummy :: bbg.blocks
+            bbg.blocks.addAll(condBlks)
+            bbg.blocks.addAll(loopBlks)
+            bbg.blocks.addOne(nextDummy)
           }
           case f: FuncBlock => {
             throw new IllegalStateException(
@@ -71,18 +71,20 @@ object AssignRegisterOptimised {
   }
 
   def partitionBasicBlock(insts: List[Instruction]): List[BasicBlock] = {
-    val partitions: List[BasicBlock] = List()
+    val partitions: ListBuffer[BasicBlock] = ListBuffer()
     var remainder = insts
-    var nxtBlk: BasicBlock = null
-    // Partition is also done in reverse (prepend so reversed at the end)
+    var lstBlk: BasicBlock = null
+    // Partition is also done in reverse
     while (!remainder.isEmpty) {
       val block = BasicBlock(remainder.take(BASIC_BLOCK_SIZE))
       remainder = remainder.drop(BASIC_BLOCK_SIZE)
-      block.succs += nxtBlk
-      block :: partitions
-      nxtBlk = block
+      if (lstBlk != null) {
+        lstBlk.succs += block
+      }
+      partitions.addOne(block)
+      lstBlk = block
     }
-    partitions
+    partitions.toList
   }
 
   //########################################################################//
@@ -169,24 +171,31 @@ object AssignRegisterOptimised {
       bbg.blocks.foreach{ 
         block => {
           genUseDefs(block)
+          liveIn += (block -> Set.empty)
           liveOut += (block -> Set.empty)
+          println(f"${block.id}%2d: insts: ${block.insts}%-40s succs: ${block.succs}%-40s def: ${block.defs}%-20s use: ${block.uses}%-20s")
         }
       }
+      //println(liveIn)
 
       // iterate until a fixed point is reached
       var changed = true
-      while (changed) {
+      var count = 0
+      while (changed && count <= 3) {
         changed = false
-
+        count += 1
+        println(s"Iteration $count:")
+        
         // iterate over blocks, which shd be in reverse order when inserted
-        for (block <- bbg.blocks) {
+        for (block <- bbg.blocks.reverse) {
           val newLiveOut: Set[Register] = Set.empty[Register]
-
+          //println(block.succs)
           // calculate new liveOut set
-          block.succs.foreach(successor => newLiveOut ++= liveIn(successor))
-
+          for (succ <- block.succs) {
+            newLiveOut ++= liveIn(succ)
+          }
           // calculate new liveIn set
-          val newLiveIn: Set[Register] = block.uses.addAll(newLiveOut.diff(block.defs))
+          val newLiveIn: Set[Register] = block.uses ++ (newLiveOut.diff(block.defs))
 
           // update liveIn and liveOut sets for this block
           if (newLiveIn != liveIn(block) || newLiveOut != liveOut(block)) {
@@ -195,6 +204,18 @@ object AssignRegisterOptimised {
             changed = true
           }
         }
+        println("liveIn:")
+        liveIn.foreach(r => {
+            print(s"${r._1.id}:  ")
+            println(r._2)
+        })
+        println("#################################################")
+        println("liveOut:")
+        liveOut.foreach(r => {
+            print(s"${r._1.id}:  ")
+            println(r._2)
+        })
+        println("#################################################")
       }
       liveRangeMap.addOne(name, (liveIn, liveOut))
     }
