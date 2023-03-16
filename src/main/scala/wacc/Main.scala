@@ -25,6 +25,24 @@ object Main {
                     CodeGenerator.translateAST(x)
 
                     val filename = WriteToFile.fileName(args(0))
+
+                     /* IR1 --> IR2: Assign registers */
+                    AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
+                    
+
+                    // Check optimisation flag
+                    if (args.length > 1) {
+                        val optimiseFlag = args(1).charAt(1)
+                        optimiseFlag match {
+                            case 'p' => {
+                                PeepholeOptimisation.peepholeOptimise(CodeGenerator.controlFlowFuncs)
+                                println("Peephole optimisation")
+                            }
+                            case _ => throw new IllegalArgumentException("Unrecognised flag")
+                        }
+                    }
+
+
                     WriteToFile.write(filename)
                 }
                 else {
@@ -52,10 +70,6 @@ object Main {
         }
 
         def write(filename: String): Unit = {        
-
-            /* IR1 --> IR2: Assign registers */
-            AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
-
             val file = new File(filename)
             val bw = new BufferedWriter(new FileWriter(file))
             /* global main */

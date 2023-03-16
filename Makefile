@@ -33,6 +33,10 @@ ext_ra_test:
 	sbt compile assembly
 	bash src/test/test_script/ext_ra_test.sh
 
+ext_lc:
+	sbt compile assembly
+	bash src/test/test_script/ext_ph_linecount.sh
+
 clean:
 	sbt clean && rm -rf wacc-45-compiler.jar && rm -f *.s
 
