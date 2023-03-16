@@ -1,0 +1,28 @@
+# Extension: full pair type
+# Variables declared with abstract pair type can be set by 
+# function call after being set a full pair type
+
+# Output:
+# 1
+# a
+# true
+#
+
+# Exit:
+# 0
+
+# Program:
+begin
+  pair(int, pair(char, bool)) f(pair(int, pair(char, bool)) x) is
+    return x
+  end
+  pair(char, bool) a = newpair('a', true) ;
+  pair(int, pair) b = newpair(1, a) ;
+  b = call f(b) ;
+  int c = fst b ;
+  char d = fst snd b ;
+  bool e = snd snd b ;
+  println c ;
+  println d ;
+  println e 
+end

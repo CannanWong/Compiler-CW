@@ -23,12 +23,23 @@ case class ProgramNode(funcList: List[FuncNode], stat: StatNode) extends ASTNode
 case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode, 
                     stat: StatNode) extends ASTNode {
     override def semanticCheck(): Unit = {
+        // function return type must be a full type
+        if(!ty.typeVal().isFullType()) {
+            Error.addSemErr(s"function ${ident.name} cannot return abstract type ${ty.typeStrVal()}")
+        }
+
         ident.isFunction = true
         
         SemanticChecker.scopeStack.push(SemanticChecker.nextScope)
         SemanticChecker.nextScope += 1
 
         paramList.semanticCheck()
+
+        /* abstract type semantic error: function param type unknown for function overloading */
+        if (paramList.abstractDef) {
+            Error.addSemErr(s"Unknown function type: abstract type definition of " +
+              s"function parameter for function \"${ident.name}\"")
+        }
 
         for (param <- paramList.paramList) {
             // Check for repeated parameter names
@@ -99,9 +110,14 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
 
 
 case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
+    var abstractDef = false
     override def semanticCheck(): Unit = {
         for (p <- paramList) {
             p.semanticCheck()
+            /* abstract type semantic error: function param unknown for function overloading */
+            if (!p.ty.typeVal().isFullType()) {
+                abstractDef = true
+            }
         }
     }
 }
@@ -127,20 +143,34 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         rvalue.semanticCheck()
 
         val rValTyval = rvalue.typeVal()
-        val tyTyval = ty.typeVal()        
+        val tyTyval = ty.typeVal()
+
+
         // Check if variable name is already declared in the same scope
         if (SemanticChecker.symbolTable.checkVarDefined(ident.name)){
             Error.addSemErr(s"Variable name \"${ident.name}\" is already used in the same scope")
         }
         // Add to symbol table and get type
         else {
-            // check if abstact type is decalred
-            if (!rValTyval.isFullType() && !tyTyval.isFullType()) {
-                Error.addSemErr(
-                    s"abstract type error: \"${ident.name}\" is declared as an abstract type " +
-                      s"${ty.typeStrVal()} for abstract value with type ${rValTyval}"
-                    )
+            /* abstract type semantic error: function call is assigned to an abstract type when function
+           overloading exists */
+        rvalue match {
+            case CallNode(callident, argList) => {
+                if (!ty.typeVal().isFullType()) {
+                     Error.addSemErr(s"Function return type unknown, cannot assign result from function " +
+                       s"call to ${callident.name} to \"${ident.name}\" of abstract type ${ty.typeStrVal()}")
+                }
             }
+            case _ => {
+                // check if abstact type is decalred
+                if (!rValTyval.isFullType() && !tyTyval.isFullType()) {
+                    Error.addSemErr(
+                        s"abstract type error: \"${ident.name}\" is declared as an abstract type " +
+                        s"${ty.typeStrVal()} for abstract value with type ${rValTyval}"
+                        )
+                }
+            }
+        }
 
             val storedType = if (tyTyval.isFullType()) tyTyval else rValTyval  
             SemanticChecker.symbolTable.addVar(ident.name, storedType)
@@ -164,6 +194,18 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         lvalue.semanticCheck()
         rvalue match {
             case c: CallNode => c.returnType = Some(lvalue.typeVal())
+            case _ =>
+        }
+
+        /* abstract type semantic error: function call is assigned to an abstract type when function
+           overloading exists */
+        rvalue match {
+            case CallNode(ident, argList) => {
+                if (!lvalue.typeVal().isFullType()) {
+                     Error.addSemErr(s"Function return type unknown, cannot " +
+                       s"assign to lhs value with an abstract type ${lvalue.typeVal()}")
+                }
+            }
             case _ =>
         }
         rvalue.semanticCheck()
