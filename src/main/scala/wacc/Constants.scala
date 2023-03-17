@@ -2,6 +2,7 @@ package wacc
 
 import wacc.FixedRegister
 import wacc.ImmVal
+import scala.collection.mutable._
 
 /* registers */
 object Constants {
@@ -21,6 +22,11 @@ object Constants {
   val sp = FixedRegister(13)
   val lr = FixedRegister(14)
   val pc = FixedRegister(15)
+
+  val allFixedRegs: List[FixedRegister] = List(r0, r1, r2, r3, r4, r5, r6, r7, r8, r9, r10, fp, r12, sp, lr, pc)
+  val allFixedRegsMap: Map[Register, Register] = Map()
+  allFixedRegs.foreach(reg => allFixedRegsMap.addOne(reg, reg))
+  val usablefixedRegs: List[FixedRegister] = List(r7, r6, r5, r4, r3, r2, r1, r0, r10, r8)
 
   /* true and false immediate value */
   val immTrue = ImmVal(1)

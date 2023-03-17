@@ -5,6 +5,7 @@ import wacc.CodeGenerator._
 import wacc.StandardFuncs._
 import wacc.Constants._
 import wacc.Constants.StdFuncsEnum._
+import ControlFlowGraph.nextTRNum
 
 object AssignmentTranslations {
     var tmpRegs: ListBuffer[TempRegister] = ListBuffer()
@@ -233,7 +234,7 @@ object AssignmentTranslations {
     
     // push args onto the stack in order
     def pushArgs(regCount: Int, args: List[ExprNode]): Unit = {
-        val tmpReg = TempRegister()
+        val tmpReg = TempRegister(nextTRNum())
 
         currInstBlock.addInst(MovInst(tmpReg, translate(args(0))))
         tmpRegs.addOne(tmpReg)

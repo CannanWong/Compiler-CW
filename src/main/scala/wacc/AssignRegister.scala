@@ -17,6 +17,17 @@ object AssignRegister {
 
     var r9Used = false                              // Store whether r9 is used
     val interRegs = List(r8, r9, r10)
+    
+
+    val FUNCTION_FP_OFFSET = 36
+
+    // ! ################### Optimisation ########################
+    var optimiseFlag = false
+    var regMap: Map[String, Map[Register, Register]] = Map()
+    var curColorMap: Map[Register, Register] = Map()
+    val stackAssigned: Map[Int, Operand] = Map()
+    val argStack: Map[Int, Operand] = Map()
+    // ! ################### Optimisation ########################
 
     def resetRegQueue(): Unit = {
         regQueue = Queue(r7, r6, r5, r4, r3, r2, r1, r0)
@@ -49,12 +60,27 @@ object AssignRegister {
         }
         // Starting from the last parameter
         val revParamQueue: Queue[ParamNode] = paramQueue.reverse
-        currFPOffset = 36
+        currFPOffset = FUNCTION_FP_OFFSET
+        var arg_count = revParamQueue.size
         while (!revParamQueue.isEmpty) {
             varOpTable.addOne(revParamQueue.dequeue().ident.newName, ImmOffset(fp, currFPOffset))
+            if (optimiseFlag) {
+                arg_count -= 1
+                argStack.addOne(arg_count, ImmOffset(fp, currFPOffset))
+            }
             currFPOffset += 4
         }
         currFPOffset = 0
+
+        // ! ################### Optimisation ########################
+        curColorMap = regMap.getOrElse(funcBlock.name, allFixedRegsMap)
+        //println(curColorMap.foreach(b => {
+        //    b._1 match {
+        //        case _: Variable | _: TempRegister => println(b)
+        //        case _ =>
+        //    }
+        //}))
+        // ! ################### Optimisation ########################
         assignBlock(funcBlock.body)
     }
 
@@ -117,20 +143,24 @@ object AssignRegister {
             
             case inst: CmpInst => CmpInst(assignReg(inst.rn), assignOp(inst.op))
             case inst: MovInst => {
-                val reg1 = assignReg(inst.rd)
-                val op = assignOp(inst.op)
-                if (interRegs.contains(reg1) && interRegs.contains(op)) {
-                    inst.rd match {
-                        case Variable(name) => storeInst = Some(StrInst(reg1, varOpTable.get(name).get))
-                        case _ => 
+                if (optimiseFlag)  {
+                    MovInst(assignReg(inst.rd), assignOp(inst.op), inst.condition)
+                } else {
+                    val reg1 = assignReg(inst.rd)
+                    val op = assignOp(inst.op)
+                    if (interRegs.contains(reg1) && interRegs.contains(op)) {
+                        inst.rd match {
+                            case Variable(name) => storeInst = Some(StrInst(reg1, varOpTable.get(name).get))
+                            case _ => 
+                        }
                     }
+                    MovInst(reg1, op, inst.condition)
                 }
-                MovInst(reg1, op, inst.condition)
             }
             // case inst: MovCondInst => MovCondInst(inst.condition, assignReg(inst.rd), assignOp(inst.op))
             case inst: AndInst => AndInst(assignReg(inst.rd), assignOp(inst.op))
-            case inst: OrInst => OrInst(assignReg(inst.rd), assignOp(inst.op))
-            
+            case inst: OrInst => OrInst(assignReg(inst.rd), assignOp(inst.op))  
+
             case inst: LdrInst => LdrInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: LdrsbInst => LdrsbInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: LdrPseudoInst => LdrPseudoInst(assignReg(inst.rd), inst.num)
@@ -183,9 +213,59 @@ object AssignRegister {
         }
     }
 
+    def assignRegOp(reg: Register): Register = {
+        reg match {
+            case FixedRegister(num) => reg
+            case _ => { 
+                curColorMap.get(reg) match { 
+                    case Some(value) => {
+                        value match {
+                            case SpilledStackSpace(id) => {
+                                spilledReg(id)
+                            }
+                            case ArgStackSpace(id) => {
+                                getStackArg(id)
+                            }
+                            case _ => value
+                        }
+                    }
+                    case None => r12
+                }
+            }
+        }
+    }
+
+    def getStackArg(id: Int): Register = {
+        val op = argStack(id)
+        newInstList += LdrInst(r9, op)
+        storeInst = Some(StrInst(r9, op))
+        r9
+    }
+
+    def spilledReg(id: Int): Register = {
+        stackAssigned.get(id) match {
+            case Some(value) => {
+                newInstList += LdrInst(r9, value)
+            }
+            case None => {
+                newInstList += SubInst(sp, sp, ImmVal(4))
+                currFPOffset -= 4
+                val op = ImmOffset(fp, currFPOffset)
+                stackAssigned.addOne((id, op))
+                storeInst = Some(StrInst(r9, op))
+            }
+        }
+        r9
+    }
+
     // Change register and assign register if needed
     def assignReg(reg: Register): Register = {
-        reg match {
+        // ! ################### Optimisation ########################
+        if (optimiseFlag) {
+            assignRegOp(reg)
+        // ! ################### Optimisation ########################
+        } else {
+            reg match {
             case v: Variable => {
                 val reg = varOpTable.get(v.name)
                 reg match {
@@ -224,41 +304,48 @@ object AssignRegister {
             }
             case t: TempRegister => assignReg(t)
             case _ => reg
-        }
+        }}
     }
     def assignReg(tReg: TempRegister): Register = {
-        val reg = tempRegTable.get(tReg.num)
-        reg match {
-            case Some(fReg: FixedRegister) => fReg
-            // From stack
-            case Some(im: ImmOffset) => {
-                if (!r9Used) {
-                    r9Used = true
-                    newInstList += LdrInst(r9, im)
-                    r9
+        // ! ################### Optimisation ########################
+        if (optimiseFlag) {
+            assignRegOp(tReg)
+        // ! ################### Optimisation ########################
+        } else {
+            val reg = tempRegTable.get(tReg.num)
+            reg match {
+                case Some(fReg: FixedRegister) => fReg
+                // From stack
+                case Some(im: ImmOffset) => {
+                    if (!r9Used) {
+                        r9Used = true
+                        newInstList += LdrInst(r9, im)
+                        r9
+                    }
+                    else {
+                        r9Used = false
+                        newInstList += LdrInst(r10, im)
+                        r10
+                    }
                 }
-                else {
-                    r9Used = false
-                    newInstList += LdrInst(r10, im)
-                    r10
+                case _ => {
+                    // Get fixed register
+                    if (!regQueue.isEmpty) {
+                        val fReg = regQueue.dequeue()
+                        tempRegTable.addOne(tReg.num, fReg)
+                        fReg
+                    }
+                    // No available registers, store in stack using fp offset
+                    else {
+                        newInstList += SubInst(sp, sp, ImmVal(4))
+                        currFPOffset -= 4
+                        val op = ImmOffset(fp, currFPOffset)
+                        tempRegTable.addOne(tReg.num, op)
+                        storeInst = Some(StrInst(r8, op))
+                        r8
+                    }
                 }
-            }
-            case _ => {
-                // Get fixed register
-                if (!regQueue.isEmpty) {
-                    val fReg = regQueue.dequeue()
-                    tempRegTable.addOne(tReg.num, fReg)
-                    fReg
-                }
-                // No available registers, store in stack using fp offset
-                else {
-                    newInstList += SubInst(sp, sp, ImmVal(4))
-                    currFPOffset -= 4
-                    val op = ImmOffset(fp, currFPOffset)
-                    tempRegTable.addOne(tReg.num, op)
-                    storeInst = Some(StrInst(r8, op))
-                    r8
-                }
+
             }
         }
     }

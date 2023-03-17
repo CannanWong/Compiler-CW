@@ -381,7 +381,14 @@ case class IdentNode(name: String) extends LValueNode with ExprNode {
                 }
             }
         }
+    }
 
+    override def toString() = {
+        if (newName != null) {
+            s"IdentNode($newName)"
+        } else {
+            s"IdentNode($name)"
+        }
     }
 }
 
