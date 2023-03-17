@@ -24,7 +24,7 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
                     stat: StatNode) extends ASTNode {
     override def semanticCheck(): Unit = {
         /* abstract type semantic error: must be a non-replacable type */
-        if(ty.typeVal().isFullType()) {
+        if(!ty.typeVal().isFullType()) {
             Error.addSemErr(s"Function ${ident.name} cannot contain abstract type " + 
                             s"${ty.typeStrVal()} in return type")
         }
@@ -157,7 +157,7 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
                when function overloading exists */
         rvalue match {
             case CallNode(callident, argList) => {
-                if (ty.typeVal().isFullType()) {
+                if (!ty.typeVal().isFullType()) {
                     Error.addSemErr(s"Function call ${callident.name} cannot be assigned " + 
                         s"to abstract type ${ty.typeStrVal()} in variable \"${ident.name}\"")
                 }
