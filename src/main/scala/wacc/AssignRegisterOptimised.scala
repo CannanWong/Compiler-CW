@@ -78,6 +78,9 @@ object AssignRegisterOptimised {
     val partitions: ListBuffer[BasicBlock] = ListBuffer()
     var remainder = insts
     var lstBlk: BasicBlock = null
+    if (remainder.isEmpty) {
+      partitions.addOne(BasicBlock(nextBBNum(), List.empty))
+    }
     // Partition is also done in reverse
     while (!remainder.isEmpty) {
       val block = BasicBlock(nextBBNum(), remainder.take(BASIC_BLOCK_SIZE))

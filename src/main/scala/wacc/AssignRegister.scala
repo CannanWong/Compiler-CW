@@ -25,7 +25,7 @@ object AssignRegister {
     var curColorMap: Map[Register, Register] = Map()
     var deleteStmt = false
     // ! ################### Optimisation ########################
-    
+
     def resetRegQueue(): Unit = {
         regQueue = Queue(r7, r6, r5, r4, r3, r2, r1, r0)
     }
@@ -214,7 +214,7 @@ object AssignRegister {
             curColorMap.get(reg) match {
                 case Some(value) => value
                 case None => {
-                    deleteStmt = true
+                    //deleteStmt = true
                     r12
                 }
             }
@@ -264,7 +264,13 @@ object AssignRegister {
     def assignReg(tReg: TempRegister): Register = {
         // ! ################### Optimisation ########################
         if (optimiseFlag) {
-            curColorMap(tReg)
+            curColorMap.get(tReg) match {
+                case Some(value) => value
+                case None => {
+                    //deleteStmt = true
+                    r12
+                }
+            }
         // ! ################### Optimisation ########################
         } else {
             val reg = tempRegTable.get(tReg.num)
