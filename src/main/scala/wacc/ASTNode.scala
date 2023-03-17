@@ -162,7 +162,7 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
                 }
             }
             case _ => {
-                // check if abstact type is decalred
+                // check if abstact type is decalred for rvalue
                 if (!rValTyval.isFullType() && !tyTyval.isFullType()) {
                     Error.addSemErr(
                         s"abstract type error: \"${ident.name}\" is declared as an abstract type " +
@@ -172,7 +172,7 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
             }
         }
 
-            val storedType = if (tyTyval.isFullType()) tyTyval else rValTyval  
+            val storedType = if (tyTyval.isFullType()) tyTyval else rValTyval
             SemanticChecker.symbolTable.addVar(ident.name, storedType)
 
             ident.newName = SemanticChecker.currScope().toString() + "!" + ident.name
@@ -654,6 +654,29 @@ sealed trait PairElemTypeNode extends TypeNode {
 case class PETPairNode() extends PairElemTypeNode {
     override def typeVal(): TypeIdentifier = PairIdentifier(AnyIdentifier(), AnyIdentifier())
     override def typeStrVal(): String = "pair"
+}
+
+sealed trait ListTypeNode extends PairElemTypeNode {
+    override def typeVal(): TypeIdentifier
+    val pairBaseType: TypeIdentifier
+}
+
+// intlist
+case class BaseListTypeNode(baseTy: TypeIdentifier) extends ListTypeNode {
+    override def typeVal() = ListIdentifier(baseTy)
+    val pairBaseType = baseTy
+}
+
+// eg: arrlist(int[])
+case class ArrayListTypeNode(arrTy: ArrayTypeNode) extends ListTypeNode {
+    override def typeVal() = ListIdentifier(arrTy.typeVal())
+    val pairBaseType = arrTy.typeVal()
+}
+
+// eg: pairlist(pair(int, int))
+case class PairListTypeNode(pairTy: PairTypeNode) extends ListTypeNode {
+    override def typeVal() = ListIdentifier(pairTy.typeVal())
+    val pairBaseType = pairTy.typeVal()
 }
 
 case class IntLiterNode(n: Int) extends ExprNode {

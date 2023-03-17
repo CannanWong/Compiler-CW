@@ -1,0 +1,15 @@
+# type declaration: lhs and rhs cannot both be an abstract type
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  pair(pair, pair) a = null ;
+  free a
+end
+

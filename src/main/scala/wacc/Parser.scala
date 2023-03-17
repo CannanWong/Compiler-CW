@@ -171,8 +171,21 @@ object Parser {
         (PairTypeNode.lift
             ("pair(" ~> pairElemType <~ ",", pairElemType <~ ")")).label("pair type")
 
+    lazy val baseListType: Parsley[BaseListTypeNode] =
+         ("intlist" #> BaseListTypeNode(IntIdentifier()) <|>
+          "charlist" #> BaseListTypeNode(CharIdentifier()) <|>
+          "stringlist" #> BaseListTypeNode(BoolIdentifier()) <|>
+          "boollist" #> BaseListTypeNode(CharIdentifier())).label("base type list")
+
+    lazy val arrayListType: Parsley[ArrayListTypeNode] =
+        (ArrayListTypeNode.lift("arrlist(" ~> arrayType <~ ")")).label("array type list")
+
+    lazy val pairListType: Parsley[PairListTypeNode] =
+        (PairListTypeNode.lift("pairlist(" ~> pairType <~ ")")).label("pair type list")
+
     lazy val pairElemType: Parsley[PairElemTypeNode] =
-        (attempt(arrayType) <|> attempt(pairType) <|> baseType <|> "pair" #> PETPairNode()).label("pair element type")
+        (attempt(arrayType) <|> attempt(pairType) <|> attempt(baseListType)<|> attempt(pairListType)<|>
+        attempt(arrayListType)<|> baseType <|>"pair" #> PETPairNode()).label("pair element type")
 
     lazy val pairLiter: Parsley[PairLiterNode] =
         ("null" #> PairLiterNode()).label("pair literal (null)")

@@ -4,6 +4,7 @@ sealed trait TypeIdentifier {
   def typeEquals(id: TypeIdentifier): Boolean
   def isFullType():Boolean
   def isRepacable():Boolean = false
+  def isAbstract():Boolean = false
   def concretenessIndex: Int
   override def toString(): String = "NO TYPE"
 }
@@ -127,6 +128,9 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
       }
       case a: AnyIdentifier => true
       case n: NullIdentifier => true
+      case l: ListIdentifier => {
+        ty1.typeEquals(l.baseTy) && ty2.typeEquals(l)
+      }
       case _ => false
 
     }
@@ -137,15 +141,42 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
   }
 }
 
-case class NullIdentifier() extends TypeIdentifier {
-  def concretenessIndex = 1
-  override def isRepacable() = true
+case class ListIdentifier(baseTy: TypeIdentifier) extends TypeIdentifier {
+  def concretenessIndex = 2
+  override def isAbstract() = true
   def isFullType() = true
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
       case n: NullIdentifier => true
       case a: AnyIdentifier => true
+      case ListIdentifier(base) => base.typeEquals(baseTy)
+      case PairIdentifier(ty1, ty2) => {
+        val ty2IsValid: Boolean = ty2 match {
+          case p@PairIdentifier(innerTy1, innerTy2) => {
+            p.isAbstract() && innerTy2.typeEquals(this)
+          }
+          case NullIdentifier() => true
+          case ListIdentifier(nestedBase) => nestedBase.typeEquals(baseTy)
+          case _ => false
+        }
+        ty1.typeEquals(baseTy) && ty2IsValid
+    }
+    case _ => false
+  }
+}
+  override def toString(): String = s"${baseTy}list"
+}
+case class NullIdentifier() extends TypeIdentifier {
+  def concretenessIndex = 1
+  override def isRepacable() = true
+  override def isAbstract() = true
+  def isFullType() = false
+  override def typeEquals(id: TypeIdentifier): Boolean = {
+    id match {
+      case n: NullIdentifier => true
+      case a: AnyIdentifier => true
       case p: PairIdentifier => true
+      case l: ListIdentifier => true
       case _ => false
     }
   }

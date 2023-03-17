@@ -1,0 +1,14 @@
+# print pair a null pair
+# type declaration: lhs and rhs cannot both be an abstract type
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+
+begin
+  pair(pair, pair) p = null ;
+  println p
+end
