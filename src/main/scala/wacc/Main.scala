@@ -14,10 +14,6 @@ import ControlFlowGraph.nextTRNum
 
 object Main {
     def main(args: Array[String]): Unit = {
-        val debug = false
-        if (debug) {
-            lvaTest()
-        } else {
         val fileContents = Source.fromFile(args(0)).getLines().mkString("\n")
         
         topLevel.parse(fileContents) match {
@@ -31,15 +27,19 @@ object Main {
                     CodeGenerator.translateAST(x)
 
                     val filename = WriteToFile.fileName(args(0))
+
+                    // Check optimisation flag
                     if (args.length > 2) {
                         val regFlag = args(2).charAt(1)
                         regFlag match {
                             case 'r' => {
                               println("regAlloc Optimisation")
-                              AssignRegister.regMap = regColouringAlloc(CodeGenerator.controlFlowFuncs)
+                              AssignRegister.regMap = regColouringAlloc(
+                                CodeGenerator.controlFlowFuncs)
                               AssignRegister.optimiseFlag = true
                             }
-                            case _ => throw new IllegalArgumentException("Unrecognised flag")
+                            case _ => throw new IllegalArgumentException(
+                                "Unrecognised flag")
                         }
                     }
                      /* IR1 --> IR2: Assign registers */
@@ -51,14 +51,14 @@ object Main {
                         val optimiseFlag = args(1).charAt(1)
                         optimiseFlag match {
                             case 'p' => {
-                              PeepholeOptimisation.peepholeOptimise(CodeGenerator.controlFlowFuncs)
+                              PeepholeOptimisation.peepholeOptimise(
+                                CodeGenerator.controlFlowFuncs)
                               println("Peephole optimisation")
                             }
-                            case _ => throw new IllegalArgumentException("Unrecognised flag")
+                            case _ => throw new IllegalArgumentException(
+                                "Unrecognised flag")
                         }
                     }
-
-
                     WriteToFile.write(filename)
                 }
                 else {
@@ -76,61 +76,9 @@ object Main {
                 sys.exit(100)
             }
         }
-        }
-    }
-    def lvaTest(): Unit = {
-        val t0 = Variable("t0")
-        val t1 = TempRegister(nextTRNum())
-        val t2 = Variable("t2")
-        TempRegister(nextTRNum()) //dummy to match slide example temp numbers for debugging
-        val t3 = TempRegister(nextTRNum())
-        val t4 = TempRegister(nextTRNum())
-        val cfg = LinkedHashMap[String, FuncBlock]()
-        val main = FuncBlock()
-        main.setGlobalMain()
-        main.body = InstBlock()
-        main.body.addInst(
-            MovInst(t0, ImmVal(1)),
-            MovInst(t1, ImmVal(10)),
-            MovInst(t2, ImmVal(1)),
-            BranchNumInst(2)
-        )
-        val whileBlock = WhileBlock()
-        whileBlock.cond = InstBlock()
-        whileBlock.cond.addInst(
-            CmpInst(t1, t2),
-            BranchNumInst(3, condition = GreaterThan()),
-        )
-        whileBlock.loop = InstBlock()
-        whileBlock.loop.addInst(
-            MovInst(t3, t2),
-            MovInst(t4, t0),
-            MulInst(t4, t3, t4),
-            MovInst(t0, t4),
-            AddInst(t2, t2, ImmVal(1))
-        )
-        whileBlock.next = InstBlock()
-        whileBlock.next.addInst(
-            MovInst(t2, t2)
-        )
-        main.body.next = whileBlock
-        cfg.addOne("main", main)
-        val bbgs = formatCFG(cfg)
-        println("#################################################")
-        println("Blocks: ")
-        bbgs("main").blocks.foreach(b => if (!b.insts.isEmpty) println(b.insts))
-        //bbgs("main").blocks.foreach(b => println(b.succs))
-        println("#################################################")
-        val liveRangeMap = liveVariableAnalysis(bbgs)
-        val (liveIn, liveOut) = liveRangeMap("main")
-        val inteferenceGraph = genIG(liveIn, liveOut)
-        val colorMap = colouring(inteferenceGraph, Map[Register, Register]())
-        println(inteferenceGraph)
-        println(colorMap)
     }
 
     object WriteToFile {
-
         def fileName(filePath: String) : String = {
             filePath.split("/").last.dropRight(5) + ".s"
         }
@@ -159,7 +107,7 @@ object Main {
                 printStringFunc.body.addInst(IOFunc.printEnd():_*)
                 Printer.printBlock(printStringFunc)
             }
-
+            
             try {
                 Printer.output.foreach { s =>
                 bw.write(s)

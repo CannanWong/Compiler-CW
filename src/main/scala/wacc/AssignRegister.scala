@@ -21,13 +21,13 @@ object AssignRegister {
 
     val FUNCTION_FP_OFFSET = 36
 
-    // ! ################### Optimisation ########################
+// ! ################### Optimisation ########################
     var optimiseFlag = false
     var regMap: Map[String, Map[Register, Register]] = Map()
     var curColorMap: Map[Register, Register] = Map()
     val stackAssigned: Map[Int, Operand] = Map()
     val argStack: Map[Int, Operand] = Map()
-    // ! ################### Optimisation ########################
+// ! ################### Optimisation ########################
 
     def resetRegQueue(): Unit = {
         regQueue = Queue(r7, r6, r5, r4, r3, r2, r1, r0)
@@ -64,23 +64,20 @@ object AssignRegister {
         var arg_count = revParamQueue.size
         while (!revParamQueue.isEmpty) {
             varOpTable.addOne(revParamQueue.dequeue().ident.newName, ImmOffset(fp, currFPOffset))
+// ! ################### Optimisation ########################
             if (optimiseFlag) {
                 arg_count -= 1
                 argStack.addOne(arg_count, ImmOffset(fp, currFPOffset))
             }
+// ! ################### Optimisation ########################
             currFPOffset += 4
         }
         currFPOffset = 0
 
-        // ! ################### Optimisation ########################
+// ! ################### Optimisation ########################
         curColorMap = regMap.getOrElse(funcBlock.name, allFixedRegsMap)
-        //println(curColorMap.foreach(b => {
-        //    b._1 match {
-        //        case _: Variable | _: TempRegister => println(b)
-        //        case _ =>
-        //    }
-        //}))
-        // ! ################### Optimisation ########################
+// ! ################### Optimisation ########################
+
         assignBlock(funcBlock.body)
     }
 
@@ -143,9 +140,11 @@ object AssignRegister {
             
             case inst: CmpInst => CmpInst(assignReg(inst.rn), assignOp(inst.op))
             case inst: MovInst => {
+// ! ################### Optimisation ########################
                 if (optimiseFlag)  {
                     MovInst(assignReg(inst.rd), assignOp(inst.op), inst.condition)
                 } else {
+// ! ################### Optimisation ########################
                     val reg1 = assignReg(inst.rd)
                     val op = assignOp(inst.op)
                     if (interRegs.contains(reg1) && interRegs.contains(op)) {
@@ -213,9 +212,10 @@ object AssignRegister {
         }
     }
 
+// ! ################### Optimisation ########################
     def assignRegOp(reg: Register): Register = {
         reg match {
-            case FixedRegister(num) => reg
+            case FixedRegister(num) => reg // Not replacing hard-coded registers
             case _ => { 
                 curColorMap.get(reg) match { 
                     case Some(value) => {
@@ -229,19 +229,21 @@ object AssignRegister {
                             case _ => value
                         }
                     }
-                    case None => r12
+                    case None => r12 // dead-after-born variables to unused r12
                 }
             }
         }
     }
 
+    // r9 used as intermediate to load stack arguments
     def getStackArg(id: Int): Register = {
         val op = argStack(id)
         newInstList += LdrInst(r9, op)
         storeInst = Some(StrInst(r9, op))
         r9
     }
-
+    
+    // r9 used as intermediate to load stack arguments
     def spilledReg(id: Int): Register = {
         stackAssigned.get(id) match {
             case Some(value) => {
@@ -257,13 +259,16 @@ object AssignRegister {
         }
         r9
     }
+// ! ################### Optimisation ########################
+
+
 
     // Change register and assign register if needed
     def assignReg(reg: Register): Register = {
-        // ! ################### Optimisation ########################
+// ! ################### Optimisation ########################
         if (optimiseFlag) {
             assignRegOp(reg)
-        // ! ################### Optimisation ########################
+// ! ################### Optimisation ########################
         } else {
             reg match {
             case v: Variable => {
@@ -306,11 +311,14 @@ object AssignRegister {
             case _ => reg
         }}
     }
+
+    // Matching original register allocation scheme to have a separate assignReg
+    // to temporary registers
     def assignReg(tReg: TempRegister): Register = {
-        // ! ################### Optimisation ########################
+// ! ################### Optimisation ########################
         if (optimiseFlag) {
             assignRegOp(tReg)
-        // ! ################### Optimisation ########################
+// ! ################### Optimisation ########################
         } else {
             val reg = tempRegTable.get(tReg.num)
             reg match {

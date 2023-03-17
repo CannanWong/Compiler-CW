@@ -3,7 +3,7 @@ package wacc
 import scala.collection.mutable._
 import Constants._
 import javax.management.InstanceNotFoundException
-import ControlFlowGraph.nextBBNum
+import ControlFlowGraph.{nextBBNum, nextTRNum}
 
 object AssignRegisterOptimised {
   val BASIC_BLOCK_SIZE = 1
@@ -18,7 +18,6 @@ object AssignRegisterOptimised {
   // Formatting CFG into monomorphic Basic Block Flow-Graph
   def formatCFG(cfg: LinkedHashMap[String, FuncBlock]): LinkedHashMap[String, BasicBlockGraph] = {
     val basicBlockGraphs = LinkedHashMap[String, BasicBlockGraph]()
-    //println(cfg("main").body.instList)
     // Doing for every separate CFG function blocks, including main body as MAIN function
     for ((name, block) <- cfg.toList) {
       val bbg = BasicBlockGraph()
@@ -144,10 +143,8 @@ object AssignRegisterOptimised {
             block.defs ++= Set(r0, r1)
             block.uses ++= Set(r0, r1, r2, r3)
             varUsed ++= Set(r0, r1, r2, r3)
-            //TODO: would be better to check for actual register usage from func table
           }
         }
-        //! Do we need anything on std functions (possibly arrStore and arrLoad)?
         case BranchNumInst(num, condition) => // This is branching to main function body labels so shd contain no uses and defs
         case FreeRegister(r) => //block.defs - r //? is this needed or shd freereg be removed from codeGenOptd?
         case WaccComment(s) => // Nothing
@@ -215,27 +212,26 @@ object AssignRegisterOptimised {
           genUseDefs(block)
           liveIn += (block -> Set.empty)
           liveOut += (block -> Set.empty)
-          println(f"${block.id}%2d: insts: ${block.insts}%-40s succs: ${block.succs}%-40s def: ${block.defs}%-20s use: ${block.uses}%-20s")
+          //println(f"${block.id}%2d: insts: ${block.insts}%-40s succs: ${block.succs}%-40s def: ${block.defs}%-20s use: ${block.uses}%-20s")
         }
       }
-      //println("######################################################################################################")
 
       // iterate until a fixed point is reached
       var changed = true
       while (changed) {
         changed = false
-        
         // iterate over blocks, which shd be in reverse order when inserted
         for (block <- bbg.blocks.reverse) {
           val newLiveOut: Set[Register] = Set.empty[Register]
-          //println(block.succs)
-          
+
           // calculate new liveOut set
           for (succ <- block.succs) {
             newLiveOut ++= liveIn(succ)
           }
+
           // calculate new liveIn set
           val newLiveIn: Set[Register] = block.uses ++ (liveOut(block).diff(block.defs))
+
           // update liveIn and liveOut sets for this block
           if (newLiveIn != liveIn(block) || newLiveOut != liveOut(block)) {
             liveIn.update(block, newLiveIn)
@@ -245,7 +241,6 @@ object AssignRegisterOptimised {
         }
       }
       liveRangeMap.addOne(name, (liveIn, liveOut))
-      printLiveInOut(liveIn, liveOut)
     }
     liveRangeMap
   }
@@ -255,22 +250,18 @@ object AssignRegisterOptimised {
   //########################################################################//
 
   // Interference graph generation
-  def genIG(
-    liveIn: Map[BasicBlock, Set[Register]],
-    liveOut: Map[BasicBlock, Set[Register]]):
-    Map[Register, Set[Register]] = {
+  def genIG(liveIn: Map[BasicBlock, Set[Register]], 
+    liveOut: Map[BasicBlock, Set[Register]]): Map[Register, Set[Register]] = {
+    // Add nodes to the interference graph for each variable that is live at any point
     val ig = Map.empty[Register, Set[Register]]
     val lives = (liveIn.values.toSet ++ liveOut.values.toSet)
-      //.map(block => (block, liveIn.getOrElse(block, Set.empty) ++ liveOut.getOrElse(block, Set.empty)))
-    //add nodes to the interference graph for each variable that is live at any point
     for (variables <- lives) {
       for (v <- variables) {
         ig.getOrElseUpdate(v, Set.empty[Register])
       }
     }
 
-    // add edges to the interference graph for each pair of variables that are live simultaneously
-    //? not sure whether to use liveIn or liveOut here
+    // Add edges to the interference graph for each pair of variables that are live simultaneously
     for ((block, variables) <- liveOut) {
       for (v <- variables) {
         for (w <- variables if v != w) {
@@ -279,7 +270,6 @@ object AssignRegisterOptimised {
         }
       }
     }
-    //println(ig)
     ig
   }
 
@@ -297,8 +287,8 @@ object AssignRegisterOptimised {
     var nodes = graph.keys.filterNot(precolored.contains).toList.sortBy(-graph(_).size)
     
     // Initialise the color map with the precolored nodes
-    val colorMap = Map[Register, Register]() ++= precolored.map(reg => reg -> reg) ++= funcArgs
-    //println(colorMap)
+    val colourMap = Map[Register, Register]() ++= precolored.map(reg => reg -> reg) ++= funcArgs
+
     // DSatur algorithm to color the partially-precoloured graph
     while (!nodes.isEmpty) {
       // Sort by 
@@ -307,28 +297,31 @@ object AssignRegisterOptimised {
       // Placing the largest element at the front
       val maxDSaturNode = 
         nodes.sortBy(
-        r => (-(graph(r).filterNot(colorMap.contains)).size, 
+        r => (-(graph(r).filterNot(colourMap.contains)).size, 
               -(graph(r).size))).head
       nodes = nodes.drop(1)
 
-      val neighborColors = 
+      // Filter coloured nodes from neighbour nodes and extract the colours
+      val neighborColours = 
         graph(maxDSaturNode)
-        .filter(r => colorMap.contains(r))
-        .map(colorMap.apply)
+        .filter(r => colourMap.contains(r))
+        .map(colourMap.apply)
 
-      val availableColors: ListBuffer[Register] =
+      // Filter assignable fixed registers with neighbour colours 
+      // or registers taken by function arguments
+      val availableColours: ListBuffer[Register] =
         ListBuffer().addAll(usablefixedRegs
           .filterNot(r => funcArgs.values.exists(_ == r))
-          .filterNot(neighborColors.contains))
+          .filterNot(neighborColours.contains))
 
       // Simple spilling that assigns stack space permanently
-      if (availableColors.isEmpty) {
-        availableColors.addOne(SpilledStackSpace(spilledCount))
+      if (availableColours.isEmpty) {
+        availableColours.addOne(SpilledStackSpace(spilledCount))
         spilledCount += 1
       }
-      colorMap.update(maxDSaturNode, availableColors.head)
+      colourMap.update(maxDSaturNode, availableColours.head)
     }
-    colorMap
+    colourMap
   }
 
   //########################################################################//
@@ -344,18 +337,11 @@ object AssignRegisterOptimised {
     val liveRanges = liveVariableAnalysis(basicBlockGraphs)
     for ((name, (liveIn, liveOut)) <- liveRanges) {
       val inteferenceGraph = genIG(liveIn, liveOut)
-      //inteferenceGraph.filterInPlace((reg, regs) => {
-      //  !(regs.isEmpty && (reg match {
-      //    case _: Variable => true
-      //    case _ => false
-      //  }))})
-      //if (name == "main") {
-      //  println(inteferenceGraph)
-      //}
       val funcArgs = Map[Register, Register]()
       if (name != "main") {
         cfg.get(name).fold(throw new InstanceNotFoundException("funcblock not found"))(
           block => {
+            // Load function arguments if this is a custom wacc function block
             var argCount = 0
             for (arg <- block.paramList) {
               if (argCount < 4) {
@@ -416,5 +402,57 @@ object AssignRegisterOptimised {
     colorMapping = colouring(testGraph3, Map[Register, Register](
         (Variable("args1"), FixedRegister(7))))
     println(colorMapping)
+  }
+    
+  def lvaTest(): Unit = {
+      val t0 = Variable("t0")
+      val t1 = TempRegister(nextTRNum())
+      val t2 = Variable("t2")
+      //dummy to match slide example temp numbers for debugging
+      TempRegister(nextTRNum())
+      val t3 = TempRegister(nextTRNum())
+      val t4 = TempRegister(nextTRNum())
+      val cfg = LinkedHashMap[String, FuncBlock]()
+      val main = FuncBlock()
+      main.setGlobalMain()
+      main.body = InstBlock()
+      main.body.addInst(
+          MovInst(t0, ImmVal(1)),
+          MovInst(t1, ImmVal(10)),
+          MovInst(t2, ImmVal(1)),
+          BranchNumInst(2)
+      )
+      val whileBlock = WhileBlock()
+      whileBlock.cond = InstBlock()
+      whileBlock.cond.addInst(
+          CmpInst(t1, t2),
+          BranchNumInst(3, condition = GreaterThan()),
+      )
+      whileBlock.loop = InstBlock()
+      whileBlock.loop.addInst(
+          MovInst(t3, t2),
+          MovInst(t4, t0),
+          MulInst(t4, t3, t4),
+          MovInst(t0, t4),
+          AddInst(t2, t2, ImmVal(1))
+      )
+      whileBlock.next = InstBlock()
+      whileBlock.next.addInst(
+          MovInst(t2, t2)
+      )
+      main.body.next = whileBlock
+      cfg.addOne("main", main)
+      val bbgs = formatCFG(cfg)
+      println("#################################################")
+      println("Blocks: ")
+      bbgs("main").blocks.foreach(b => if (!b.insts.isEmpty) println(b.insts))
+      //bbgs("main").blocks.foreach(b => println(b.succs))
+      println("#################################################")
+      val liveRangeMap = liveVariableAnalysis(bbgs)
+      val (liveIn, liveOut) = liveRangeMap("main")
+      val inteferenceGraph = genIG(liveIn, liveOut)
+      val colorMap = colouring(inteferenceGraph, Map[Register, Register]())
+      println(inteferenceGraph)
+      println(colorMap)
   }
 }
