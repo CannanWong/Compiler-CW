@@ -1,6 +1,11 @@
 # Extension: full pair type
+# Assignment is not legal when both sides types do not match
 
 # Output:
+# #semantic_error#
+
+# Exit:
+# 200
 
 # Program:
 begin 
