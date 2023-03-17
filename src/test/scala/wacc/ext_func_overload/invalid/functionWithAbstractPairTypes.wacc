@@ -2,7 +2,7 @@
 # Due to function overloading, function declaration cannot contain 
 # abstract pair types in parameter types or return type. LHS type 
 # of function call also cannot contain abstract pair types, and 
-# arguments cannot contain null.
+# arguments cannot be null.
 
 # Output:
 # #semantic_error#
@@ -25,11 +25,9 @@ begin
   end
   pair(char, bool) a = newpair('a', true) ;
   pair(int, pair) b = newpair(1, a) ;
-  pair(int, pair) c = newpair(1, null) ;
+  pair(int, pair(char, bool)) c = newpair(1, null) ;
   # Semantic error: LHS type of function call cannot be abstract
-  pair(int, pair) e = call f(b) ;
-  # Semantic error: Function call arguments cannot contain null
-  pair(int, pair(char, bool)) d = call f(c) ;
-  # Semantic error: Function call arguments cannot contain null
-  d = call f(null)
+  pair(int, pair) d = call f(b) ;
+  # Semantic error: Function call arguments cannot be null
+  pair(int, pair(char, bool)) e = call f(null)
 end

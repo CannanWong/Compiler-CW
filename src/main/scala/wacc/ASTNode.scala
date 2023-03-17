@@ -24,8 +24,9 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
                     stat: StatNode) extends ASTNode {
     override def semanticCheck(): Unit = {
         /* abstract type semantic error: must be a non-replacable type */
-        if(!ty.typeVal().isFullType()) {
-            Error.addSemErr(s"function ${ident.name} cannot return abstract type ${ty.typeStrVal()}")
+        if(ty.typeVal().isFullType()) {
+            Error.addSemErr(s"Function ${ident.name} cannot contain abstract type " + 
+                            s"${ty.typeStrVal()} in return type")
         }
 
         ident.isFunction = true
@@ -37,8 +38,8 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
 
         /* abstract type semantic error: function param type unknown for function overloading */
         if (paramList.abstractDef) {
-            Error.addSemErr(s"Unknown function type: abstract type definition of " +
-              s"function parameter for function \"${ident.name}\"")
+            Error.addSemErr(s"Function ${ident.name} cannot contain abstract type " + 
+                            s"in parameter")
         }
 
         for (param <- paramList.paramList) {
@@ -152,21 +153,21 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         }
         // Add to symbol table and get type
         else {
-            /* abstract type semantic error: function call is assigned to an abstract type when function
-           overloading exists */
+            /* abstract type semantic error: function call is assigned to an abstract type
+               when function overloading exists */
         rvalue match {
             case CallNode(callident, argList) => {
-                if (!ty.typeVal().isFullType()) {
-                     Error.addSemErr(s"Function return type unknown, cannot assign result from function " +
-                       s"call ${callident.name} to \"${ident.name}\" of abstract type ${ty.typeStrVal()}")
+                if (ty.typeVal().isFullType()) {
+                    Error.addSemErr(s"Function call ${callident.name} cannot be assigned " + 
+                        s"to abstract type ${ty.typeStrVal()} in variable \"${ident.name}\"")
                 }
             }
             case _ => {
                 // check if abstact type is decalred for rvalue
                 if (!rValTyval.isFullType() && !tyTyval.isFullType()) {
                     Error.addSemErr(
-                        s"abstract type error: \"${ident.name}\" is declared as an abstract type " +
-                        s"${ty.typeStrVal()} for abstract value with type ${rValTyval}"
+                        s"Declared type ${ty.typeStrVal()} of \"${ident.name}\" and " +
+                        s"type ${rValTyval} of assigned value cannot be both abstract"
                         )
                 }
             }
@@ -213,8 +214,8 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
         val lhsType = lvalue.typeVal()
         val rhsType = rvalue.typeVal()
         if (!SemanticChecker.typeCheck(lhsType, rhsType)) {
-                Error.addSemErr(s"assignment: type mismatch: expected ${lvalue.typeVal().toString}, " +
-                                s"gets ${rvalue.typeVal().toString()}")
+                Error.addSemErr(s"Type mismatch in assignment, expected ${lvalue.typeVal().toString} " +
+                                s"instead of ${rvalue.typeVal().toString()}")
         }else {
             //lvalue will update type if type if type is known from assignment
             val newLvalueType = SemanticChecker.getNewType(lhsType, rhsType)
@@ -569,7 +570,8 @@ case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
                     case i: IdentNode => s" \"${i.name}\" "
                     case _ => " "
                 }
-                Error.addSemErr(s"function call to ${callName}: parameter${name}cannot be of abstract type")
+                Error.addSemErr(s"Function call ${callName} cannot contain " + 
+                        s"abstract type in argument ${name}")
             }
         }
     }

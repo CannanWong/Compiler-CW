@@ -145,8 +145,9 @@ object AssignRegisterOptimised {
             varUsed ++= Set(r0, r1, r2, r3)
           }
         }
-        case BranchNumInst(num, condition) => // This is branching to main function body labels so shd contain no uses and defs
-        case FreeRegister(r) => //block.defs - r //? is this needed or shd freereg be removed from codeGenOptd?
+        case BranchNumInst(num, condition) => 
+          // This is branching to main function body labels so shd contain no uses and defs
+        case FreeRegister(r) => 
         case WaccComment(s) => // Nothing
       }
     }
@@ -168,7 +169,6 @@ object AssignRegisterOptimised {
     block.uses ++= checkUses(rn) ++ checkUses(op)
   }
 
-  //? Shd check if variable is corresponding to array/pair type?
   def checkUses(op: Operand): Set[Register] = {
     op match {
       case r: Register => {
@@ -212,8 +212,7 @@ object AssignRegisterOptimised {
           genUseDefs(block)
           liveIn += (block -> Set.empty)
           liveOut += (block -> Set.empty)
-          //println(f"${block.id}%2d: insts: ${block.insts}%-40s succs: ${block.succs}%-40s def: ${block.defs}%-20s use: ${block.uses}%-20s")
-        }
+          }
       }
 
       // iterate until a fixed point is reached
@@ -446,7 +445,6 @@ object AssignRegisterOptimised {
       println("#################################################")
       println("Blocks: ")
       bbgs("main").blocks.foreach(b => if (!b.insts.isEmpty) println(b.insts))
-      //bbgs("main").blocks.foreach(b => println(b.succs))
       println("#################################################")
       val liveRangeMap = liveVariableAnalysis(bbgs)
       val (liveIn, liveOut) = liveRangeMap("main")
