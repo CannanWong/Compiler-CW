@@ -108,49 +108,6 @@ object PeepholeOptimisation {
                     case None =>    
                 }
             }
-            // case i: PopInst => {
-            //     var popInsts: ListBuffer[PopInst] = ListBuffer(i)
-            //     var optionNext: Option[Instruction] = removeRedundant(iter.next, iter)
-
-            //     while (optionNext match {
-            //             case Some(PopInst(_*)) => true 
-            //             case _ => false}) {
-            //         popInsts += optionNext.get.asInstanceOf[PopInst]
-            //         if (iter.hasNext) {
-            //             optionNext = removeRedundant(iter.next, iter)
-            //         } else {
-            //             optionNext = None
-            //         }
-            //     }
-
-            //     var matchingRegs: Boolean = true
-            //     while (matchingRegs && 
-            //             (optionNext match {
-            //                 case Some(PushInst(_*)) => true
-            //                 case _ => false
-            //             }) 
-            //             && popInsts.nonEmpty) {
-            //         if (optionNext.get.asInstanceOf[PushInst].regs == popInsts.last.regs) {
-            //             println("match")
-            //             popInsts = popInsts.dropRight(1)
-            //             if (iter.hasNext) {
-            //                 optionNext = removeRedundant(iter.next, iter)
-            //             } else {
-            //                 optionNext = None
-            //             }
-            //         } else {
-            //             println("not match")
-            //             matchingRegs = false
-            //         }
-            //     }
-            //     optimisedInsts ++= popInsts
-            //     optionNext match {
-            //         case Some(next) => {
-            //             optimisedInsts ++= optimiseInst(next, iter)
-            //         }
-            //         case None =>
-            //     }
-            // }
             /* Optimises the setup before a division or modulo operation, so that if the denominator is an ImmVal, 
                the compare instruction is removed, if the ImmVal is 0, it will branch directly to the error label, otherwise it will not*/
             case MovInst(FixedRegister(1), op, _) => {

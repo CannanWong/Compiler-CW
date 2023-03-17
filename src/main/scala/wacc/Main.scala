@@ -10,7 +10,6 @@ import java.io._
 
 import scala.collection.mutable._
 import AssignRegisterOptimised._
-import ControlFlowGraph.nextTRNum
 
 object Main {
     def main(args: Array[String]): Unit = {
@@ -28,10 +27,11 @@ object Main {
 
                     val filename = WriteToFile.fileName(args(0))
 
-                    val flags: ListBuffer[Char] = ListBuffer()
+                    val flags: ListBuffer[OptimisationFlag] = ListBuffer()
                     def addFlag(c: Char): Unit = {
                         c match {
-                            case 'r' | 'p' => flags += c
+                            case 'r' => flags += RegisterFlag()
+                            case 'p' => flags += PeepholeFlag()
                             case _ => throw new IllegalArgumentException("Unrecognised flag")
                         }
                     }
@@ -43,7 +43,7 @@ object Main {
                     }
 
                     // Check optimisation flag
-                    if (flags.contains('r')) {
+                    if (flags.contains(RegisterFlag())) {
                         println("regAlloc Optimisation")
                         AssignRegister.regMap = regColouringAlloc(CodeGenerator.controlFlowFuncs)
                         AssignRegister.optimiseFlag = true
@@ -53,7 +53,7 @@ object Main {
                     
 
                     // Check optimisation flag
-                    if (flags.contains('p')) {
+                    if (flags.contains(PeepholeFlag())) {
                         println("Peephole optimisation")
                         PeepholeOptimisation.peepholeOptimise(CodeGenerator.controlFlowFuncs)
                     }
