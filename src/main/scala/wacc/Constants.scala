@@ -71,17 +71,6 @@ object Constants {
   val ARRAY_LOAD_B_LABEL = "_arrLoadB"
   val FREE_PAIR_LABEL = "_freePair"
 
-  /* cond code (pg. 1-43 of mannual) */
-
-  // val NOT_EQUAL = "ne"
-  // val EQUAL = "eq"
-  // val LESS_THAN = "lt"
-  // val GREATER_THAN = "gt"
-  // val GREATER_OR_EQUAL = "ge"
-  // val LESS_OR_EQUAL = "le"
-  // val OVERFLOW = "vs"
-  // val NO_OVERFLOW = "vc"
-
 /* charracter set of leagal escape characters in Wacc*/
   val ESCAPE_CHAR_LIST = 
     List[String]("\"", "\n", "\'", "\r", "\f", "\t", "\b", "\u0000", "\\")
@@ -115,3 +104,7 @@ case class Overflow() extends Condition {
 case class NoOverflow() extends Condition {
   override def toString(): String = "vc"
 }
+
+sealed trait OptimisationFlag
+case class PeepholeFlag() extends OptimisationFlag
+case class RegisterFlag() extends OptimisationFlag

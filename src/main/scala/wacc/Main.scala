@@ -10,7 +10,6 @@ import java.io._
 
 import scala.collection.mutable._
 import AssignRegisterOptimised._
-import ControlFlowGraph.nextTRNum
 
 object Main {
     def main(args: Array[String]): Unit = {
@@ -28,37 +27,37 @@ object Main {
 
                     val filename = WriteToFile.fileName(args(0))
 
-                    // Check optimisation flag
-                    if (args.length > 2) {
-                        val regFlag = args(2).charAt(1)
-                        regFlag match {
-                            case 'r' => {
-                              println("regAlloc Optimisation")
-                              AssignRegister.regMap = regColouringAlloc(
-                                CodeGenerator.controlFlowFuncs)
-                              AssignRegister.optimiseFlag = true
-                            }
-                            case _ => throw new IllegalArgumentException(
-                                "Unrecognised flag")
+                    val flags: ListBuffer[OptimisationFlag] = ListBuffer()
+                    def addFlag(c: Char): Unit = {
+                        c match {
+                            case 'r' => flags += RegisterFlag()
+                            case 'p' => flags += PeepholeFlag()
+                            case _ => throw new IllegalArgumentException("Unrecognised flag")
                         }
+                    }
+                    if (args.length > 1) {
+                        addFlag(args(1).charAt(1))
+                        if (args.length > 2) {
+                            addFlag(args(2).charAt(1))
+                        }
+                    }
+
+                    // Check optimisation flag
+                    if (flags.contains(RegisterFlag())) {
+                        println("regAlloc Optimisation")
+                        AssignRegister.regMap = regColouringAlloc(CodeGenerator.controlFlowFuncs)
+                        AssignRegister.optimiseFlag = true
                     }
                      /* IR1 --> IR2: Assign registers */
                     AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
                     
 
                     // Check optimisation flag
-                    if (args.length > 1) {
-                        val optimiseFlag = args(1).charAt(1)
-                        optimiseFlag match {
-                            case 'p' => {
-                              PeepholeOptimisation.peepholeOptimise(
-                                CodeGenerator.controlFlowFuncs)
-                              println("Peephole optimisation")
-                            }
-                            case _ => throw new IllegalArgumentException(
-                                "Unrecognised flag")
-                        }
+                    if (flags.contains(PeepholeFlag())) {
+                        println("Peephole optimisation")
+                        PeepholeOptimisation.peepholeOptimise(CodeGenerator.controlFlowFuncs)
                     }
+
                     WriteToFile.write(filename)
                 }
                 else {

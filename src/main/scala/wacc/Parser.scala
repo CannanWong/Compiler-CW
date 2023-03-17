@@ -34,7 +34,9 @@ object lexer {
                 "while", "do", "done", 
                 "call", 
                 "fst", "snd", "newpair", "pair",
-                "null")
+                "null",
+                "intlist", "charlist", "stringlist", "boollist",
+                "arrlist", "pairlist")
         ),
         nameDesc = NameDesc.plain.copy(
             identifierStart = predicate.Basic(validIdentStart),
