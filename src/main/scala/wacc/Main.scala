@@ -24,7 +24,6 @@ object Main {
             // Parsing successful
             case Success(x) => {
                 SemanticChecker.check(x)
-                
                 if (!Error.exitWithSemanticErr()) {
                     println("No syntax or semantic error")
 
@@ -33,6 +32,17 @@ object Main {
 
                     val filename = WriteToFile.fileName(args(0))
 
+                    if (args.length > 2) {
+                        val regFlag = args(2).charAt(1)
+                        regFlag match {
+                            case 'r' => {
+                                println("regAlloc Optimisation")
+                                AssignRegister.regMap = regColouringAlloc(CodeGenerator.controlFlowFuncs)
+                                AssignRegister.optimiseFlag = true
+                            }
+                            case _ => throw new IllegalArgumentException("Unrecognised flag")
+                        }
+                    }
                      /* IR1 --> IR2: Assign registers */
                     AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
                     
@@ -126,11 +136,7 @@ object Main {
             filePath.split("/").last.dropRight(5) + ".s"
         }
 
-        def write(filename: String): Unit = {        
-
-            /* IR1 --> IR2: Assign registers */
-            AssignRegister.assignCFG(CodeGenerator.controlFlowFuncs)
-            
+        def write(filename: String): Unit = {
             val file = new File(filename)
             val bw = new BufferedWriter(new FileWriter(file))
             /* global main */

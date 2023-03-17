@@ -50,7 +50,7 @@ case class FixedRegister(num: Int) extends Register {
     override def toString = s"FR$num"
 }
 case class Variable(name: String) extends Register {
-    override def toString() = s"V$name"
+    override def toString() = s"$name"
 }
 
 case class SpilledStackSpace(id: Int) extends Register

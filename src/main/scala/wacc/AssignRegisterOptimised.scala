@@ -6,8 +6,10 @@ import javax.management.InstanceNotFoundException
 import ControlFlowGraph.nextBBNum
 
 object AssignRegisterOptimised {
-  val BASIC_BLOCK_SIZE = 2
+  val BASIC_BLOCK_SIZE = 1
   val ARG_OFFSET = 4
+
+  val varUsed = Set[Register]()
 
   //########################################################################//
   //                              CFG -> BBG                                //
@@ -16,6 +18,7 @@ object AssignRegisterOptimised {
   // Formatting CFG into monomorphic Basic Block Flow-Graph
   def formatCFG(cfg: LinkedHashMap[String, FuncBlock]): LinkedHashMap[String, BasicBlockGraph] = {
     val basicBlockGraphs = LinkedHashMap[String, BasicBlockGraph]()
+    //println(cfg("main").body.instList)
     // Doing for every separate CFG function blocks, including main body as MAIN function
     for ((name, block) <- cfg.toList) {
       val bbg = BasicBlockGraph()
@@ -104,7 +107,10 @@ object AssignRegisterOptimised {
         case StrbChgInst(rd, op)                => genTwoOp(block, rd, op)
         case LdrInst(rd, op)                    => genTwoOp(block, rd, op)
         case LdrsbInst(rd, op)                  => genTwoOp(block, rd, op)
-        case LdrPseudoInst(rd, num)             => block.defs += rd
+        case LdrPseudoInst(rd, num)             => {
+          block.defs += rd
+          varUsed += rd
+        }
         case AddInst(rd, rn, op)                => genThreeOp(block, rd, rn, op)
         case AddsInst(rd, rn, op)               => genThreeOp(block, rd, rn, op)
         case SubInst(rd, rn, op)                => genThreeOp(block, rd, rn, op)
@@ -116,17 +122,25 @@ object AssignRegisterOptimised {
         case OrInst(rd, op)                     => genFlag(block, rd, op)
         case CmpInst(rn, op)                    => genFlag(block, rn, op)
         //? Not sure if this is how push and pop shd be handled
-        case p: PushInst                        => for (r <- p.regs) block.uses += r
-        case p: PopInst                         => for (r <- p.regs) block.defs += r
+        case p: PushInst                        => for (r <- p.regs) {
+          block.uses += r
+          varUsed += r
+        }
+        case p: PopInst                         => for (r <- p.regs) {
+          block.defs += r
+          varUsed += r
+        }
         case SmullInst(rdlo, rdhi, rm, rs)      => {
           genThreeOp(block, rdlo, rdhi, rm)
           block.uses ++= checkUses(rs)
+          varUsed += rs
         }
         case BranchInst(label, link, condition) => {
           // If link is false, it means the program is going to end anyway
           if (link) {
             block.defs ++= Set(r0, r1)
             block.uses ++= Set(r0, r1, r2, r3)
+            varUsed ++= Set(r0, r1, r2, r3)
             //TODO: would be better to check for actual register usage from func table
           }
         }
@@ -140,6 +154,7 @@ object AssignRegisterOptimised {
 
   def genTwoOp(block: BasicBlock, rd: Register, rn: Operand): Unit = {
     block.defs += rd
+    varUsed += rd
     block.uses ++= checkUses(rn)
   }
 
@@ -149,16 +164,39 @@ object AssignRegisterOptimised {
 
   def genThreeOp(block: BasicBlock, rd: Register, rn: Register, op: Operand): Unit = {
     block.defs += rd
+    varUsed += rd
     block.uses ++= checkUses(rn) ++ checkUses(op)
   }
 
   //? Shd check if variable is corresponding to array/pair type?
   def checkUses(op: Operand): Set[Register] = {
     op match {
-      case r: Register => Set(r)
+      case r: Register => {
+        varUsed += r
+        Set(r)
+      }
+      case ASR(r, _) => {
+        varUsed += r
+        Set(r)
+      }
+      case ImmOffset(r, offset) => {
+        varUsed += r
+        Set(r)
+      }
+      case RegOffset(rm, rn) => {
+        varUsed += rm
+        varUsed += rn
+        Set(rm, rn)
+      }
+      case ScaledOffsetLSL(rn, rm, shift) => {
+        varUsed += rm
+        varUsed += rn
+        Set(rm, rn)
+      }
       case _ => Set()
     }
   }
+
   def liveVariableAnalysis(
     basicBlockGraphs: LinkedHashMap[String, BasicBlockGraph]): 
       Map[String, (Map[BasicBlock, Set[Register]], Map[BasicBlock, Set[Register]])] = {
@@ -174,7 +212,7 @@ object AssignRegisterOptimised {
           genUseDefs(block)
           liveIn += (block -> Set.empty)
           liveOut += (block -> Set.empty)
-          //println(f"${block.id}%2d: insts: ${block.insts}%-40s succs: ${block.succs}%-40s def: ${block.defs}%-20s use: ${block.uses}%-20s")
+          println(f"${block.id}%2d: insts: ${block.insts}%-40s succs: ${block.succs}%-40s def: ${block.defs}%-20s use: ${block.uses}%-20s")
         }
       }
       //println("######################################################################################################")
@@ -202,11 +240,11 @@ object AssignRegisterOptimised {
             changed = true
           }
         }
-          
-        
       }
       liveRangeMap.addOne(name, (liveIn, liveOut))
-      //printLiveInOut(liveIn, liveOut)
+      if (name == "main") {
+        printLiveInOut(liveIn, liveOut)
+      }
     }
     liveRangeMap
   }
@@ -221,14 +259,14 @@ object AssignRegisterOptimised {
     liveOut: Map[BasicBlock, Set[Register]]):
     Map[Register, Set[Register]] = {
     val ig = Map.empty[Register, Set[Register]]
-    val lives = (liveIn.keySet ++ liveOut.keySet)
-      .map(block => (block, liveIn.getOrElse(block, Set.empty) ++ liveOut.getOrElse(block, Set.empty)))
+    //val lives = (liveIn.keySet ++ liveOut.keySet)
+    //  .map(block => (block, liveIn.getOrElse(block, Set.empty) ++ liveOut.getOrElse(block, Set.empty)))
     // add nodes to the interference graph for each variable that is live at any point
-    for ((block, variables) <- lives) {
-      for (v <- variables) {
-        ig.getOrElseUpdate(v, Set.empty[Register])
-      }
+    //for ((block, variables) <- varUsed) {
+    for (v <- varUsed) {
+      ig.getOrElseUpdate(v, Set.empty[Register])
     }
+    //}
 
     // add edges to the interference graph for each pair of variables that are live simultaneously
     //? not sure whether to use liveIn or liveOut here
@@ -240,6 +278,7 @@ object AssignRegisterOptimised {
         }
       }
     }
+    //println(ig)
     ig
   }
 
@@ -251,14 +290,14 @@ object AssignRegisterOptimised {
     var spilledCount = 0
     // Identify precolored nodes
     val precolored = graph.keys.filter(
-      r => fixedRegs.contains(r) || funcArgs.contains(r)).toSet
+      r => allFixedRegs.contains(r) || funcArgs.contains(r)).toSet
     
     // Sort the uncolored nodes in decreasing order of their degree
     var nodes = graph.keys.filterNot(precolored.contains).toList.sortBy(-graph(_).size)
     
     // Initialise the color map with the precolored nodes
     val colorMap = Map[Register, Register]() ++= precolored.map(reg => reg -> reg) ++= funcArgs
-
+    //println(colorMap)
     // DSatur algorithm to color the partially-precoloured graph
     while (!nodes.isEmpty) {
       // Sort by 
@@ -277,7 +316,7 @@ object AssignRegisterOptimised {
         .map(colorMap.apply)
 
       val availableColors: ListBuffer[Register] =
-        ListBuffer().addAll(fixedRegs
+        ListBuffer().addAll(usablefixedRegs
           .filterNot(r => funcArgs.values.exists(_ == r))
           .filterNot(neighborColors.contains))
 
@@ -304,6 +343,14 @@ object AssignRegisterOptimised {
     val liveRanges = liveVariableAnalysis(basicBlockGraphs)
     for ((name, (liveIn, liveOut)) <- liveRanges) {
       val inteferenceGraph = genIG(liveIn, liveOut)
+      inteferenceGraph.filterInPlace((reg, regs) => {
+        !(regs.isEmpty && (reg match {
+          case _: Variable => true
+          case _ => false
+        }))})
+      if (name == "main") {
+        println(inteferenceGraph)
+      }
       val funcArgs = Map[Register, Register]()
       if (name != "main") {
         cfg.get(name).fold(throw new InstanceNotFoundException("funcblock not found"))(
