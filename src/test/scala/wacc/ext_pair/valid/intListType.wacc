@@ -1,0 +1,14 @@
+# Extension: full pair type
+
+# Output:
+
+# Program:
+
+begin  
+  pair(int, intlist) a = newpair(1, null); 
+  pair(int, intlist) b = newpair(1, a);
+  pair(int, intlist) c = newpair(1, b);
+  pair(int, intlist) d = newpair(1, c);
+  a = d;
+  d = b
+end

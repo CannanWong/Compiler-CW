@@ -1,8 +1,11 @@
 # print a pair of null pairs
+# type declaration: lhs and rhs cannot both be an abstract type
 
 # Output:
-# #addrs# = ((nil),(nil))
-#
+# #semantic_error#
+
+# Exit:
+# 200
 
 # Program:
 

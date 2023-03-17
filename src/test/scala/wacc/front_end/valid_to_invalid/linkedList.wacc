@@ -1,8 +1,11 @@
 # create and print a linked list using pairs
+# type declaration: lhs and rhs cannot both be an abstract type
 
 # Output:
-# list = {1, 2, 4, 11}
-#
+# #semantic_error#
+
+# Exit:
+# 200
 
 # Program:
 

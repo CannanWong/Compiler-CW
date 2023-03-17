@@ -1,0 +1,16 @@
+# Extension: full pair type
+
+# Output:
+
+# Program:
+begin 
+  pair(int, charlist) p = newpair(1, null);
+  pair(pair(int, charlist), pairlist(pair(int, charlist))) a = newpair(p, null); 
+  pair(pair(int, charlist), pairlist(pair(int, charlist))) b = newpair(p, a);
+  pair(pair(int, charlist), pairlist(pair(int, charlist))) c = newpair(p, b);
+  pair(pair(int, charlist), pairlist(pair(int, charlist))) d = newpair(p, c);
+  a = d;
+  d = b;
+  pair(pair(int, int), pairlist(pair(int, intlist))) e = null;
+  a = e
+end

@@ -1,0 +1,15 @@
+# Semantic error: Function call arguments cannot contain null
+# Output:
+# #semantic_error#
+
+
+# 200
+
+# Program:
+begin
+  pair(int, pair(char, bool)) f (pair(int, pair(char, bool)) x) is
+    return x
+  end
+  pair(int, pair) c = newpair(1, null);
+  pair(int, pair(char, bool)) d = call f(c)
+end

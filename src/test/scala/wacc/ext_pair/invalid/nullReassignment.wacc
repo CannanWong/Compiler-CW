@@ -1,4 +1,4 @@
-# assigning a more concrete type to lvalue will update lvalue type
+# abstract type cannot be assigned to abstract type
 # Output:
 # #semantic_error#
 
