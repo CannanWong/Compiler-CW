@@ -2,8 +2,9 @@ package wacc
 
 sealed trait TypeIdentifier {
   def typeEquals(id: TypeIdentifier): Boolean
+  // false if does can be assigned to multiple types
   def isFullType():Boolean
-  def isRepacable():Boolean = false
+  // true for type alias or non-full type
   def isAbstract():Boolean = false
   def concretenessIndex: Int
   override def toString(): String = "NO TYPE"
@@ -11,7 +12,7 @@ sealed trait TypeIdentifier {
 
 // when ident node not in symbol table
 case class AnyIdentifier() extends TypeIdentifier {
-  override def isRepacable():Boolean = true
+  override def isAbstract():Boolean = true
   def concretenessIndex = 1
   override def isFullType() = false
   override def typeEquals(id: TypeIdentifier): Boolean = {
@@ -96,7 +97,7 @@ case class FuncIdentifier(old_name: String, paramtype: List[TypeIdentifier], ret
 case class ArrayIdentifier(baseTy: TypeIdentifier, dim: Int) extends TypeIdentifier {
   def concretenessIndex = baseTy.concretenessIndex
   override def isFullType() = baseTy.isFullType()
-  override def isRepacable(): Boolean = baseTy.isRepacable()
+  override def isAbstract(): Boolean = baseTy.isAbstract()
 
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
@@ -119,7 +120,7 @@ case class ArrayIdentifier(baseTy: TypeIdentifier, dim: Int) extends TypeIdentif
 case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends TypeIdentifier {
   def concretenessIndex = ty1.concretenessIndex + ty2.concretenessIndex
   override def isFullType() = ty1.isFullType() && ty2.isFullType()
-  override def isRepacable() = ty1.isRepacable() || ty2.isRepacable()
+  override def isAbstract() = ty1.isAbstract() || ty2.isAbstract()
 
   override def typeEquals(id: TypeIdentifier): Boolean = {
     id match {
@@ -142,6 +143,7 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
   }
 }
 
+// type alias for pair(<type>, pair(<type>, pair(......, null))
 case class ListIdentifier(baseTy: TypeIdentifier) extends TypeIdentifier {
   def concretenessIndex = 2
   override def isAbstract() = true
@@ -170,7 +172,6 @@ case class ListIdentifier(baseTy: TypeIdentifier) extends TypeIdentifier {
 }
 case class NullIdentifier() extends TypeIdentifier {
   def concretenessIndex = 1
-  override def isRepacable() = true
   override def isAbstract() = true
   def isFullType() = false
   override def typeEquals(id: TypeIdentifier): Boolean = {

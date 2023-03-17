@@ -95,7 +95,7 @@ object SemanticChecker {
     def getNewType(lhsTy: TypeIdentifier, rhsTy: TypeIdentifier): TypeIdentifier = {
         if (!typeCheck(lhsTy, rhsTy)) {
             throw new IllegalArgumentException(s"lhs ${lhsTy} type is not replacable by rhs type ${rhsTy}")
-        } else if (lhsTy.isRepacable()) {
+        } else if (lhsTy.isAbstract()) {
             /*  type of lhs is not complete and can be replaced if a more complete type exists on rhs.
                 if lhs typenode idx > rhs typenode index, replace node */
             lhsTy match {
@@ -124,10 +124,7 @@ object SemanticChecker {
                             pty
                         }
                         case NullIdentifier() => lhsTy
-                        case _ 
-                        // attempts to repalce pair with non-pair type
-                            => throw new IllegalArgumentException(s"lhs ${lhsTy} type is not " +
-                              s"replacable by rhs type ${rhsTy}")
+                        case _ =>  lhsTy // attempts to repace pair with list type
                     }
                 }
                 case ArrayIdentifier(base, dim) => {

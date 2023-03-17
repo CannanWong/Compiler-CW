@@ -24,7 +24,7 @@ case class FuncNode(ty: TypeNode, ident: IdentNode, paramList: ParamListNode,
                     stat: StatNode) extends ASTNode {
     override def semanticCheck(): Unit = {
         /* abstract type semantic error: must be a non-replacable type */
-        if(ty.typeVal().isRepacable()) {
+        if(!ty.typeVal().isFullType()) {
             Error.addSemErr(s"function ${ident.name} cannot return abstract type ${ty.typeStrVal()}")
         }
 
@@ -115,7 +115,7 @@ case class ParamListNode(paramList: List[ParamNode]) extends ASTNode {
         for (p <- paramList) {
             p.semanticCheck()
             /* abstract type semantic error: function param unknown for function overloading */
-            if (p.ty.typeVal().isRepacable()) {
+            if (!p.ty.typeVal().isFullType()) {
                 abstractDef = true
             }
         }
@@ -156,7 +156,7 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
            overloading exists */
         rvalue match {
             case CallNode(callident, argList) => {
-                if (ty.typeVal().isRepacable()) {
+                if (!ty.typeVal().isFullType()) {
                      Error.addSemErr(s"Function return type unknown, cannot assign result from function " +
                        s"call ${callident.name} to \"${ident.name}\" of abstract type ${ty.typeStrVal()}")
                 }
@@ -201,7 +201,7 @@ case class LValuesAssignNode(lvalue: LValueNode, rvalue: RValueNode) extends Sta
            overloading exists */
         rvalue match {
             case CallNode(ident, argList) => {
-                if (lvalue.typeVal().isRepacable()) {
+                if (!lvalue.typeVal().isFullType()) {
                      Error.addSemErr(s"Function return type unknown, cannot " +
                        s"assign to lhs value with an abstract type ${lvalue.typeVal()}")
                 }
@@ -564,7 +564,7 @@ case class ArgListNode(exprList: List[ExprNode]) extends ASTNode {
         for (e <- exprList) {
             e.semanticCheck()
             /* abstract type semantic error: function call arguement cannot be abstract */
-            if (e.typeVal().isRepacable()) {
+            if (!e.typeVal().isFullType()) {
                 val name = e match {
                     case i: IdentNode => s" \"${i.name}\" "
                     case _ => " "
@@ -607,7 +607,7 @@ case class ArrayTypeNode(ty: TypeNode) extends TypeNode with PairElemTypeNode {
     override def semanticCheck(): Unit = {
         ty.semanticCheck()
         /* abstract type semantic error: array type cannot be abstract */
-        if (ty.typeVal().isRepacable()) {
+        if (!ty.typeVal().isFullType()) {
             Error.addSemErr("array type cannot be abstact type")
         }
         arrayType = getType(ty).typeVal()
