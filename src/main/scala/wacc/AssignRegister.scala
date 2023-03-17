@@ -142,18 +142,21 @@ object AssignRegister {
             case inst: SmullInst => SmullInst(assignReg(inst.rdlo), assignReg(inst.rdhi), assignReg(inst.rm), assignReg(inst.rs))
             
             case inst: CmpInst => CmpInst(assignReg(inst.rn), assignOp(inst.op))
-            case inst: MovInst => MovInst(assignReg(inst.rd), assignOp(inst.op), inst.condition)
-                /*{
-                val reg1 = assignReg(inst.rd)
-                val op = assignOp(inst.op)
-                if (interRegs.contains(reg1) && interRegs.contains(op)) {
-                    inst.rd match {
-                        case Variable(name) => storeInst = Some(StrInst(reg1, varOpTable.get(name).get))
-                        case _ => 
+            case inst: MovInst => {
+                if (optimiseFlag)  {
+                    MovInst(assignReg(inst.rd), assignOp(inst.op), inst.condition)
+                } else {
+                    val reg1 = assignReg(inst.rd)
+                    val op = assignOp(inst.op)
+                    if (interRegs.contains(reg1) && interRegs.contains(op)) {
+                        inst.rd match {
+                            case Variable(name) => storeInst = Some(StrInst(reg1, varOpTable.get(name).get))
+                            case _ => 
+                        }
                     }
+                    MovInst(reg1, op, inst.condition)
                 }
-                MovInst(reg1, op, inst.condition)
-            }*/
+            }
             // case inst: MovCondInst => MovCondInst(inst.condition, assignReg(inst.rd), assignOp(inst.op))
             case inst: AndInst => AndInst(assignReg(inst.rd), assignOp(inst.op))
             case inst: OrInst => OrInst(assignReg(inst.rd), assignOp(inst.op))  
