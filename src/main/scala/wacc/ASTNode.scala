@@ -153,8 +153,8 @@ case class AssignIdentNode(ty: TypeNode, ident: IdentNode, rvalue: RValueNode) e
         }
         // Add to symbol table and get type
         else {
-            /* abstract type semantic error: function call is assigned to an abstract type when function
-           overloading exists */
+            /* abstract type semantic error: function call is assigned to an abstract type
+               when function overloading exists */
         rvalue match {
             case CallNode(callident, argList) => {
                 if (ty.typeVal().isRepacable()) {
