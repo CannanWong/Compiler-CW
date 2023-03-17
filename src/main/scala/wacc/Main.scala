@@ -17,7 +17,6 @@ object Main {
             // Parsing successful
             case Success(x) => {
                 SemanticChecker.check(x)
-                println(SemanticChecker.symbolTable)
                 
                 if (!Error.exitWithSemanticErr()) {
                     println("No syntax or semantic error")
