@@ -43,7 +43,7 @@ case class BoolIdentifier() extends TypeIdentifier {
       case _ => false
     }
   }
-  override def toString(): String = "boolean"
+  override def toString(): String = "bool"
 }
 
 case class StrIdentifier() extends TypeIdentifier {
