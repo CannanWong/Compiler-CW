@@ -61,13 +61,12 @@ object AssignRegister {
         // Starting from the last parameter
         val revParamQueue: Queue[ParamNode] = paramQueue.reverse
         currFPOffset = FUNCTION_FP_OFFSET
-        var arg_count = revParamQueue.size - 1
-        println(arg_count)
+        var arg_count = revParamQueue.size
         while (!revParamQueue.isEmpty) {
             varOpTable.addOne(revParamQueue.dequeue().ident.newName, ImmOffset(fp, currFPOffset))
             if (optimiseFlag) {
-                argStack.addOne(arg_count, ImmOffset(fp, currFPOffset))
                 arg_count -= 1
+                argStack.addOne(arg_count, ImmOffset(fp, currFPOffset))
             }
             currFPOffset += 4
         }
