@@ -129,6 +129,7 @@ case class PairIdentifier(ty1: TypeIdentifier, ty2: TypeIdentifier) extends Type
       case a: AnyIdentifier => true
       case n: NullIdentifier => true
       case l: ListIdentifier => {
+        // right-most element if a list type must be null
         ty1.typeEquals(l.baseTy) && ty2.typeEquals(l)
       }
       case _ => false
@@ -152,6 +153,7 @@ case class ListIdentifier(baseTy: TypeIdentifier) extends TypeIdentifier {
       case ListIdentifier(base) => base.typeEquals(baseTy)
       case PairIdentifier(ty1, ty2) => {
         val ty2IsValid: Boolean = ty2 match {
+          // right-most element if a list type must be null
           case p@PairIdentifier(innerTy1, innerTy2) => {
             p.isAbstract() && innerTy2.typeEquals(this)
           }

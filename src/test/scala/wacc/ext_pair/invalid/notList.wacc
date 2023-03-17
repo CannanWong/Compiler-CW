@@ -1,0 +1,17 @@
+# right-most element if a list type must be null
+
+# Output:
+# #semantic_error#
+
+# Exit:
+# 200
+
+# Program:
+
+begin
+  pair(int, int) p1 = newpair(4, 5);
+  pair(int, pair) p2 = newpair(3, p1);
+  pair(int, intlist) bad_assign = p2;
+  pair(int, intlist) intList = newpair(3, null);
+  p2 = intList
+end
