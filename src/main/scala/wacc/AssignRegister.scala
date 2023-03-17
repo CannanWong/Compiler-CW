@@ -18,11 +18,14 @@ object AssignRegister {
     var r9Used = false                              // Store whether r9 is used
     val interRegs = List(r8, r9, r10)
     
+
+    // ! ################### Optimisation ########################
     var optimiseFlag = false
     var regMap: Map[String, Map[Register, Register]] = Map()
     var curColorMap: Map[Register, Register] = Map()
     var deleteStmt = false
-
+    // ! ################### Optimisation ########################
+    
     def resetRegQueue(): Unit = {
         regQueue = Queue(r7, r6, r5, r4, r3, r2, r1, r0)
     }
@@ -70,7 +73,6 @@ object AssignRegister {
         //    }
         //}))
         // ! ################### Optimisation ########################
-        //println(funcBlock.name)
         assignBlock(funcBlock.body)
     }
 
@@ -260,8 +262,10 @@ object AssignRegister {
         }}
     }
     def assignReg(tReg: TempRegister): Register = {
+        // ! ################### Optimisation ########################
         if (optimiseFlag) {
             curColorMap(tReg)
+        // ! ################### Optimisation ########################
         } else {
             val reg = tempRegTable.get(tReg.num)
             reg match {
