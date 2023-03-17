@@ -245,9 +245,7 @@ object AssignRegisterOptimised {
         }
       }
       liveRangeMap.addOne(name, (liveIn, liveOut))
-      if (name == "main") {
-        printLiveInOut(liveIn, liveOut)
-      }
+      printLiveInOut(liveIn, liveOut)
     }
     liveRangeMap
   }
@@ -262,14 +260,14 @@ object AssignRegisterOptimised {
     liveOut: Map[BasicBlock, Set[Register]]):
     Map[Register, Set[Register]] = {
     val ig = Map.empty[Register, Set[Register]]
-    //val lives = (liveIn.keySet ++ liveOut.keySet)
-    //  .map(block => (block, liveIn.getOrElse(block, Set.empty) ++ liveOut.getOrElse(block, Set.empty)))
-    // add nodes to the interference graph for each variable that is live at any point
-    //for ((block, variables) <- varUsed) {
-    for (v <- varUsed) {
-      ig.getOrElseUpdate(v, Set.empty[Register])
+    val lives = (liveIn.values.toSet ++ liveOut.values.toSet)
+      //.map(block => (block, liveIn.getOrElse(block, Set.empty) ++ liveOut.getOrElse(block, Set.empty)))
+    //add nodes to the interference graph for each variable that is live at any point
+    for (variables <- lives) {
+      for (v <- variables) {
+        ig.getOrElseUpdate(v, Set.empty[Register])
+      }
     }
-    //}
 
     // add edges to the interference graph for each pair of variables that are live simultaneously
     //? not sure whether to use liveIn or liveOut here
@@ -346,14 +344,14 @@ object AssignRegisterOptimised {
     val liveRanges = liveVariableAnalysis(basicBlockGraphs)
     for ((name, (liveIn, liveOut)) <- liveRanges) {
       val inteferenceGraph = genIG(liveIn, liveOut)
-      inteferenceGraph.filterInPlace((reg, regs) => {
-        !(regs.isEmpty && (reg match {
-          case _: Variable => true
-          case _ => false
-        }))})
-      if (name == "main") {
-        println(inteferenceGraph)
-      }
+      //inteferenceGraph.filterInPlace((reg, regs) => {
+      //  !(regs.isEmpty && (reg match {
+      //    case _: Variable => true
+      //    case _ => false
+      //  }))})
+      //if (name == "main") {
+      //  println(inteferenceGraph)
+      //}
       val funcArgs = Map[Register, Register]()
       if (name != "main") {
         cfg.get(name).fold(throw new InstanceNotFoundException("funcblock not found"))(

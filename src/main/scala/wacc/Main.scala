@@ -31,14 +31,13 @@ object Main {
                     CodeGenerator.translateAST(x)
 
                     val filename = WriteToFile.fileName(args(0))
-
                     if (args.length > 2) {
                         val regFlag = args(2).charAt(1)
                         regFlag match {
                             case 'r' => {
-                                println("regAlloc Optimisation")
-                                AssignRegister.regMap = regColouringAlloc(CodeGenerator.controlFlowFuncs)
-                                AssignRegister.optimiseFlag = true
+                              println("regAlloc Optimisation")
+                              AssignRegister.regMap = regColouringAlloc(CodeGenerator.controlFlowFuncs)
+                              AssignRegister.optimiseFlag = true
                             }
                             case _ => throw new IllegalArgumentException("Unrecognised flag")
                         }
@@ -52,8 +51,8 @@ object Main {
                         val optimiseFlag = args(1).charAt(1)
                         optimiseFlag match {
                             case 'p' => {
-                                PeepholeOptimisation.peepholeOptimise(CodeGenerator.controlFlowFuncs)
-                                println("Peephole optimisation")
+                              PeepholeOptimisation.peepholeOptimise(CodeGenerator.controlFlowFuncs)
+                              println("Peephole optimisation")
                             }
                             case _ => throw new IllegalArgumentException("Unrecognised flag")
                         }

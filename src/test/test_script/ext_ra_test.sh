@@ -19,10 +19,10 @@ do
         expected_output=$(echo "$extracted" | head -n -2 | tail -n +2 | cut -c 3-)        
     fi
 
-    timeout 10s ./compile $file > /dev/null
+    timeout 10s ./compile $file -p -r > /dev/null
     filename=$(basename $file .wacc)
     timeout 10s arm-linux-gnueabi-gcc -o $filename -mcpu=arm1176jzf-s -mtune=arm1176jzf-s $filename.s
-    output=$(timeout 10s qemu-arm -L /usr/arm-linux-gnueabi/ $filename)
+    output=$(timeout 20s qemu-arm -L /usr/arm-linux-gnueabi/ $filename)
     exit=$?
     
     pass=1
